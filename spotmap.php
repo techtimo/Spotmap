@@ -27,7 +27,7 @@ function spotmap_activation(){
     global $wpdb;
     $table_name = $wpdb->prefix."spotmap_points";
     $charset_collate = $wpdb->get_charset_collate();
-    $sql = "CREATE TABLE $table_name (
+    $sql = "CREATE TABLE {$table_name} (
     `id` INT NOT NULL,
     `message_type` VARCHAR(25) NOT NULL,
     `time` INT(11) NOT NULL,
@@ -67,12 +67,13 @@ function spotmap_add_cron_interval( $schedules ) {
 
 	return $schedules;
 }
-
 add_filter( 'cron_schedules', 'spotmap_add_cron_interval' );
 
 
-
-
+/**
+ * This function should be called by cron. It checks the spot api for new waypoints. if there are new points they are stored to the db.
+ * NOTE: The spot api shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
+ */
 function spotmap_cron_exec(){
     //get feed
     $spotmap_feed = '0XgPnzRoTYnfT09sX5LGl2vXsyfF3nsm6';
@@ -83,11 +84,9 @@ function spotmap_cron_exec(){
 	$messages = $json['messages']['message'];
 	global $wpdb;
 	foreach($messages as $msg){
-
-		//TODO: !!!!! check if latest point is in db
-		//if(is_in_db($msg['id'])){
-		//  break;
-		//}
+		if(is_point_in_db($msg['id'])){
+		  break;
+		}
 		$wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(
@@ -101,11 +100,7 @@ function spotmap_cron_exec(){
 			)
 		);
 	}
-	//update kml file
-
-spotmap_update_kml();
-
-
+	spotmap_update_kml();
 }
 
 add_action( 'spotmap_cron_hook', 'spotmap_cron_exec',10,0 );
@@ -121,6 +116,9 @@ function spotmap_update_kml(){
             <color>ff0000f9</color>
             <width>2</width>
          </LineStyle>
+         <PolyStyle>
+            <color>ff0000f9</color>
+         </PolyStyle>
       </Style>";
 
 	global $wpdb;
@@ -136,16 +134,17 @@ function spotmap_update_kml(){
           <coordinates>'.$point->longitude.','.$point->latitude.',0</coordinates>
         </Point>
       </Placemark>';
-        $coordinates.=$point->longitude.','.$point->latitude.',0,';
+        $coordinates.=$point->longitude.','.$point->latitude.',0
+        ';
     }
 
     $kml.='<Placemark>
-         <name>Track</name>
+         <name>Spot Track</name>
          <styleUrl>#Track</styleUrl>
          <LineString>
             <tessellate>1</tessellate>
             <altitudeMode>clampToGround</altitudeMode>
-			   <coordinates>'.substr($coordinates,0,-1).'            </coordinates>
+			   <coordinates>'.$coordinates.'</coordinates>
    		</LineString>
    	</Placemark>';
     $kml.='</Document></kml>';
@@ -153,7 +152,33 @@ function spotmap_update_kml(){
 	$file = fopen('spotmap.kml','w');
 	fwrite($file,$kml);
 	fclose($file);
-
 }
 
 
+function spotmap_show( $atts ) {
+	$a = shortcode_atts( array(
+		'width' => '400',
+		'height' => '400',
+	), $atts );
+
+	$spotmap_kml_url = "http://2-camp.com/spotmap.kml";//urlencode(site_url()."/spotmap.kml");
+	$spotmap_iframe = "<iframe width=\"".$a['width']."\" height=\"".$a['height']."]\" frameborder=\"0\" scrolling=\"no\" marginheight=\"0\" marginwidth=\"0\" src=\"http://www.topomap.co.nz/NZTopoMapEmbedded?v=2&z=12&kml=$spotmap_kml_url\"></iframe>";
+	return $spotmap_iframe;
+}
+add_shortcode( 'spotmap', 'spotmap_show' );
+
+
+/**
+ * This function checks wether a point stored in the db or not
+ * @param $id The id of the point to check
+ *
+ * @return bool true if point with same id is in db else false
+ */
+function is_point_in_db($id){
+	global $wpdb;
+	$result = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE id = {$id}");
+	if ($result == '1'){
+		return true;
+	}
+	return false;
+}
