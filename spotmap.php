@@ -25,7 +25,8 @@ defined( 'ABSPATH' ) or die();
 
 register_activation_hook( __FILE__, 'spotmap_activation' );
 function spotmap_activation(){
-    global $wpdb;
+    //TODO to support different feeds at once we need another table
+	global $wpdb;
     $table_name = $wpdb->prefix."spotmap_points";
     $charset_collate = $wpdb->get_charset_collate();
     $sql = "CREATE TABLE {$table_name} (
@@ -46,6 +47,8 @@ function spotmap_activation(){
 	if ( ! wp_next_scheduled( 'spotmap_cron_hook' ) ) {
 		wp_schedule_event( time(), 'twohalf_min', 'spotmap_cron_hook' );
 	}
+
+	add_option('Spot_Feed_ID');
 }
 
 
@@ -64,6 +67,59 @@ function spotmap_add_cron_interval( $schedules ) {
     return $schedules;
 }
 
+
+
+add_action( 'admin_menu', 'spotmap_menu' );
+function spotmap_menu() {
+	add_options_page( 'My Plugin Options', 'Spotmap', 'manage_options', 'spotmap', 'spotmap_show_options' );
+	add_action( 'admin_init', 'spotmap_register_settings' );
+}
+
+
+function spotmap_register_settings() {
+	//register our settings
+	register_setting( 'spotmap-settings-group', 'spotmap_feed_id','spotmap_validate_feed_id' );
+	register_setting( 'spotmap-settings-group', 'spotmap_feed_password');
+}
+function spotmap_validate_feed_id($new_feed_id){
+	$new_feed_id = sanitize_text_field($new_feed_id);
+	$feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
+	$jsonraw = file_get_contents($feedurl);
+	$json = json_decode($jsonraw,true)['response'];
+	//if feed is empty bail out here
+	if ($json['errors']['error']['code'] === "E-0160"){
+		add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id is not valid. Please enter a valid one', 'error' );
+		return get_option('spotmap_feed_id');
+	}
+	return $new_feed_id;
+}
+
+function spotmap_show_options(){
+	echo '<div class="wrap">
+	<h1>Spotmap Settings</h1>
+	<form method="post" action="options.php">
+';
+	settings_fields( 'spotmap-settings-group' );
+	do_settings_sections( 'spotmap-settings-group' );
+	?>
+	<table class="form-table">
+        <tr valign="top">
+	        <th scope="row">Spot Feed ID</th>
+	        <td><input type="text" name="spotmap_feed_id" value="<?php echo esc_attr( get_option('spotmap_feed_id') ); ?>" /></td>
+        </tr>
+		<tr valign="top">
+			<th scope="row">Feed password</th>
+			<td>
+                <input type="password" name="spotmap_feed_password" value="<?php echo esc_attr( get_option('spotmap_feed_password') ); ?>" />
+                <p class="description" id="tagline-description">Leave this empty if the feed is public</p>
+            </td>
+		</tr>
+    </table>
+    <?php
+	submit_button();
+	echo '</form>
+</div>';
+}
 
 add_action('wp_enqueue_scripts', 'spotmap_setup_scripts_and_styles');
 function spotmap_setup_scripts_and_styles() {
@@ -94,16 +150,18 @@ add_action( 'spotmap_cron_hook', 'spotmap_cron_exec',10,0 );
  * NOTE: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
  */
 function spotmap_cron_exec(){
-    //get feed
-    //TODO: should be editable in backend
-    $spotmap_feed = '0XgPnzRoTYnfT09sX5LGl2vXsyfF3nsm6';
-    $feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$spotmap_feed.'/message.json';
+    if(!empty(get_option('spotmap_feed_password'))){
+	    $feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.get_option('spotmap_feed_id').'/message.json?feedPassword='.get_option('spotmap_feed_password');
+    } else {
+	    $feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.get_option('spotmap_feed_id').'/message.json';
+    }
     $jsonraw = file_get_contents($feedurl);
-	$json = json_decode($jsonraw,true)['response']['feedMessageResponse'];
-	$messages_count = $json['count'];
-	$messages = $json['messages']['message'];
+
+	$json = json_decode($jsonraw,true)['response'];
+	//if feed is empty bail out here
+	if ($json['errors']['error']['code'] === "E-0195"){return;}
+	$messages = $json['feedMessageResponse']['messages']['message'];
 	#loop through the data, if a msg is in the db all the others are there as well
-	$update = false;
 	global $wpdb;
 	foreach((array)$messages as $msg){
 		if(is_point_in_db($msg['id'])){
@@ -126,7 +184,7 @@ function spotmap_cron_exec(){
 
 function spotmap_get_data(){
 	global $wpdb;
-	$points = $wpdb->get_results("SELECT id, message_type, time, longitude, latitude, altitude FROM " . $wpdb->prefix . "spotmap_points;");
+	$points = $wpdb->get_results("SELECT id, message_type, time, longitude, latitude, altitude FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
 
 	$data = array();
 	$daycoordinates = array();
@@ -143,22 +201,29 @@ function spotmap_get_data(){
 		$properties = new stdClass();
 		$properties->id = $point->id;
 		$properties->type = $point->message_type;
-		$properties->time = $friendly_date = date_i18n( get_option('date_format'), $point->time );;
+		$properties->time = date_i18n( get_option('time_format'), $point->time );
+		$properties->date = date_i18n( get_option('date_format'), $point->time );
 		$newpoint->properties = $properties;
+		$data[] = $newpoint;
 
-
-		//TODO create a line between the points in chronological order
+		//TODO find the bug below to have a line connecting each day
+		//looks like proper geojson but leaflet don't like it
 		/*if (($point->time - $lasttime) <= 43200){
 			$daycoordinates[] = $geometry->coordinates;
 		} else if (count($daycoordinates) > 1){
+			$geometry = new stdClass();
+			$geometry->type = "LineString";
+			$geometry->coordinates = $daycoordinates;
+
 			$dayline = new stdClass();
-			$dayline->type = "LineString";
-			$dayline->coordinates = $daycoordinates;
+			$dayline->type = "Feature";
+			$dayline->geometry = $geometry;
+
 			$data[] = $dayline;
 			$daycoordinates = array();
 		}
 		$lasttime = $point->time;*/
-		$data[] = $newpoint;
+
 	}
 
 	return $data;
