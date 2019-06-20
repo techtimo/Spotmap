@@ -36,10 +36,11 @@ class Spotmap_Public{
 		wp_enqueue_style( 'leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css' );
 		#if no attributes are provided use the default:
 		$a = shortcode_atts( array(
-			'height' => '400'
+			'height' => '400',
+            'mapcenter' => 'all'
 		), $atts );
 
-		return '<div id="spotmap" style="height: '.$a['height'].'px;"></div>';
+		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap" style="height: '.$a['height'].'px;"></div>';
 	}
 
 	/**
