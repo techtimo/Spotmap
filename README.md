@@ -8,14 +8,15 @@ It uses [wp cron](https://codex.wordpress.org/Function_Reference/wp_cron) to reg
 Furthermore it uses [Leaflet.fullscreen](https://github.com/Leaflet/Leaflet.fullscreen)
 
 Currently the Plugin will show all positions since configuring the plugin. The following screenshot was taken after using the plugin for 3 months:
+
 ![Screenshot of a configured spotmap](https://i.ibb.co/tXz0Db8/spotmap.png)
 
-##Installation 
+## Installation 
 Download the [current version](https://github.com/techtimo/spotmap/archive/master.zip) of Spotmap. 
 Go to your `Dasboard > Plugins > Add New` and click the button `Upload Plugin`. Choose the downloaded Zip file and press "Install Now"
 After installing the plugin you can head over to `Settings > Spotmap` and enter your Feed ID of your Spot Feed.
 
-##Usage
+## Usage
 Use the following Shortcode to display the map:
 ```
 [spotmap mapcenter="last" height="500"]
@@ -25,7 +26,7 @@ With `mapcenter` you can configure if the map centers all points (`all`) or zoom
 With `height` you set the height of the map in pixels. Default `400`.
 
  
-##FAQ
-###How do I get my Feed ID
+## FAQ
+### How do I get my Feed ID
 First of all you need to create a Shared Page in your Spot account the link to this page looks similar to the following link
 http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB 
