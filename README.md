@@ -30,3 +30,7 @@ With `height` you set the height of the map in pixels. Default `400`.
 ### How do I get my Feed ID
 First of all you need to create a Shared Page in your Spot account the link to this page looks similar to the following link
 http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB 
+Everthing after the `=` is your feed id:
+```
+0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB
+```
