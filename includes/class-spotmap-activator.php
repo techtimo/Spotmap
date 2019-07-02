@@ -12,14 +12,17 @@ class Spotmap_Activator {
 		$table_name = $wpdb->prefix."spotmap_points";
 		$charset_collate = $wpdb->get_charset_collate();
 		$sql = "CREATE TABLE {$table_name} (
-		    `id` INT NOT NULL,
-		    `message_type` VARCHAR(25) NOT NULL,
-		    `time` INT(11) NOT NULL,
-		    `longitude` VARCHAR(45) NOT NULL,
-		    `latitude` FLOAT(11,7) NOT NULL,
-		    `altitude` FLOAT(11,7) NULL,
-		    `battery_status` VARCHAR(45) NULL,
-		    PRIMARY KEY (`id`) )$charset_collate";
+		    `id` int(11) unsigned NOT NULL,
+            `type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
+            `time` int(11) unsigned NOT NULL,
+            `longitude` float(11,7) NOT NULL,
+            `latitude` float(11,7) NOT NULL,
+            `altitude` float(11,7) DEFAULT NULL,
+            `battery_status` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `id_UNIQUE` (`id`) 
+            )$charset_collate";
 
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 		dbDelta( $sql );

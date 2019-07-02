@@ -1,7 +1,7 @@
 === Spotmap ===
 Contributors: Timo Giese
 Donate link:
-Tags:
+Tags: findmespot,spotgen3
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 3.5
