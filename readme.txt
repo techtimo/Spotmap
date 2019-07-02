@@ -1,18 +1,18 @@
 === Spotmap ===
 Contributors: Timo Giese
 Donate link:
-Tags: findmespot,spotgen3
+Tags: findmespot,spotgen3,spotbeacon,embedded map
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 3.5
-Tested up to: 3.5
+Tested up to: 4.9
 Stable tag: 0.1
 
-The plugin will let you have an embedded topographic map with all positions sent from your SPOT device
+The plugin will let you have an embedded topographic map that shows the movement of a SPOT beacon.
 
 == Description ==
 
-The plugin will let you have an embedded topographic map with all positions sent from your SPOT device
+See https://github.com/techtimo/spotmap for details
 
 == Installation ==
 
@@ -22,6 +22,7 @@ The plugin will let you have an embedded topographic map with all positions sent
 
 == Screenshots ==
 
+[https://i.ibb.co/tXz0Db8/spotmap.png Screenshot of a configured spotmap using for 3 months]
 
 == Changelog ==
 
