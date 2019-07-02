@@ -16,15 +16,18 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_styles() {
-		//wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/plugin-name-public.css');
-		wp_register_style( 'leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css' );
-	}
+        //wp_enqueue_style( leafletcss, plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
+        wp_register_style('leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css');
+        wp_register_style('leafletfullscreencss', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css');
+    }
 
 	public function enqueue_scripts(){
-		wp_enqueue_script( 'leafletjs', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.js');
-		wp_enqueue_script( 'spotmap-handler',  plugins_url( 'js/maphandler.js', __FILE__ ),array('jquery'),false,true);
+        //wp_enqueue_script( 'leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
+        wp_enqueue_script('leafletjs', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.js');
+        wp_enqueue_script('leafletfullscreenjs', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js');
+        wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
 
-		wp_localize_script( 'spotmap-handler', 'spotmapjsobj', array(
+        wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
 			'ajax_url' => admin_url( 'admin-ajax.php' )
 		));
 	}
@@ -34,7 +37,7 @@ class Spotmap_Public{
 
 	function show_spotmap($atts){
 		wp_enqueue_style( 'leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css' );
-		#if no attributes are provided use the default:
+        // if no attributes are provided use the default:
 		$a = shortcode_atts( array(
 			'height' => '400',
             'mapcenter' => 'all'
@@ -46,51 +49,64 @@ class Spotmap_Public{
 	/**
 	 * This function gets called by cron. It checks the SPOT API for new data. If so the GeoJSON gets updated.
 	 * NOTE: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
+     * TODO: atm this only scrapes the last 50 messages. if a new feed id is added, it has to loop through all messages
 	 */
 	function get_feed_data(){
-		if(!empty(get_option('spotmap_feed_password'))){
-			$feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.get_option('spotmap_feed_id').'/message.json?feedPassword='.get_option('spotmap_feed_password');
-		} else {
-			$feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.get_option('spotmap_feed_id').'/message.json';
-		}
-		$jsonraw = file_get_contents($feedurl);
+        $feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/' . get_option('spotmap_feed_id') . '/message.json';
+        if (!empty(get_option('spotmap_feed_password'))) {
+            $feed_url .= '?feedPassword=' . get_option('spotmap_feed_password');
+        }
+        $jsonraw = file_get_contents($feed_url);
 
-		$json = json_decode($jsonraw,true)['response'];
-		//if feed is empty bail out here
-		if ($json['errors']['error']['code'] === "E-0195"){return;}
-		$messages = $json['feedMessageResponse']['messages']['message'];
-		#loop through the data, if a msg is in the db all the others are there as well
+        $json = json_decode($jsonraw, true)['response'];
+        if (!empty($json['errors']['error']['code'])) {
+            //E-0195 means the feed has no points to show
+            $error_code = $json['errors']['error']['code'];
+            if ($error_code === "E-0195") {
+                return;
+            }
+            //TODO: retrieve a list of possible errors
+            trigger_error('Unknown error: ' . $error_code, E_USER_WARNING);
+        }
+        $messages = $json['feedMessageResponse']['messages']['message'];
+        // loop through the data, if a msg is in the db all the others are there as well
 
-		foreach((array)$messages as $msg){
-			if(db_does_point_exist($msg['id'])){
-				break;
-			}
-			db_insert_point($msg['id'],$msg['messageType'],$msg['unixTime'],$msg['longitude'],$msg['latitude'], $msg['altitude'], $msg['batteryState']);
-		}
+
+        foreach ((array)$messages as $msg) {
+            if ($this->db_does_point_exist($msg['id'])) {
+                return;
+            }
+            $this->db_insert_point($msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState']);
+        }
 	}
 
 	public function the_action_function(){
 		wp_send_json($this->spotmap_get_data());
 	}
+
 	private function db_insert_point(
-		$point_id,
-		$message_type,
-		$timestamp,
-		$longitude,
-		$latitude,
-		$altitude,
-		$battery_status){
+        $point_id,
+        $type,
+        $timestamp,
+        $longitude,
+        $latitude,
+        $altitude,
+        $battery_status,
+        $custom_message = '')
+    {
+
 		global $wpdb;
 		$wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(
 				'id' => $point_id,
-				'message_type' => $message_type,
+                'type' => $type,
 				'time' => $timestamp,
 				'longitude' => $longitude,
 				'latitude' => $latitude,
 				'altitude' => $altitude,
-				'battery_status' => $battery_status
+                'battery_status' => $battery_status,
+                'custom_message' => $custom_message
 			)
 		);
 	}
@@ -98,7 +114,7 @@ class Spotmap_Public{
 
 	/**
 	 * This function checks whether a point stored in the db or not
-	 * @param $id The id of the point to check
+     * @param $id int The id of the point to check
 	 *
 	 * @return bool true if point with same id is in db else false
 	 */
@@ -113,7 +129,7 @@ class Spotmap_Public{
 
 	public function spotmap_get_data(){
 		global $wpdb;
-		$points = $wpdb->get_results("SELECT id, message_type, time, longitude, latitude, altitude FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
+        $points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
 
 		$data = array();
 		$daycoordinates = array();
@@ -129,7 +145,9 @@ class Spotmap_Public{
 
 			$properties = new stdClass();
 			$properties->id = $point->id;
-			$properties->type = $point->message_type;
+            $properties->type = $point->type;
+            $properties->message = $point->custom_message;
+
 			$properties->time = date_i18n( get_option('time_format'), $point->time );
 			$properties->date = date_i18n( get_option('date_format'), $point->time );
 			$newpoint->properties = $properties;

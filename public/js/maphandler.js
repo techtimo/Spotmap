@@ -1,4 +1,5 @@
 var spotmap = L.map('spotmap');
+spotmap.addControl(new L.Control.Fullscreen());
 var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
     maxZoom: 17,
     attribution: 'Map: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
@@ -7,10 +8,18 @@ var mapcenter = null;
 OpenTopoMap.addTo(spotmap);
 
 function onEachFeature(feature, layer) {
-    if (feature.properties.type === 'UNLIMITED-TRACK') {
-        layer.bindPopup(
-            'Date: ' + feature.properties.date +
-            'Time: ' + feature.properties.time);
+    switch (feature.properties.type) {
+        case 'CUSTOM':
+        case 'OK':
+            layer.bindPopup(
+                'Date: ' + feature.properties.date + '</br>'
+                + 'Time: ' + feature.properties.time + '</br>'
+                + 'Message: ' + feature.properties.message);
+            break;
+        default:
+            layer.bindPopup(
+                'Date: ' + feature.properties.date + '</br>'
+                + 'Time: ' + feature.properties.time);
     }
 }
 
@@ -52,7 +61,7 @@ jQuery(document).ready(function () {
             ]);
         } else if (mapcenter == 'last'){
             var lastpoint = response[response.length-1];
-            spotmap.setView([lastpoint.geometry.coordinates[1],lastpoint.geometry.coordinates[0]],12);
+            spotmap.setView([lastpoint.geometry.coordinates[1], lastpoint.geometry.coordinates[0]], 13);
             console.log('last')
         }
 
