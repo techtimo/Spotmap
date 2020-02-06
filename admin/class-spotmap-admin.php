@@ -11,7 +11,7 @@ class Spotmap_Admin {
 	}
 
 	public function enqueue_scripts(){
-		//wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/plugin-name-admin.js', array( 'jquery' ));
+		// wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/plugin-name-admin.js', array( 'jquery' ));
 	}
 	public function add_cron_schedule($schedules){
 		$schedules['twohalf_min'] = array(
@@ -31,11 +31,10 @@ class Spotmap_Admin {
 
 	function spotmap_validate_feed_id($new_feed_id){
 		$new_feed_id = sanitize_text_field($new_feed_id);
-		$feedurl = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
-		$jsonraw = file_get_contents($feedurl);
-		$json = json_decode($jsonraw,true)['response'];
+		$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
+		$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
 		//if feed is empty bail out here
-		if ($json['errors']['error']['code'] === "E-0160"){
+		if ($json['response']['errors']['error']['code'] === "E-0160"){
 			add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id is not valid. Please enter a valid one', 'error' );
 			return get_option('spotmap_feed_id');
 		}

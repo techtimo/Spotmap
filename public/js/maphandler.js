@@ -1,10 +1,8 @@
-var spotmap = L.map('spotmap');
-spotmap.addControl(new L.Control.Fullscreen());
+var spotmap = L.map('spotmap',{ fullscreenControl: true,});
 var OpenTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    maxZoom: 17,
+    maxZoom: 16,
     attribution: 'Map: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
 });
-var mapcenter = null;
 OpenTopoMap.addTo(spotmap);
 
 function onEachFeature(feature, layer) {
@@ -24,19 +22,26 @@ function onEachFeature(feature, layer) {
 }
 
 jQuery(document).ready(function () {
-    jQuery.post(spotmapjsobj.ajax_url,{ 'action': 'the_ajax_hook'},function (response) {
+    jQuery.post(spotmapjsobj.ajax_url,{ 'action': 'get_positions'},function (response) {
+
+        if(response.length == 0){
+            spotmap.setView([51.505, -0.09], 13);
+            var popup = L.popup()
+                .setLatLng([51.5, -0.09])
+                .setContent("<b>No data found</b><br>Please register your feed id in the settings")
+                .openOn(spotmap);
+            return;
+        }
 
         response.forEach(function(point){
 
         });
-      //  console.log(JSON.stringify(response));
+
         L.geoJSON(response, {
             onEachFeature: onEachFeature
         }).addTo(spotmap);
 
-
-        mapcenter = jQuery('#spotmap').data("mapcenter");
-
+        const mapcenter = jQuery('#spotmap').data("mapcenter");
         if(mapcenter == 'all'){
             //get the outermost points to set the map boarders accordingly
             var corner1 = [200,200], corner2 = [-200,-200];
@@ -62,7 +67,6 @@ jQuery(document).ready(function () {
         } else if (mapcenter == 'last'){
             var lastpoint = response[response.length-1];
             spotmap.setView([lastpoint.geometry.coordinates[1], lastpoint.geometry.coordinates[0]], 13);
-            console.log('last')
         }
 
     });

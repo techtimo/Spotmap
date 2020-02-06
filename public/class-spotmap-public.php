@@ -16,15 +16,12 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_styles() {
-        //wp_enqueue_style( leafletcss, plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
-        wp_register_style('leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css');
-        wp_register_style('leafletfullscreencss', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css');
+        // wp_register_style('leafletfullscreencss', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css');
     }
 
 	public function enqueue_scripts(){
-        //wp_enqueue_script( 'leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
-        wp_enqueue_script('leafletjs', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.js');
-        wp_enqueue_script('leafletfullscreenjs', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js');
+        wp_enqueue_script('leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
+        wp_enqueue_script('leafletfullscreenjs',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
 
         wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
@@ -36,14 +33,15 @@ class Spotmap_Public{
 	}
 
 	function show_spotmap($atts){
-		wp_enqueue_style( 'leafletcss', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css' );
+        wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
+        wp_enqueue_style( 'leafletfullscreencss', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
         // if no attributes are provided use the default:
 		$a = shortcode_atts( array(
 			'height' => '400',
             'mapcenter' => 'all'
 		), $atts );
 
-		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap" style="height: '.$a['height'].'px;"></div>';
+		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap" style="height: '.$a['height'].'px;max-width: 100%;"></div>';
 	}
 
 	/**
@@ -56,7 +54,7 @@ class Spotmap_Public{
         if (!empty(get_option('spotmap_feed_password'))) {
             $feed_url .= '?feedPassword=' . get_option('spotmap_feed_password');
         }
-        $jsonraw = file_get_contents($feed_url);
+		$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 
         $json = json_decode($jsonraw, true)['response'];
         if (!empty($json['errors']['error']['code'])) {
@@ -113,7 +111,7 @@ class Spotmap_Public{
 
 
 	/**
-	 * This function checks whether a point stored in the db or not
+	 * This function checks if a point is stored is preseent in the db
      * @param $id int The id of the point to check
 	 *
 	 * @return bool true if point with same id is in db else false
