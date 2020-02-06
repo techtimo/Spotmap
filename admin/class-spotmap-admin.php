@@ -25,7 +25,7 @@ class Spotmap_Admin {
 	}
 
 	public function register_settings(){
-		register_setting( 'spotmap-settings-group', 'spotmap_feed_id','spotmap_validate_feed_id' );
+		register_setting( 'spotmap-settings-group', 'spotmap_feed_id',['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']] );
 		register_setting( 'spotmap-settings-group', 'spotmap_feed_password');
 	}
 
@@ -34,11 +34,12 @@ class Spotmap_Admin {
 		$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
 		$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
 		//if feed is empty bail out here
+		print_r(json);
 		if ($json['response']['errors']['error']['code'] === "E-0160"){
 			add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id is not valid. Please enter a valid one', 'error' );
 			return get_option('spotmap_feed_id');
 		}
-		return $new_feed_id;
+		return get_option('spotmap_feed_id');
 	}
 
 	function display_options_page(){
