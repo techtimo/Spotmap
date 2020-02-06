@@ -4,7 +4,7 @@ Donate link:
 Tags: findmespot, spotgen3, spotbeacon, topomap, liveposition
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 3.5
+Requires at least: 4.7
 Tested up to: 5.3
 Stable tag: 0.1
 
