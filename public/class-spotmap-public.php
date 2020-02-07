@@ -70,9 +70,9 @@ class Spotmap_Public{
             trigger_error('Unknown error: ' . $error_code, E_USER_WARNING);
         }
         $messages = $json['feedMessageResponse']['messages']['message'];
+		
+		
         // loop through the data, if a msg is in the db all the others are there as well
-
-
         foreach ((array)$messages as $msg) {
             if ($this->db_does_point_exist($msg['id'])) {
                 return;
@@ -134,12 +134,16 @@ class Spotmap_Public{
         $points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
 		
 		if(empty($points)){
+			error_log("no points found");
 			$error = new stdClass();
 			$error->sucess = false;
+			$error->title = "No data found";
 			if (get_option('spotmap_feed_id') == ""){
+				error_log("no points found");
 				$error->message = "Head over to the settings and enter your feed id.";
 			} else {
-				$error->message = "Time to go out with your SPOT. You are all";
+				error_log("no points found");
+				$error->message = "You are all set up! Now it's time to head in the backcountry with your SPOT.";
 			}
 			return $error;
 		}
