@@ -24,11 +24,11 @@ function onEachFeature(feature, layer) {
 jQuery(document).ready(function () {
     jQuery.post(spotmapjsobj.ajax_url,{ 'action': 'get_positions'},function (response) {
 
-        if(response.length == 0){
+        if(!response.sucess){
             spotmap.setView([51.505, -0.09], 13);
             var popup = L.popup()
                 .setLatLng([51.5, -0.09])
-                .setContent("<b>No data found</b><br>Please register your feed id in the settings")
+                .setContent("<b>No data found</b><br>" + response.messagex)
                 .openOn(spotmap);
             return;
         }
