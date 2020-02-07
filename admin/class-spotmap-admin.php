@@ -39,7 +39,7 @@ class Spotmap_Admin {
 			add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id is not valid. Please enter a valid one', 'error' );
 			return get_option('spotmap_feed_id');
 		}
-		return get_option('spotmap_feed_id');
+		return $new_feed_id;
 	}
 
 	function display_options_page(){

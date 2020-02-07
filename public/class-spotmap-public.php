@@ -50,9 +50,12 @@ class Spotmap_Public{
      * TODO: atm this only scrapes the last 50 messages. if a new feed id is added, it has to loop through all messages
 	 */
 	function get_feed_data(){
+        if (get_option('spotmap_feed_id') == "") {
+			return;
+        }
         $feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/' . get_option('spotmap_feed_id') . '/message.json';
-        if (!empty(get_option('spotmap_feed_password'))) {
-            $feed_url .= '?feedPassword=' . get_option('spotmap_feed_password');
+        if (get_option('spotmap_feed_password') == "") {
+			$feed_url .= '?feedPassword=' . get_option('spotmap_feed_password');
         }
 		$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 
@@ -126,12 +129,23 @@ class Spotmap_Public{
 	}
 
 	public function spotmap_get_data(){
+		$data = array();
 		global $wpdb;
         $points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
+		
+		if(empty($points)){
+			$error = new stdClass();
+			$error->sucess = false;
+			if (get_option('spotmap_feed_id') == ""){
+				$error->message = "Head over to the settings and enter your feed id.";
+			} else {
+				$error->message = "Time to go out with your SPOT. You are all";
+			}
+			return $error;
+		}
 
-		$data = array();
-		$daycoordinates = array();
-		$lasttime = null;
+		// $daycoordinates = array();
+		// $lasttime = null;
 		foreach ($points as $key => $point){
 			$newpoint = new stdClass();
 			$newpoint->type = 'Feature';
