@@ -26,9 +26,11 @@ jQuery(document).ready(function () {
 
         if(!response.sucess){
             spotmap.setView([51.505, -0.09], 13);
+            response.title = response.title || "No data found!";
+            response.message = response.message || "";
             var popup = L.popup()
                 .setLatLng([51.5, -0.09])
-                .setContent("<b>No data found</b><br>" + response.messagex)
+                .setContent("<b>"+response.title+"</b><br>" + response.message)
                 .openOn(spotmap);
             return;
         }

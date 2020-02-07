@@ -31,11 +31,14 @@ class Spotmap_Admin {
 
 	function spotmap_validate_feed_id($new_feed_id){
 		$new_feed_id = sanitize_text_field($new_feed_id);
+		if(parse_url($new_feed_id)){
+			$new_feed_id = end(explode('glId=', $new_feed_id));
+		}
 		$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
 		$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
 		//if feed is empty bail out here
-		print_r(json);
-		if ($json['response']['errors']['error']['code'] === "E-0160"){
+		if (empty($json) || isset($json['response']['errors']) && $json['response']['errors']['error']['code'] === "E-0160"){
+			error_log('stay with old value');
 			add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id is not valid. Please enter a valid one', 'error' );
 			return get_option('spotmap_feed_id');
 		}

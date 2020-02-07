@@ -15,7 +15,7 @@ do_settings_sections( 'spotmap-settings-group' ); ?>
 		<table class="form-table">
 			<tr valign="top">
 				<th scope="row">Spot Feed ID</th>
-				<td><input type="text" name="spotmap_feed_id" value="<?php echo esc_attr( get_option('spotmap_feed_id') ); ?>" /></td>
+				<td><input type="text" name="spotmap_feed_id" placeholder="Paste your feed url or id here" value="<?php echo esc_attr( get_option('spotmap_feed_id') ); ?>" /></td>
 			</tr>
 			<tr valign="top">
 				<th scope="row">Feed password</th>
