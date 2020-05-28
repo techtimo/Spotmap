@@ -1,7 +1,5 @@
 <?php
 /**
- * The plugin bootstrap file
- *
  * Plugin Name: Spotmap
  * Plugin URI: https://github.com/techtimo/spotmap
  * Description:       Add an embedded topographic maps that shows the movement of a SPOT beacon
