@@ -16,8 +16,20 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_styles() {
-        // wp_register_style('leafletfullscreencss', 'https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css');
+		wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
+        wp_enqueue_style( 'leafletfullscreencss', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
     }
+
+	public function enqueue_block_editor_assets(){
+		$this->enqueue_scripts();
+		$this->enqueue_styles();
+		wp_enqueue_script(
+			'spotmap-block',
+			plugins_url('js/block.js', __FILE__),
+			array( 'wp-blocks', 'wp-element' )
+		);
+
+	}
 
 	public function enqueue_scripts(){
         wp_enqueue_script('leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
@@ -41,7 +53,7 @@ class Spotmap_Public{
             'mapcenter' => 'all'
 		), $atts );
 
-		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap" style="height: '.$a['height'].'px;max-width: 100%;"></div>';
+		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap();});</script>';
 	}
 
 	/**
