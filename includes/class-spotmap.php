@@ -66,6 +66,7 @@ class Spotmap{
 		$this->loader->add_action('init', $spotmap_public, 'register_shortcodes');
 		$this->loader->add_action('wp_enqueue_styles', $spotmap_public, 'enqueue_styles');
 		$this->loader->add_action('wp_enqueue_scripts', $spotmap_public, 'enqueue_scripts');
+		$this->loader->add_action('enqueue_block_assets', $spotmap_public, 'enqueue_block_editor_assets');
 		$this->loader->add_action('wp_ajax_get_positions', $spotmap_public, 'the_action_function');
 		$this->loader->add_action('wp_ajax_nopriv_get_positions', $spotmap_public, 'the_action_function');
 		$this->loader->add_action('spotmap_cron_hook', $spotmap_public, 'get_feed_data');
