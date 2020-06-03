@@ -17,6 +17,7 @@ class Spotmap_Public{
 
 	public function enqueue_styles() {
 		wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
+		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
         wp_enqueue_style( 'leafletfullscreencss', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
     }
 
@@ -35,9 +36,14 @@ class Spotmap_Public{
         wp_enqueue_script('leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
         wp_enqueue_script('leafletfullscreenjs',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
-
+		
+		$maps = new stdClass();
+		$maps->OpenTopoMap = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
+		$maps->Landscape = "http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png";
         wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
-			'ajax_url' => admin_url( 'admin-ajax.php' )
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'maps' => $maps
+
 		));
 	}
 	public function register_shortcodes(){
@@ -45,9 +51,7 @@ class Spotmap_Public{
 	}
 
 	function show_spotmap($atts){
-        wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
-        wp_enqueue_style( 'leafletfullscreencss', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
-        // if no attributes are provided use the default:
+		// if no attributes are provided use the default:
 		$a = shortcode_atts( array(
 			'height' => '400',
             'mapcenter' => 'all'
