@@ -8,7 +8,7 @@ Requires at least: 4.7
 Tested up to: 5.3
 Stable tag: 0.1
 
-The plugin will show sent positions of a findmespot device on a topographic embedded map 🗺
+See your Spot device movements on a topographic map inside your Blog! 🗺
 
 == Description ==
 
@@ -31,12 +31,11 @@ After installing the plugin, head over to your Dashboard  `Settings > Spotmap` a
 == Frequently Asked Questions ==
 
 = How do I get my Feed ID? =
-First of all you need to create a Shared Page in your Spot account the link to this page looks similar to the following link
-http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB 
-Everthing after the `glId=` is your feed id:
-```
-0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB
-```
+First of all you need to create a XML Feed in your Spot account. If you have multiple devices, select only one.
+The link to the newly created feed looks similar to the following link: `http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+Everthing after the `=` is your feed id:
+`0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+
 
 == Screenshots ==
 
@@ -44,5 +43,5 @@ Everthing after the `glId=` is your feed id:
 
 == Changelog ==
 
-= 0.1 =
-- Initial Revision
+= 0.3 =
+- First working draft
