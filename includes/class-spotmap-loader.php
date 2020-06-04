@@ -9,12 +9,7 @@
 class Spotmap_Loader {
 
 	protected $actions = array();
-	protected $filters= array();
-
-	public function __construct() {
-		$this->actions = array();
-		$this->filters = array();
-	}
+	protected $filters = array();
 
 	/**
 	 * Add a new action to the collection to be registered with WordPress.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Spotmap
  * Plugin URI: https://github.com/techtimo/spotmap
- * Description:       Add an embedded topographic maps that shows the movement of a SPOT beacon
+ * Description:       Add an embedded map that shows the movement of a Spot device
  * Version:           0.3.0
  * Author:            Timo Giese
  * Author URI:        https://github.com/techtimo
@@ -35,4 +35,3 @@ function run_spotmap() {
 	$plugin->run();
 }
 run_spotmap();
-

@@ -31,6 +31,13 @@ class Spotmap_Activator {
 		if ( ! wp_next_scheduled( 'spotmap_cron_hook' ) ) {
 			wp_schedule_event( time(), 'twohalf_min', 'spotmap_cron_hook' );
 		}
-		//add_option('Spot_Feed_ID');
+		
+		// activate for first time
+		if(!get_option('spotmap_options')){
+			$data_r = ['findmespot' => 1, 'garmin inreach'=> 0];
+			add_option('spotmap_options', $data_r);
+
+		}
+
 	}
 }

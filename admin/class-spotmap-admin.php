@@ -7,11 +7,7 @@
  */
 class Spotmap_Admin {
 
-	public function __construct() {
-	}
-
 	public function enqueue_scripts(){
-		// wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/plugin-name-admin.js', array( 'jquery' ));
 	}
 	public function add_cron_schedule($schedules){
 		$schedules['twohalf_min'] = array(
@@ -21,14 +17,118 @@ class Spotmap_Admin {
 		return $schedules;
 	}
 	public function add_options_page(){
-		add_options_page( 'My Plugin Options', 'Spotmap', 'manage_options', 'spotmap', array($this,'display_options_page') );
+		add_options_page( 'Spotmap Options', 'Spotmap', 'manage_options', 'spotmap', array($this,'display_options_page') );
 	}
 
 	public function register_settings(){
-		register_setting( 'spotmap-settings-group', 'spotmap_feed_id',['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']] );
-		register_setting( 'spotmap-settings-group', 'spotmap_feed_password');
+		foreach (get_option("spotmap_options") as $key => $count) {
+			if($count < 1){
+				continue;
+			}
+			add_settings_section(
+				$key.'-feeds',
+				$key.' Feeds',
+				[$this,'settings_section_'.$key],
+				'spotmap-settings-group'
+			);
+			for ($i=0; $i < $count; $i++) { 
+				register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_name'.$i);
+				register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_id'.$i, ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
+				register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_password'.$i);
+				
+				add_settings_field(
+					'spotmap_'.$key.'_name'.$i,
+					'Feed Name',
+					[$this, 'generate_text_field'],
+					'spotmap-settings-group',
+					'findmespot-feeds',
+					['spotmap_'.$key.'_name'.$i]
+				);
+				add_settings_field(
+					'spotmap_'.$key.'_id'.$i,
+					'Feed Id',
+					[$this, 'generate_text_field'],
+					'spotmap-settings-group',
+					'findmespot-feeds',
+					['spotmap_'.$key.'_id'.$i]
+				);
+				add_settings_field(
+					'spotmap_'.$key.'_password'.$i,
+					'Feed password',
+					[$this, 'generate_password_field'],
+					'spotmap-settings-group',
+					'findmespot-feeds',
+					['spotmap_'.$key.'_password'.$i]	
+					
+				);
+
+			}
+		}
+		add_settings_section(
+			'spotmap_options',
+			'Add new Feed',
+			'',
+			'spotmap-settings-group'
+		);
+		add_settings_field(
+			'spotmap_options',
+			'Choose a new feed provider',
+			[$this, 'generate_dropdown'],
+			'spotmap-settings-group',
+			'findmespot-feeds'	
+			
+		);
+		register_setting( 'spotmap-settings-group', 'spotmap_options',['sanitize_callback'=>[$this, 'spotmap_validate_new_feed']] );
+	}
+	function generate_dropdown()
+	{
+		?>
+			 <select id="spotmap_options" name="spotmap_options">
+			 	<option name="spotmap_options" value="" selected="selected"></option>
+			 <?php foreach (get_option("spotmap_options") as $key => $count) {
+				 echo '<option name="spotmap_options" value="'.$key.'">'.$key.'</option>';
+			 } ?>
+			 </select>
+		<?php
+	 }
+	function generate_text_field($args)
+	{
+		// get the value of the setting we've registered with register_setting()
+		$setting = get_option($args[0]);
+		// output the field
+		?>
+		<input type="text" name="<?php echo $args[0]?>" value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
+		<?php
 	}
 
+	function generate_password_field($args)
+	{
+		// get the value of the setting we've registered with register_setting()
+		$setting = get_option($args[0]);
+		// output the field
+		?>
+		<input type="password" name="<?php echo $args[0]?>">
+		<p class="description">Leave this empty if the feed is public</p>
+		<?php
+	}
+
+	function settings_section_findmespot()
+	{
+		echo '<p>Here goes a detailed description.</p>';
+	}
+	
+	function spotmap_validate_new_feed($new_value){
+		$old = get_option("spotmap_options");
+		error_log(print_r($new_value,true));
+		if ($new_value == '') {
+			return $old;
+		} else if (!isset($old[$new_value])){
+			add_settings_error( 'This service is not yet supported', 'error' );
+			return $old;
+		}
+		$old[$new_value]++;
+		return $old;
+	}
 	function spotmap_validate_feed_id($new_feed_id){
 		$new_feed_id = sanitize_text_field($new_feed_id);
 		if(parse_url($new_feed_id)){
