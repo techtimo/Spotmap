@@ -72,10 +72,10 @@ class Spotmap_Admin {
 		);
 		add_settings_field(
 			'spotmap_options',
-			'Choose a new feed provider',
+			'Add a new feed',
 			[$this, 'generate_dropdown'],
 			'spotmap-settings-group',
-			'findmespot-feeds'	
+			'spotmap_options'	
 			
 		);
 		register_setting( 'spotmap-settings-group', 'spotmap_options',['sanitize_callback'=>[$this, 'spotmap_validate_new_feed']] );
@@ -91,8 +91,7 @@ class Spotmap_Admin {
 			 </select>
 		<?php
 	 }
-	function generate_text_field($args)
-	{
+	function generate_text_field($args){
 		// get the value of the setting we've registered with register_setting()
 		$setting = get_option($args[0]);
 		// output the field
@@ -101,38 +100,32 @@ class Spotmap_Admin {
 		<?php
 	}
 
-	function generate_password_field($args)
-	{
+	function generate_password_field($args){
 		// get the value of the setting we've registered with register_setting()
 		$setting = get_option($args[0]);
 		// output the field
 		?>
-		<input type="password" name="<?php echo $args[0]?>">
+		<input type="password" name="<?php echo $args[0]?>"value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
 		<p class="description">Leave this empty if the feed is public</p>
 		<?php
 	}
 
-	function settings_section_findmespot()
-	{
+	function settings_section_findmespot(){
 		echo '<p>Here goes a detailed description.</p>';
 	}
 	
 	function spotmap_validate_new_feed($new_value){
 		$old = get_option("spotmap_options");
-		error_log(print_r($new_value,true));
-		if ($new_value == '') {
+		if ($new_value == '')
 			return $old;
-		} else if (!isset($old[$new_value])){
-			add_settings_error( 'This service is not yet supported', 'error' );
-			return $old;
-		}
 		$old[$new_value]++;
 		return $old;
 	}
 	function spotmap_validate_feed_id($new_feed_id){
 		$new_feed_id = sanitize_text_field($new_feed_id);
 		if(parse_url($new_feed_id)){
-			$new_feed_id = end(explode('glId=', $new_feed_id));
+			$tmp = explode('glId=', $new_feed_id);
+			$new_feed_id = end($tmp);
 		}
 		$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$new_feed_id.'/message.json';
 		$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
