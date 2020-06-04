@@ -5,10 +5,17 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
-//$option_name = 'wporg_option';
+foreach (get_option("spotmap_options") as $key => $count) {
+    if($count < 1)
+        continue;
+    
+    for ($i=0; $i < $count; $i++) {
+        delete_option('spotmap_'.$key.'_name'.$i);
+        delete_option('spotmap_'.$key.'_id'.$i);
+        delete_option('spotmap_'.$key.'_password'.$i);
+    }
+}
+delete_option("spotmap_options");
 
-//delete_option($option_name);
-
-// drop a custom database table
 global $wpdb;
 $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}spotmap_points");
