@@ -75,8 +75,8 @@ function initMap(options = {}) {
                 line.push([entry.latitude, entry.longitude]);
                 if(['CUSTOM','OK','NEWMOVEMENT','STATUS'].includes(entry.type)){
                     let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                    if(entry.message)
-                        message += 'Message: ' + entry.message;
+                    if(entry.custom_message)
+                        message += 'Message: ' + entry.custom_message;
                     let marker = L.marker([entry.latitude, entry.longitude]).bindPopup(message);
                     group.push(marker);
                 }
