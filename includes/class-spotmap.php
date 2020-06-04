@@ -3,14 +3,8 @@
 class Spotmap{
 
 	protected $loader;
-	protected $plugin_name = 'spotmap';
-	protected $version;
 
 	public function __construct() {
-		if ( defined( 'SPOTMAP__VERSION' ) ) {
-			$this->version = SPOTMAP_VERSION;
-		}
-
 		$this->load_dependencies();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
@@ -62,7 +56,7 @@ class Spotmap{
 	 * @access   private
 	 */
 	private function define_public_hooks() {
-		$spotmap_public = new Spotmap_Public( $this->get_plugin_name());
+		$spotmap_public = new Spotmap_Public();
 		$this->loader->add_action('init', $spotmap_public, 'register_shortcodes');
 		$this->loader->add_action('wp_enqueue_styles', $spotmap_public, 'enqueue_styles');
 		$this->loader->add_action('wp_enqueue_scripts', $spotmap_public, 'enqueue_scripts');
@@ -79,10 +73,6 @@ class Spotmap{
 	 */
 	public function run() {
 		$this->loader->run();
-	}
-
-	public function get_plugin_name(){
-		return $this->plugin_name;
 	}
 
 }
