@@ -103,7 +103,7 @@ class Spotmap_Public{
 					trigger_error($msg['id']. " already exists", E_USER_WARNING);
 					return;
 				}
-				$this->db_insert_point($device, $msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState']);
+				$this->db_insert_point($device, $msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState'],$msg['messageContent']);
 			}
 			$i += $json['feedMessageResponse']['count'] + 1;
 		}
