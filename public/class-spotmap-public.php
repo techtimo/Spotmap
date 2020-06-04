@@ -7,14 +7,6 @@
  */
 class Spotmap_Public{
 
-	private $plugin_name;
-
-	public function __construct($plugin_name) {
-
-		$this->plugin_name = $plugin_name;
-
-	}
-
 	public function enqueue_styles() {
 		wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
@@ -62,46 +54,73 @@ class Spotmap_Public{
 
 	/**
 	 * This function gets called by cron. It checks the SPOT API for new data. If so the GeoJSON gets updated.
-	 * NOTE: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
-     * TODO: atm this only scrapes the last 50 messages. if a new feed id is added, it has to loop through all messages
+	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
 	 */
 	function get_feed_data(){
-        if (get_option('spotmap_feed_id') == "") {
+		error_log("cron job started");
+        if (get_option('spotmap_options') == "") {
+			trigger_error('no values found');
 			return;
-        }
-        $feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/' . get_option('spotmap_feed_id') . '/message.json';
-        if (get_option('spotmap_feed_password') == "") {
-			$feed_url .= '?feedPassword=' . get_option('spotmap_feed_password');
-        }
-		$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
+		}
+		foreach (get_option("spotmap_options") as $key => $count) {
+			if($count < 1){
+				continue;
+			}
+			for ($i=0; $i < $count; $i++) {
+				if($key == 'findmespot'){
+					$name = get_option('spotmap_'.$key.'_name'.$i);
+					$id = get_option('spotmap_'.$key.'_id'.$i);
+					$pwd = get_option('spotmap_'.$key.'_password'.$i);
+					$this->get_spot_data($name, $id, $pwd);
+				}
+			}
+		}
+        
+	}
 
-        $json = json_decode($jsonraw, true)['response'];
-        if (!empty($json['errors']['error']['code'])) {
-            //E-0195 means the feed has no points to show
-            $error_code = $json['errors']['error']['code'];
-            if ($error_code === "E-0195") {
-                return;
-            }
-            //TODO: retrieve a list of possible errors
-            trigger_error('Unknown error: ' . $error_code, E_USER_WARNING);
-        }
-        $messages = $json['feedMessageResponse']['messages']['message'];
-		
-		
-        // loop through the data, if a msg is in the db all the others are there as well
-        foreach ((array)$messages as $msg) {
-            if ($this->db_does_point_exist($msg['id'])) {
-                return;
-            }
-            $this->db_insert_point($msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState']);
-        }
+	private function get_spot_data ($device, $id, $pwd = ""){
+
+		$i = 0;
+		while (true) {
+			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;
+			if ($pwd != "") {
+				$feed_url .= '&feedPassword=' . $pwd;
+			}
+			error_log($feed_url);
+			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
+	
+			$json = json_decode($jsonraw, true)['response'];
+
+			if (!empty($json['errors']['error']['code'])) {
+				//E-0195 means the feed has no points to show
+				$error_code = $json['errors']['error']['code'];
+				if ($error_code === "E-0195") {
+					return;
+				}
+				trigger_error($json['errors']['error']['description'], E_USER_WARNING);
+				return;
+			}
+			$messages = $json['feedMessageResponse']['messages']['message'];
+			
+			
+			// loop through the data, if a msg is in the db all the others are there as well
+			foreach ((array)$messages as $msg) {
+				if ($this->db_does_point_exist($msg['id'])) {
+					trigger_error($msg['id']. " already exists", E_USER_WARNING);
+					return;
+				}
+				$this->db_insert_point($device, $msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState']);
+			}
+			$i += $json['feedMessageResponse']['count'] + 1;
+		}
+
 	}
 
 	public function the_action_function(){
-		wp_send_json($this->spotmap_get_data());
+		wp_send_json($this->db_get_data());
 	}
 
-	private function db_insert_point(
+	private function db_insert_point( $device,
         $point_id,
         $type,
         $timestamp,
@@ -116,6 +135,7 @@ class Spotmap_Public{
 		$wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(
+				'device' => $device,
 				'id' => $point_id,
                 'type' => $type,
 				'time' => $timestamp,
@@ -144,11 +164,10 @@ class Spotmap_Public{
 		return false;
 	}
 
-	public function spotmap_get_data(){
+	public function db_get_data(){
 		$data = array();
 		global $wpdb;
         $points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
-		
 		if(empty($points)){
 			error_log("no points found");
 			$error = new stdClass();
