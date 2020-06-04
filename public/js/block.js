@@ -69,14 +69,21 @@ function initMap(options = {}) {
                 console.log(devices)
                 group.push(L.polyline(line, {color: 'red'}))
                 overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
-                line,group = [];
+                line = [];
+                group = [];
                 devices.push(entry.device);
             } else {
                 line.push([entry.latitude, entry.longitude]);
                 if(['CUSTOM','OK','NEWMOVEMENT','STATUS'].includes(entry.type)){
                     let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
                     if(entry.custom_message)
+                    message += 'Message: ' + entry.custom_message;
+                    if(entry.altitude > 0)
                         message += 'Message: ' + entry.custom_message;
+    
+                    if(entry.battery_status == 'LOW')
+                        message += 'Battery status is low!';
+                    
                     let marker = L.marker([entry.latitude, entry.longitude]).bindPopup(message);
                     group.push(marker);
                 }
