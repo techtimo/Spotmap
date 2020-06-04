@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Timo
- * Date: 6/19/2019
- * Time: 3:55 PM
- */
 
 class Spotmap_Activator {
 	public static function activate() {
@@ -20,6 +14,7 @@ class Spotmap_Activator {
             `altitude` float(11,7) DEFAULT NULL,
             `battery_status` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `device` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `id_UNIQUE` (`id`) 
             )$charset_collate";
@@ -34,7 +29,7 @@ class Spotmap_Activator {
 		
 		// activate for first time
 		if(!get_option('spotmap_options')){
-			$data_r = ['findmespot' => 1, 'garmin inreach'=> 0];
+			$data_r = ['findmespot' => 0, 'garmin inreach'=> 0];
 			add_option('spotmap_options', $data_r);
 
 		}
