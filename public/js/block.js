@@ -29,22 +29,6 @@
     window.wp.i18n
 );
 
-function onEachFeature(feature, layer) {
-    switch (feature.properties.type) {
-        case 'CUSTOM':
-        case 'OK':
-            layer.bindPopup(
-                'Date: ' + feature.properties.date + '</br>'
-                + 'Time: ' + feature.properties.time + '</br>'
-                + 'Message: ' + feature.properties.message);
-            break;
-        default:
-            layer.bindPopup(
-                'Date: ' + feature.properties.date + '</br>'
-                + 'Time: ' + feature.properties.time);
-    }
-}
-
 function initMap(options = {}) {
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
@@ -59,12 +43,8 @@ function initMap(options = {}) {
             attribution: '© <a href="https://apps.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         })};
     for (var map in spotmapjsobj.maps){
-        console.log(spotmapjsobj.maps[map])
-        baseLayers[map] = L.tileLayer(spotmapjsobj.maps[map],{ attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
-    })
+        baseLayers[map] = L.tileLayer(spotmapjsobj.maps[map])
     }
-    L.control.layers(baseLayers).addTo(spotmap);
-
 
     baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
     jQuery.post(spotmapjsobj.ajaxUrl, { 'action': 'get_positions' }, function (response) {
@@ -80,37 +60,43 @@ function initMap(options = {}) {
             return;
         }
 
-        L.geoJSON(response, {
-            onEachFeature: onEachFeature
-        }).addTo(spotmap);
+        var overlays = {},
+            devices = [response[0].device],
+            group = [], 
+            line = [];
+        response.forEach((entry,index) => {
+            if(devices[devices.length-1] != entry.device){
+                console.log(devices)
+                group.push(L.polyline(line, {color: 'red'}))
+                overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
+                line,group = [];
+                devices.push(entry.device);
+            } else {
+                line.push([entry.latitude, entry.longitude]);
+                if(['CUSTOM','OK','NEWMOVEMENT','STATUS'].includes(entry.type)){
+                    let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                    if(entry.message)
+                        message += 'Message: ' + entry.message;
+                    let marker = L.marker([entry.latitude, entry.longitude]).bindPopup(message);
+                    group.push(marker);
+                }
+            }
+            
+            if(response.length == index+1){
+                group.push(L.polyline(line, {color: 'green'}));
+                overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
+                devices.push(entry.device);
+            }
+        });
 
-        const mapcenter = options.mapcenter || "all";
-        if (mapcenter == 'all') {
-            // get the outermost points to set the map boarders accordingly
-            var corner1 = [200, 200], corner2 = [-200, -200];
-            response.forEach(function (point) {
-                if (corner1[1] > point.geometry.coordinates[0]) {
-                    corner1[1] = point.geometry.coordinates[0];
-                }
-                if (corner1[0] > point.geometry.coordinates[1]) {
-                    corner1[0] = point.geometry.coordinates[1];
-                }
-                if (corner2[1] < point.geometry.coordinates[0]) {
-                    corner2[1] = point.geometry.coordinates[0];
-                }
-                if (corner2[0] < point.geometry.coordinates[1]) {
-                    corner2[0] = point.geometry.coordinates[1];
-                }
-            });
-            //console.log(JSON.stringify([corner2,corner1]));
-            spotmap.fitBounds([
-                corner2,
-                corner1
-            ]);
-        } else if (mapcenter == 'last') {
-            var lastpoint = response[response.length - 1];
-            spotmap.setView([lastpoint.geometry.coordinates[1], lastpoint.geometry.coordinates[0]], 13);
-        }
+        if(devices.length == 1)
+            L.control.layers(baseLayers).addTo(spotmap);
+        else
+            L.control.layers(baseLayers,overlays).addTo(spotmap);
+
+        var polyline = L.polyline(line, {color: 'red'});
+        // zoom the map to the polyline
+        spotmap.fitBounds(polyline.getBounds());
 
     });
 }

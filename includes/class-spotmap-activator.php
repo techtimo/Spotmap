@@ -9,8 +9,8 @@ class Spotmap_Activator {
 		    `id` int(11) unsigned NOT NULL,
             `type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
             `time` int(11) unsigned NOT NULL,
-            `longitude` float(11,7) NOT NULL,
             `latitude` float(11,7) NOT NULL,
+            `longitude` float(11,7) NOT NULL,
             `altitude` float(11,7) DEFAULT NULL,
             `battery_status` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -29,7 +29,7 @@ class Spotmap_Activator {
 		
 		// activate for first time
 		if(!get_option('spotmap_options')){
-			$data_r = ['findmespot' => 0, 'garmin inreach'=> 0];
+			$data_r = ['findmespot' => 0];
 			add_option('spotmap_options', $data_r);
 
 		}

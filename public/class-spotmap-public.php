@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Work
- * Date: 6/19/2019
- * Time: 10:17 PM
- */
 class Spotmap_Public{
 
 	public function enqueue_styles() {
@@ -32,7 +26,10 @@ class Spotmap_Public{
 		$maps = new stdClass();
 		$maps->OpenTopoMap = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
 		$maps->Landscape = "http://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png";
-        wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
+		
+
+		
+		wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'maps' => $maps
 
@@ -75,18 +72,15 @@ class Spotmap_Public{
 				}
 			}
 		}
-        
 	}
 
 	private function get_spot_data ($device, $id, $pwd = ""){
-
 		$i = 0;
 		while (true) {
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;
 			if ($pwd != "") {
 				$feed_url .= '&feedPassword=' . $pwd;
 			}
-			error_log($feed_url);
 			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 	
 			$json = json_decode($jsonraw, true)['response'];
@@ -165,15 +159,22 @@ class Spotmap_Public{
 	}
 
 	public function db_get_data(){
-		$data = array();
 		global $wpdb;
-        $points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message FROM " . $wpdb->prefix . "spotmap_points ORDER BY time;");
+		$points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message, device FROM " . $wpdb->prefix . "spotmap_points ORDER BY device, time;");
+		
 		if(empty($points)){
 			error_log("no points found");
 			$error = new stdClass();
 			$error->sucess = false;
 			$error->title = "No data found";
-			if (get_option('spotmap_feed_id') == ""){
+			$is_feed_set = false;
+			foreach (get_option("spotmap_options") as $key => $count) {
+				if($count < 1)
+				continue;
+				$is_feed_set = true;
+			}
+			
+			if (!$is_feed_set){
 				error_log("no points found");
 				$error->message = "Head over to the settings and enter your feed id.";
 			} else {
@@ -182,48 +183,44 @@ class Spotmap_Public{
 			}
 			return $error;
 		}
+		foreach ($points as &$point){
+			$point->time = date_i18n( get_option('time_format'), $point->time );
+			$point->date = date_i18n( get_option('date_format'), $point->time );
+		}
 
-		// $daycoordinates = array();
-		// $lasttime = null;
+		return $points;
+
+
+
+		$data = [];
+		$line = new stdClass();
+		$line->type = "MultiLineString";
+		$coordinates = [];
 		foreach ($points as $key => $point){
+			$coordinates[] = array($point->longitude,$point->latitude);
+			
+			
 			$newpoint = new stdClass();
 			$newpoint->type = 'Feature';
-
+			
 			$geometry = new stdClass();
 			$geometry->type = 'Point';
 			$geometry->coordinates = array($point->longitude,$point->latitude);
 			$newpoint->geometry=$geometry;
-
+			
 			$properties = new stdClass();
 			$properties->id = $point->id;
             $properties->type = $point->type;
+            $properties->device = $point->device;
             $properties->message = $point->custom_message;
-
+			
 			$properties->time = date_i18n( get_option('time_format'), $point->time );
 			$properties->date = date_i18n( get_option('date_format'), $point->time );
 			$newpoint->properties = $properties;
 			$data[] = $newpoint;
-
-			//TODO find the bug below to have a line connecting each day
-			//looks like proper geojson but leaflet don't like it
-			/*if (($point->time - $lasttime) <= 43200){
-				$daycoordinates[] = $geometry->coordinates;
-			} else if (count($daycoordinates) > 1){
-				$geometry = new stdClass();
-				$geometry->type = "LineString";
-				$geometry->coordinates = $daycoordinates;
-
-				$dayline = new stdClass();
-				$dayline->type = "Feature";
-				$dayline->geometry = $geometry;
-
-				$data[] = $dayline;
-				$daycoordinates = array();
-			}
-			$lasttime = $point->time;*/
-
 		}
-
+		// $line->coordinates = $coordinates;
+		// $data[] = $line;
 		return $data;
 	}
 
