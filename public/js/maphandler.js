@@ -1,4 +1,4 @@
-function initMap(options = {devices: [], styles: {}}) {
+function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all'}) {
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
     } catch (e){
@@ -43,13 +43,6 @@ function initMap(options = {devices: [], styles: {}}) {
         }
     };
 
-    var blue_tiny = L.icon({
-        iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-smallest.png',
-        iconSize:     [10, 10], // size of the icon
-        iconAnchor:   [5, 5], // point of the icon which will correspond to marker's location
-        popupAnchor:  [-5, -5] // point from which the popup should open relative to the iconAnchor
-    });
-
     var baseLayers = {"Mapbox Outdoors": L.tileLayer(
         'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             tileSize: 512,
@@ -62,7 +55,16 @@ function initMap(options = {devices: [], styles: {}}) {
     }
 
     baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
-    jQuery.post(spotmapjsobj.ajaxUrl, { 'action': 'get_positions', 'devices': options.devices }, function (response) {
+    let data = { 
+        'action': 'get_positions', 
+        'date-range-from': options.dateRange.from, 
+        'date-range-to': options.dateRange.to, 
+        'date': options.date, 
+    }
+    if(options.devices){
+        data.devices = options.devices;
+    }
+    jQuery.post(spotmapjsobj.ajaxUrl, data, function (response) {
 
         if (response.error) {
             spotmap.setView([51.505, -0.09], 13);
@@ -79,48 +81,57 @@ function initMap(options = {devices: [], styles: {}}) {
             devices = [response[0].device],
             group = [], 
             line = [];
+
+
+        // loop thru the data received from backend
         response.forEach((entry,index) => {
+            // device changed in loop
+            let color = 'blue';
+            if(options.styles[entry.device] && options.styles[entry.device].color)
+                color = options.styles[entry.device].color;
             if(devices[devices.length-1] != entry.device){
                 let lastDevice = devices[devices.length-1];
                 let color = 'blue';
-                if(options.styles[lastDevice].color)
+                if(options.styles[lastDevice] && options.styles[lastDevice].color)
                     color = options.styles[lastDevice].color;
                 group.push(L.polyline(line, {color: color}))
-                overlays[lastDevice] = L.layerGroup(group).addTo(spotmap);
+                overlays[lastDevice] = L.layerGroup(group);
                 line = [];
                 group = [];
                 devices.push(entry.device);
-            } else {
-                let color = 'blue';
-                if(options.styles[entry.device].color)
-                    color = options.styles[entry.device].color;
-                line.push([entry.latitude, entry.longitude]);
-                
-                let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                if(entry.custom_message)
-                    message += 'Message: ' + entry.custom_message + '</br>';
-                if(entry.altitude > 0)
-                    message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-                if(entry.battery_status == 'LOW')
-                    message += 'Battery status is low!' + '</br>';
-
-                var option = {icon: markers[color]};
-                let tinyTypes = ['UNLIMITED-TRACK','STOP'];
-                if(options.styles[entry.device].tinyTypes)
-                    tinyTypes = options.styles[entry.device].tinyTypes;
-
-                if(tinyTypes.includes(entry.type))
-                    option.icon = markers.tiny[color];
-
-                var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
-                group.push(marker);
-                
+            } else if (options.styles[entry.device] && options.styles[entry.device].splitLines && index > 0 && entry.unixtime - response[index-1].unixtime >= options.styles[entry.device].splitLines*60*60){
+                group.push(L.polyline(line, {color: color}));
+                line = [];
             }
+
+             else {
+                // a normal iteration adding stuff with default values
+                line.push([entry.latitude, entry.longitude]);
+             }
+                let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+            if(entry.custom_message)
+                message += 'Message: ' + entry.custom_message + '</br>';
+            if(entry.altitude > 0)
+                message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+            if(entry.battery_status == 'LOW')
+                message += 'Battery status is low!' + '</br>';
+
+            var option = {icon: markers[color]};
+            let tinyTypes = ['UNLIMITED-TRACK','STOP','EXTREME-TRACK','TRACK'];
+            if(options.styles[entry.device] && options.styles[entry.device].tinyTypes)
+                tinyTypes = options.styles[entry.device].tinyTypes;
+
+            if(tinyTypes.includes(entry.type))
+                option.icon = markers.tiny[color];
+
+            var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
+            group.push(marker);
+                
             
+            // for last iteration add the rest that is not cought with a device change
             if(response.length == index+1){
-                console.log(options.styles[entry.device].color)
-                group.push(L.polyline(line, {color: options.styles[entry.device].color}));
-                overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
+                group.push(L.polyline(line, {color: color}));
+                overlays[devices[devices.length-1]] = L.layerGroup(group);
             }
         });
 
@@ -128,10 +139,37 @@ function initMap(options = {devices: [], styles: {}}) {
             L.control.layers(baseLayers).addTo(spotmap);
         else
             L.control.layers(baseLayers,overlays).addTo(spotmap);
+        
+        
+            var bounds = L.bounds([[0,0],[0,0]]);
+            let all = [];
+            // loop thru feeds to get the bounds
+            for (const feed in overlays) {
+                if (overlays.hasOwnProperty(feed)) {
+                    const element = overlays[feed];
+                    element.addTo(spotmap);
+                    const layers = element.getLayers();
+                    layers.forEach(element => {
+                        all.push(element);
+                    });
+                }
+            }
+            if(options.mapcenter == 'all'){
+            var group = new L.featureGroup(all);
+            spotmap.fitBounds(group.getBounds());
+            spotmap.fitBounds(bounds);
+        } else {
+            var lastPoint;
+            var time = 0;
+            response.forEach((entry,index) => {
+                if( time < entry.unixtime){
+                    time = entry.unixtime;
+                    lastPoint = [entry.latitude, entry.longitude];
+                }
+            });
+            spotmap.setView([lastPoint[0],lastPoint[1]], 13);
 
-        var polyline = L.polyline(line, {color: 'red'});
-        // zoom the map to the polyline
-        spotmap.fitBounds(polyline.getBounds());
+        }
 
     });
 }
