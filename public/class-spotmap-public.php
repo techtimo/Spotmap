@@ -36,46 +36,49 @@ class Spotmap_Public{
 		));
 	}
 	public function register_shortcodes(){
-		add_shortcode('spotmap', array($this,'show_spotmap') );
+		add_shortcode('spotmap', [$this,'show_spotmap'] );
 	}
 
 	function show_spotmap($atts,$content){
 		error_log(wp_json_encode($atts));
 		// if no attributes are provided use the default:
 			$a = shortcode_atts( array(
-				'height' => '400',
+				'height' => '500',
 				'mapcenter' => 'all',
 				'devices' => [],
-				'colors' => ''
+				'colors' => '',
+				'splitlines' => '',
+				'date-range-from' => '',
+				'date' => '',
+				'date-range-to' => '',
 			), $atts );
 			
 			$a['devices'] = explode(',',$a['devices']);
+			$a['splitlines'] = explode(',',$a['splitlines']);
 			$a['colors'] = explode(',',$a['colors']);
 			// check if length is the same or del color array
 		$styles = [];
 		foreach ($a['devices'] as $key => $value) {
 			$styles[$value] = [
-				'color'=>$a['colors'][$key]
+				'color'=>$a['colors'][$key],
+				'splitLines' => $a['splitlines'][$key]
 				];
-			error_log(wp_json_encode([
-				'styles'=>[
-					$value=>[
-						'color'=>$a['colors'][$key]
-						]
-					]
-				]));
 		}
+		// generate the option object for init the map
 		$options = wp_json_encode([
 			'devices' => $a['devices'],
-			'styles' => $styles
+			'styles' => $styles,
+			'date' => $a['date'],
+			'dateRange' => [
+				'from' => $a['date-range-from'],
+				'to' => $a['date-range-to']
+			],
+			'mapcenter' => $a['mapcenter']
 		]);
-		error_log(wp_json_encode([
-			'devices' => $a['devices'],
-			'styles' => $styles
-		]));
+		error_log($options);
 
 
-		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
+		return '<div id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
 	}
 
 	/**
@@ -141,7 +144,7 @@ class Spotmap_Public{
 
 	public function the_action_function(){
 		error_log(print_r($_POST,true));
-		wp_send_json($this->db_get_data());
+		wp_send_json($this->db_get_data($_POST));
 	}
 
 	private function db_insert_point( $device,
@@ -188,70 +191,57 @@ class Spotmap_Public{
 		return false;
 	}
 
-	public function db_get_data(){
+	public function db_get_data($atts){
 		global $wpdb;
-		$points = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points ORDER BY device, time;");
+		$where = '';
+		if(isset($atts['devices'])){
+			$devices_on_db = $wpdb->get_col("SELECT DISTINCT device FROM " . $wpdb->prefix . "spotmap_points");
+			foreach ($atts['devices'] as $value) {
+				if(!in_array($value,$devices_on_db)){
+					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
+				}
+			}
+			$where .= "AND device IN ('".implode("','", $atts['devices']). "') ";
+		}
+		
+		// either have a day or a range
+		$date;
+		if(!empty($atts['date'])){
+			$date = date_create($atts['date']);
+			if($date != null){
+				$date = date_format( $date,"Y-m-d" );
+				$where .= "AND FROM_UNIXTIME(time) between '" . $date . " 00:00:00' and  '" . $date . " 23:59:59' ";
+			}
+		} else{
+			if(!empty($atts['date-range-to'])){
+				$date = date_create($atts['date-range-to']);
+				if($date != null){
+					$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
+				}
+			}
+			if(!empty($atts['date-range-from'])){
+				$date = date_create($atts['date-range-from']);
+				if($date != null){
+					$where .= "AND FROM_UNIXTIME(time) >= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
+				}
+			}
+		}
+		error_log("Where: " .$where);
+		$points = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY device, time;");
 		
 		if(empty($points)){
-			error_log("no points found");
-			$error = new stdClass();
-			$error->sucess = false;
-			$error->title = "No data found";
-			$is_feed_set = false;
-			foreach (get_option("spotmap_options") as $key => $count) {
-				if($count < 1)
-				continue;
-				$is_feed_set = true;
-			}
-			
-			if (!$is_feed_set){
-				error_log("no points found");
-				$error->message = "Head over to the settings and enter your feed id.";
-			} else {
-				error_log("no points found");
-				$error->message = "You are all set up! Now it's time to head in the backcountry with your SPOT.";
-			}
-			return $error;
+			return ['error'=> true,
+				'title'=> "No data found",
+				'message'=> "Check your configuration"
+			];
 		}
 		foreach ($points as &$point){
+			$point->unixtime = $point->time;
 			$point->date = date_i18n( get_option('date_format'), $point->time );
 			$point->time = date_i18n( get_option('time_format'), $point->time );
 		}
 
 		return $points;
-
-
-
-		$data = [];
-		$line = new stdClass();
-		$line->type = "MultiLineString";
-		$coordinates = [];
-		foreach ($points as $key => $point){
-			$coordinates[] = array($point->longitude,$point->latitude);
-			
-			
-			$newpoint = new stdClass();
-			$newpoint->type = 'Feature';
-			
-			$geometry = new stdClass();
-			$geometry->type = 'Point';
-			$geometry->coordinates = array($point->longitude,$point->latitude);
-			$newpoint->geometry=$geometry;
-			
-			$properties = new stdClass();
-			$properties->id = $point->id;
-            $properties->type = $point->type;
-            $properties->device = $point->device;
-            $properties->message = $point->custom_message;
-			
-			$properties->time = date_i18n( get_option('time_format'), $point->time );
-			$properties->date = date_i18n( get_option('date_format'), $point->time );
-			$newpoint->properties = $properties;
-			$data[] = $newpoint;
-		}
-		// $line->coordinates = $coordinates;
-		// $data[] = $line;
-		return $data;
 	}
 
 }

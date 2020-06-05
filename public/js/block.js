@@ -4,7 +4,7 @@
     const { __ } = i18n;
     function renderMap( props ) {
         return el('div',{},
-            el('div', {id: 'spotmap-container', 'data-mapcenter': 'all',style: {'height': 400+'px', 'max-width': 100+'%'}}),
+            el('div', {id: 'spotmap-container', 'data-mapcenter': 'all',style: {'height': 500+'px', 'max-width': 100+'%'}}),
             el('script', {type: 'text/javascript'},'jQuery( document ).ready(function() {initMap();});')
         )
     }
