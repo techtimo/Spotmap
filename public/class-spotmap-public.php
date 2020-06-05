@@ -13,7 +13,7 @@ class Spotmap_Public{
 		wp_enqueue_script(
 			'spotmap-block',
 			plugins_url('js/block.js', __FILE__),
-			array( 'wp-blocks', 'wp-element' )
+			['wp-blocks', 'wp-element']
 		);
 	}
 
@@ -42,20 +42,49 @@ class Spotmap_Public{
 	function show_spotmap($atts,$content){
 		error_log(wp_json_encode($atts));
 		// if no attributes are provided use the default:
-		$a = shortcode_atts( array(
-			'height' => '400',
-		), $atts );
+			$a = shortcode_atts( array(
+				'height' => '400',
+				'mapcenter' => 'all',
+				'devices' => [],
+				'colors' => ''
+			), $atts );
+			
+			$a['devices'] = explode(',',$a['devices']);
+			$a['colors'] = explode(',',$a['colors']);
+			// check if length is the same or del color array
+		$styles = [];
+		foreach ($a['devices'] as $key => $value) {
+			$styles[$value] = [
+				'color'=>$a['colors'][$key]
+				];
+			error_log(wp_json_encode([
+				'styles'=>[
+					$value=>[
+						'color'=>$a['colors'][$key]
+						]
+					]
+				]));
+		}
+		$options = wp_json_encode([
+			'devices' => $a['devices'],
+			'styles' => $styles
+		]);
+		error_log(wp_json_encode([
+			'devices' => $a['devices'],
+			'styles' => $styles
+		]));
 
-		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap();});</script>';
+
+		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
 	}
 
 	/**
-	 * This function gets called by cron. It checks the SPOT API for new data. If so the GeoJSON gets updated.
+	 * This function gets called by cron. It checks the SPOT API for new data.
 	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
 	 */
 	function get_feed_data(){
 		error_log("cron job started");
-        if (get_option('spotmap_options') == "") {
+        if (!get_option('spotmap_options')) {
 			trigger_error('no values found');
 			return;
 		}
