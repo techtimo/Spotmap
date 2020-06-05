@@ -214,8 +214,8 @@ class Spotmap_Public{
 			return $error;
 		}
 		foreach ($points as &$point){
-			$point->time = date_i18n( get_option('time_format'), $point->time );
 			$point->date = date_i18n( get_option('date_format'), $point->time );
+			$point->time = date_i18n( get_option('time_format'), $point->time );
 		}
 
 		return $points;
