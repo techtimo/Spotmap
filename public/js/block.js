@@ -29,12 +29,58 @@
     window.wp.i18n
 );
 
-function initMap(options = {}) {
+function initMap(options = {styles: {"spot3": {color: 'green', tinyTypes:['UNLIMITED-TRACK']},"spottracer":{color: 'yellow', tinyTypes:['UNLIMITED-TRACK','STOP']}}}) {
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
     } catch (e){
         return;
     }
+    var Marker = L.Icon.extend({
+        options: {
+            shadowUrl: spotmapjsobj.url +'leaflet/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        }
+    });
+    var TinyMarker = L.Icon.extend({
+        options: {
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
+            popupAnchor: [0, 0]
+        }
+    });
+    markers = {
+        blue: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-blue.png'}),
+        gold: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-gold.png'}),
+        red: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-red.png'}),
+        green: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-green.png'}),
+        orange: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-orange.png'}),
+        yellow: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-yellow.png'}),
+        violet: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-violet.png'}),
+        gray: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-gray.png'}),
+        black: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-black.png'}),
+        tiny:{
+            blue: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-blue.png'}),
+            gold: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-gold.png'}),
+            red: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-red.png'}),
+            green: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-green.png'}),
+            orange: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-orange.png'}),
+            yellow: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-yellow.png'}),
+            violet: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-violet.png'}),
+            gray: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-gray.png'}),
+            black: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-black.png'}),
+        }
+    };
+
+    var blue_tiny = L.icon({
+        iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-smallest.png',
+        iconSize:     [10, 10], // size of the icon
+        iconAnchor:   [5, 5], // point of the icon which will correspond to marker's location
+        popupAnchor:  [-5, -5] // point from which the popup should open relative to the iconAnchor
+    });
+
     var baseLayers = {"Mapbox Outdoors": L.tileLayer(
         'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             tileSize: 512,
@@ -47,7 +93,7 @@ function initMap(options = {}) {
     }
 
     baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
-    jQuery.post(spotmapjsobj.ajaxUrl, { 'action': 'get_positions' }, function (response) {
+    jQuery.post(spotmapjsobj.ajaxUrl, { 'action': 'get_positions', 'devices': 'spot3' }, function (response) {
 
         if (response.error) {
             spotmap.setView([51.505, -0.09], 13);
@@ -66,33 +112,46 @@ function initMap(options = {}) {
             line = [];
         response.forEach((entry,index) => {
             if(devices[devices.length-1] != entry.device){
-                console.log(devices)
-                group.push(L.polyline(line, {color: 'red'}))
-                overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
+                let lastDevice = devices[devices.length-1];
+                let color = 'blue';
+                if(options.styles[lastDevice].color)
+                    color = options.styles[lastDevice].color;
+                group.push(L.polyline(line, {color: color}))
+                overlays[lastDevice] = L.layerGroup(group).addTo(spotmap);
                 line = [];
                 group = [];
                 devices.push(entry.device);
             } else {
+                let color = 'blue';
+                if(options.styles[entry.device].color)
+                    color = options.styles[entry.device].color;
                 line.push([entry.latitude, entry.longitude]);
-                if(['CUSTOM','OK','NEWMOVEMENT','STATUS'].includes(entry.type)){
-                    let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                    if(entry.custom_message)
-                    message += 'Message: ' + entry.custom_message;
-                    if(entry.altitude > 0)
-                        message += 'Message: ' + entry.custom_message;
-    
-                    if(entry.battery_status == 'LOW')
-                        message += 'Battery status is low!';
-                    
-                    let marker = L.marker([entry.latitude, entry.longitude]).bindPopup(message);
-                    group.push(marker);
-                }
+                
+                let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                if(entry.custom_message)
+                    message += 'Message: ' + entry.custom_message + '</br>';
+                if(entry.altitude > 0)
+                    message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+                if(entry.battery_status == 'LOW')
+                    message += 'Battery status is low!' + '</br>';
+
+                var option = {icon: markers[color]};
+                let tinyTypes = ['UNLIMITED-TRACK','STOP'];
+                if(options.styles[entry.device].tinyTypes)
+                    tinyTypes = options.styles[entry.device].tinyTypes;
+
+                if(tinyTypes.includes(entry.type))
+                    option.icon = markers.tiny[color];
+
+                var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
+                group.push(marker);
+                
             }
             
             if(response.length == index+1){
-                group.push(L.polyline(line, {color: 'green'}));
+                console.log(options.styles[entry.device].color)
+                group.push(L.polyline(line, {color: options.styles[entry.device].color}));
                 overlays[devices[devices.length-1]] = L.layerGroup(group).addTo(spotmap);
-                devices.push(entry.device);
             }
         });
 

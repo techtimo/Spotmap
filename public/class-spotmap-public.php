@@ -15,7 +15,6 @@ class Spotmap_Public{
 			plugins_url('js/block.js', __FILE__),
 			array( 'wp-blocks', 'wp-element' )
 		);
-
 	}
 
 	public function enqueue_scripts(){
@@ -31,7 +30,8 @@ class Spotmap_Public{
 		
 		wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'maps' => $maps
+			'maps' => $maps,
+			'url' =>  plugin_dir_url( __FILE__ )
 
 		));
 	}
@@ -39,11 +39,11 @@ class Spotmap_Public{
 		add_shortcode('spotmap', array($this,'show_spotmap') );
 	}
 
-	function show_spotmap($atts){
+	function show_spotmap($atts,$content){
+		error_log(wp_json_encode($atts));
 		// if no attributes are provided use the default:
 		$a = shortcode_atts( array(
 			'height' => '400',
-            'mapcenter' => 'all'
 		), $atts );
 
 		return '<div data-mapcenter="' . $a['mapcenter'] . '" id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap();});</script>';
@@ -111,6 +111,7 @@ class Spotmap_Public{
 	}
 
 	public function the_action_function(){
+		error_log(print_r($_POST,true));
 		wp_send_json($this->db_get_data());
 	}
 
@@ -160,7 +161,7 @@ class Spotmap_Public{
 
 	public function db_get_data(){
 		global $wpdb;
-		$points = $wpdb->get_results("SELECT id, type, time, longitude, latitude, altitude, custom_message, device FROM " . $wpdb->prefix . "spotmap_points ORDER BY device, time;");
+		$points = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points ORDER BY device, time;");
 		
 		if(empty($points)){
 			error_log("no points found");
