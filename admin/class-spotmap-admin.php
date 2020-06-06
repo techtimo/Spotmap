@@ -2,6 +2,13 @@
 
 class Spotmap_Admin {
 
+	public $db;
+
+	function __construct() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		$this->db = new Spotmap_Database();
+	}
+	
 	public function enqueue_scripts(){
 	}
 	public function add_cron_schedule($schedules){
@@ -141,4 +148,35 @@ class Spotmap_Admin {
 		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">Settings</a>',];
 		return array_merge( $mylinks,$links );
 	}
+
+	/**
+	 * This function gets called by cron. It checks the SPOT API for new data.
+	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
+	 */
+	function get_feed_data(){
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
+		foreach (get_option("spotmap_api_providers") as $api_name) {
+
+		}
+		// error_log("cron job started");
+        if (!get_option('spotmap_options')) {
+			trigger_error('no values found');
+			return;
+		}
+		foreach (get_option("spotmap_options") as $key => $count) {
+			if($count < 1){
+				continue;
+			}
+			for ($i=0; $i < $count; $i++) {
+				if($key == 'findmespot'){
+					$feed_name = get_option('spotmap_'.$key.'_name'.$i);
+					$id = get_option('spotmap_'.$key.'_id'.$i);
+					$pwd = get_option('spotmap_'.$key.'_password'.$i);
+					$crawler = new Spotmap_Api_Crawler("findmespot");
+					$crawler->get_data('findmespot', $feed_name, $id, $pwd = "");
+				}
+			}
+		}
+	}
+
 }

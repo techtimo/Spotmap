@@ -14,7 +14,8 @@ class Spotmap_Activator {
             `altitude` float(11,7) DEFAULT NULL,
             `battery_status` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-            `device` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `feed_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `feed_id` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `id_UNIQUE` (`id`) 
             )$charset_collate";
@@ -31,6 +32,12 @@ class Spotmap_Activator {
 		if(!get_option('spotmap_options')){
 			$data_r = ['findmespot' => 0];
 			add_option('spotmap_options', $data_r);
+
+		}
+		// activate for first time
+		if(!get_option('spotmap_api_providers')){
+			$data_r = ['findmespot'=>'Spot Feed'];
+			add_option('spotmap_api_providers', $data_r);
 
 		}
 

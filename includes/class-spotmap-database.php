@@ -4,7 +4,7 @@ class Spotmap_Database {
 
 	public function get_all_feednames(){
 		global $wpdb;
-		return $wpdb->get_col("SELECT DISTINCT device FROM " . $wpdb->prefix . "spotmap_points");
+		return $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points");
 	}
 
 	public function get_points($filter){
@@ -18,7 +18,7 @@ class Spotmap_Database {
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
 				}
 			}
-			$where .= "AND device IN ('".implode("','", $filter['devices']). "') ";
+			$where .= "AND feed_name IN ('".implode("','", $filter['devices']). "') ";
 		}
 		
 		// either have a day or a range
@@ -44,15 +44,17 @@ class Spotmap_Database {
 			}
 		}
 		// error_log("Where: " .$where);
-		return $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY device, time;");
+		return $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY feed_name, time;");
 	}
 	public function insert_point($point,$multiple = false){
 		// TODO check if point is valid
 		global $wpdb;
+		if(empty($point['messageContent']))
+			$point['messageContent'] = null;
 		$wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(
-				'device' => $point['feedName'],
+				'feed_name' => $point['feedName'],
 				'id' => $point['id'],
 				'type' => $point['messageType'],
 				'time' => $point['unixTime'],
@@ -60,8 +62,8 @@ class Spotmap_Database {
 				'longitude' => $point['longitude'],
 				'altitude' => $point['altitude'],
 				'battery_status' => $point['batteryState'],
-				'custom_message' => $point['messageContent']
-				// 'feed_id' => $point['feed_id']
+				'custom_message' => $point['messageContent'],
+				'feed_id' => $point['feedId']
 			)
 		);
 	}
