@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Work
- * Date: 6/19/2019
- * Time: 10:01 PM
- */
+
 class Spotmap_Admin {
 
 	public function enqueue_scripts(){
@@ -140,5 +135,10 @@ class Spotmap_Admin {
 
 	function display_options_page(){
 		include_once  plugin_dir_path( dirname( __FILE__ ) ) . 'admin/partials/spotmap-admin-display.php';
+	}
+
+	function settings_link( $links ) {
+		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">Settings</a>',];
+		return array_merge( $mylinks,$links );
 	}
 }
