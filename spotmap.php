@@ -1,20 +1,20 @@
 <?php
 /**
- * Plugin Name: Spotmap
- * Plugin URI: https://github.com/techtimo/spotmap
+ * Plugin Name:       Spotmap
+ * Plugin URI:        https://github.com/techtimo/spotmap
  * Description:       Add an embedded map that shows the movement of a Spot device
- * Version:           0.7.0
+ * Version:           0.7.5
  * Author:            Timo Giese
  * Author URI:        https://github.com/techtimo
  * License:           GPL2
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Text Domain:       spotmap
+ * Domain Path:       /languages
  */
 
 
 // Block direct access
 defined( 'ABSPATH' ) or die();
-
-define( 'SPOTMAP_VERSION', '0.3.0' );
 
 register_activation_hook( __FILE__, 'activate_spotmap' );
 function activate_spotmap() {
