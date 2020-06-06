@@ -1,5 +1,12 @@
 <?php
 class Spotmap_Public{
+	
+	public $db;
+
+	function __construct() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-spotmap-database.php';
+		$this->db = new Spotmap_Database();
+    }
 
 	public function enqueue_styles() {
 		wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
@@ -45,24 +52,33 @@ class Spotmap_Public{
 			$a = shortcode_atts( array(
 				'height' => '500',
 				'mapcenter' => 'all',
-				'devices' => [],
-				'colors' => '',
-				'splitlines' => '',
+				'devices' => $this->db->get_all_feednames(),
+				'width' => 'normal',
+				'colors' => [],
+				'splitlines' => [],
 				'date-range-from' => '',
 				'date' => '',
 				'date-range-to' => '',
 			), $atts );
-			
-			$a['devices'] = explode(',',$a['devices']);
-			$a['splitlines'] = explode(',',$a['splitlines']);
-			$a['colors'] = explode(',',$a['colors']);
-			// check if length is the same or del color array
+			error_log(wp_json_encode($a));
+
+			foreach (['devices','splitlines','colors'] as $value) {
+				if(!empty($a[$value])){
+					error_log($a[$value]);
+					$a[$value] = explode(',',$a[$value]);
+				}
+		}
+
+		// TODO test what happens if array lengths are different
+	
 		$styles = [];
-		foreach ($a['devices'] as $key => $value) {
-			$styles[$value] = [
-				'color'=>$a['colors'][$key],
-				'splitLines' => $a['splitlines'][$key]
-				];
+		if(!empty($a['devices'])){
+			foreach ($a['devices'] as $key => $value) {
+				$styles[$value] = [
+					'color'=>$a['colors'][$key],
+					'splitLines' => $a['splitlines'][$key]
+					];
+			}
 		}
 		// generate the option object for init the map
 		$options = wp_json_encode([
@@ -76,9 +92,13 @@ class Spotmap_Public{
 			'mapcenter' => $a['mapcenter']
 		]);
 		error_log($options);
+		
+		$css ='height: '.$a['height'].'px;';
+		if($a['width'] == 'full'){
+			$css .= "max-width: 100%;";
+		}
 
-
-		return '<div id="spotmap-container" style="height: '.$a['height'].'px;max-width: 100%;"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
+		return '<div id="spotmap-container" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
 	}
 
 	/**
@@ -86,7 +106,7 @@ class Spotmap_Public{
 	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
 	 */
 	function get_feed_data(){
-		error_log("cron job started");
+		// error_log("cron job started");
         if (!get_option('spotmap_options')) {
 			trigger_error('no values found');
 			return;
@@ -106,7 +126,7 @@ class Spotmap_Public{
 		}
 	}
 
-	private function get_spot_data ($device, $id, $pwd = ""){
+	private function get_spot_data ($feed_name, $id, $pwd = ""){
 		$i = 0;
 		while (true) {
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;
@@ -130,12 +150,13 @@ class Spotmap_Public{
 			
 			
 			// loop through the data, if a msg is in the db all the others are there as well
-			foreach ((array)$messages as $msg) {
-				if ($this->db_does_point_exist($msg['id'])) {
-					trigger_error($msg['id']. " already exists", E_USER_WARNING);
+			foreach ((array)$messages as &$point) {
+				if ($this->db->does_point_exist($point['id'])) {
+					trigger_error($point['id']. " already exists", E_USER_WARNING);
 					return;
 				}
-				$this->db_insert_point($device, $msg['id'], $msg['messageType'], $msg['unixTime'], $msg['longitude'], $msg['latitude'], $msg['altitude'], $msg['batteryState'],$msg['messageContent']);
+				$point['feedName'] = $feed_name;
+				$this->db->insert_point($point);
 			}
 			$i += $json['feedMessageResponse']['count'] + 1;
 		}
@@ -143,91 +164,8 @@ class Spotmap_Public{
 	}
 
 	public function the_action_function(){
-		error_log(print_r($_POST,true));
-		wp_send_json($this->db_get_data($_POST));
-	}
-
-	private function db_insert_point( $device,
-        $point_id,
-        $type,
-        $timestamp,
-        $longitude,
-        $latitude,
-        $altitude,
-        $battery_status,
-        $custom_message = '')
-    {
-
-		global $wpdb;
-		$wpdb->insert(
-			$wpdb->prefix."spotmap_points",
-			array(
-				'device' => $device,
-				'id' => $point_id,
-                'type' => $type,
-				'time' => $timestamp,
-				'longitude' => $longitude,
-				'latitude' => $latitude,
-				'altitude' => $altitude,
-                'battery_status' => $battery_status,
-                'custom_message' => $custom_message
-			)
-		);
-	}
-
-
-	/**
-	 * This function checks if a point is stored is preseent in the db
-     * @param $id int The id of the point to check
-	 *
-	 * @return bool true if point with same id is in db else false
-	 */
-	function db_does_point_exist($id){
-		global $wpdb;
-		$result = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE id = {$id}");
-		if ($result == '1'){
-			return true;
-		}
-		return false;
-	}
-
-	public function db_get_data($atts){
-		global $wpdb;
-		$where = '';
-		if(isset($atts['devices'])){
-			$devices_on_db = $wpdb->get_col("SELECT DISTINCT device FROM " . $wpdb->prefix . "spotmap_points");
-			foreach ($atts['devices'] as $value) {
-				if(!in_array($value,$devices_on_db)){
-					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
-				}
-			}
-			$where .= "AND device IN ('".implode("','", $atts['devices']). "') ";
-		}
-		
-		// either have a day or a range
-		$date;
-		if(!empty($atts['date'])){
-			$date = date_create($atts['date']);
-			if($date != null){
-				$date = date_format( $date,"Y-m-d" );
-				$where .= "AND FROM_UNIXTIME(time) between '" . $date . " 00:00:00' and  '" . $date . " 23:59:59' ";
-			}
-		} else{
-			if(!empty($atts['date-range-to'])){
-				$date = date_create($atts['date-range-to']);
-				if($date != null){
-					$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
-				}
-			}
-			if(!empty($atts['date-range-from'])){
-				$date = date_create($atts['date-range-from']);
-				if($date != null){
-					$where .= "AND FROM_UNIXTIME(time) >= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
-				}
-			}
-		}
-		error_log("Where: " .$where);
-		$points = $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY device, time;");
+		// error_log(print_r($_POST,true));
+		$points = $this->db->get_points($_POST);
 		
 		if(empty($points)){
 			return ['error'=> true,
@@ -240,8 +178,7 @@ class Spotmap_Public{
 			$point->date = date_i18n( get_option('date_format'), $point->time );
 			$point->time = date_i18n( get_option('time_format'), $point->time );
 		}
-
-		return $points;
+		wp_send_json($points);
 	}
 
 }
