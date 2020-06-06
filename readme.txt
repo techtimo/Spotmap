@@ -5,7 +5,7 @@ Tags: findmespot, spotgen3, spotbeacon, topomap, liveposition
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 4.7
-Tested up to: 5.3
+Tested up to: 5.4
 Stable tag: 0.1
 
 See your Spot device movements on a topographic map inside your Blog! 🗺
@@ -34,30 +34,39 @@ There are some attributes we can parse with the Shortcode:
 
 Note: `devices` must always match your feed name.
 
-This will show a slighlty larger map and the points are all in yellow.
+This will show a bigger map and the points are all in yellow:
 ```
-[spotmap height=600 devices=spot colors=yellow]
+[spotmap height=600 width=full devices=spot colors=yellow]
 ```
-This will show a map where we zoom into the last known position, and we only show data from the the first of May.
+
+This will show a map where we zoom into the last known position, and we only show data from the the first of May:
 ```
 [spotmap mapcenter=last devices=spot colors=red date-range-from="2020-05-01"]
 ```
-We can also show multiple tracks in different colors on a same day.
+
+We can also show multiple tracks in different colors on a same day:
 ```
 [spotmap mapcenter=last devices=spot,spot2 colors=gray,green date="2020-06-01"]
 ```
+
 == Frequently Asked Questions ==
 
 = How do I get my Feed ID? =
-First of all you need to create a XML Feed in your Spot account. If you have multiple devices, select only one.
-The link to the newly created feed looks similar to the following link: `http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
-Everthing after the `=` is your feed id:
-`0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+First of all you need to create a XML Feed in your Spot account. If you have multiple devices, create a feed for each device.
+Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
-
+= I found a bug =
+Preferable open a issue in the [GitHub Repo](https://github.com/techtimo/spotmap). 
+You could also describe the issue in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 == Screenshots ==
 
 [https://i.ibb.co/tXz0Db8/spotmap.png Screenshot of a configured spotmap using for 3 months]
+
+
+== Screenshots ==
+ 
+1. This screenshot was taken after using the plugin for 3 months.
+2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 == Changelog ==
 = 0.7 =
