@@ -46,7 +46,7 @@ class Spotmap{
 		$this->loader->add_filter( "plugin_action_links_spotmap/spotmap.php", $spotmap_admin, 'settings_link');
 		$this->loader->add_action( 'admin_menu', $spotmap_admin, 'add_options_page');
 		$this->loader->add_action( 'admin_init', $spotmap_admin, 'register_settings');
-
+		$this->loader->add_action('spotmap_cron_hook', $spotmap_admin, 'get_feed_data');
 	}
 
 	/**
@@ -64,8 +64,6 @@ class Spotmap{
 		$this->loader->add_action('enqueue_block_assets', $spotmap_public, 'enqueue_block_editor_assets');
 		$this->loader->add_action('wp_ajax_get_positions', $spotmap_public, 'the_action_function');
 		$this->loader->add_action('wp_ajax_nopriv_get_positions', $spotmap_public, 'the_action_function');
-		$this->loader->add_action('spotmap_cron_hook', $spotmap_public, 'get_feed_data');
-
 	}
 	/**
 	 * Run the loader to execute all of the hooks with WordPress.
