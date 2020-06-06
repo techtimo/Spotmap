@@ -20,28 +20,12 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
             popupAnchor: [0, 0]
         }
     });
-    markers = {
-        blue: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-blue.png'}),
-        gold: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-gold.png'}),
-        red: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-red.png'}),
-        green: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-green.png'}),
-        orange: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-orange.png'}),
-        yellow: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-yellow.png'}),
-        violet: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-violet.png'}),
-        gray: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-gray.png'}),
-        black: new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-black.png'}),
-        tiny:{
-            blue: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-blue.png'}),
-            gold: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-gold.png'}),
-            red: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-red.png'}),
-            green: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-green.png'}),
-            orange: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-orange.png'}),
-            yellow: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-yellow.png'}),
-            violet: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-violet.png'}),
-            gray: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-gray.png'}),
-            black: new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-black.png'}),
-        }
-    };
+    // create markers
+    markers = {tiny:{}};
+    ['blue','gold','red','green','orange','yellow','violet','gray','black'].forEach(color => {
+        markers[color] = new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-'+color+'.png'});
+        markers.tiny[color] = new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-'+color+'.png'});
+    });
 
     var baseLayers = {"Mapbox Outdoors": L.tileLayer(
         'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -85,10 +69,11 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
 
         // loop thru the data received from backend
         response.forEach((entry,index) => {
-            // device changed in loop
             let color = 'blue';
             if(options.styles[entry.device] && options.styles[entry.device].color)
                 color = options.styles[entry.device].color;
+            
+            // device changed in loop
             if(devices[devices.length-1] != entry.device){
                 let lastDevice = devices[devices.length-1];
                 let color = 'blue';
@@ -101,14 +86,28 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
                 devices.push(entry.device);
             } else if (options.styles[entry.device] && options.styles[entry.device].splitLines && index > 0 && entry.unixtime - response[index-1].unixtime >= options.styles[entry.device].splitLines*60*60){
                 group.push(L.polyline(line, {color: color}));
-                line = [];
+                // start the new line
+                line = [[entry.latitude, entry.longitude]];
             }
 
-             else {
+            else {
                 // a normal iteration adding stuff with default values
                 line.push([entry.latitude, entry.longitude]);
-             }
-                let message = 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+            }
+            
+            let message = '';
+            let tinyTypes = ['UNLIMITED-TRACK','STOP','EXTREME-TRACK','TRACK'];
+            if(options.styles[entry.device] && options.styles[entry.device].tinyTypes)
+                tinyTypes = options.styles[entry.device].tinyTypes;
+            
+            var option = {icon: markers[color]};
+            if(tinyTypes.includes(entry.type)){
+                option.icon = markers.tiny[color];
+            } else {
+                message += "<b>"+entry.type+"</b><br>";
+            }
+
+            message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
             if(entry.custom_message)
                 message += 'Message: ' + entry.custom_message + '</br>';
             if(entry.altitude > 0)
@@ -116,19 +115,12 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
             if(entry.battery_status == 'LOW')
                 message += 'Battery status is low!' + '</br>';
 
-            var option = {icon: markers[color]};
-            let tinyTypes = ['UNLIMITED-TRACK','STOP','EXTREME-TRACK','TRACK'];
-            if(options.styles[entry.device] && options.styles[entry.device].tinyTypes)
-                tinyTypes = options.styles[entry.device].tinyTypes;
-
-            if(tinyTypes.includes(entry.type))
-                option.icon = markers.tiny[color];
-
+            
             var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
             group.push(marker);
                 
             
-            // for last iteration add the rest that is not cought with a device change
+            // for last iteration add the rest that is not caught with a device change
             if(response.length == index+1){
                 group.push(L.polyline(line, {color: color}));
                 overlays[devices[devices.length-1]] = L.layerGroup(group);
@@ -156,7 +148,7 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
             }
             if(options.mapcenter == 'all'){
             var group = new L.featureGroup(all);
-            spotmap.fitBounds(group.getBounds());
+            let bounds = group.getBounds();
             spotmap.fitBounds(bounds);
         } else {
             var lastPoint;
