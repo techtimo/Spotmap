@@ -25,8 +25,9 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_scripts(){
-        wp_enqueue_script('leafletjs',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
-        wp_enqueue_script('leafletfullscreenjs',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
+        wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
+        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
+        wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
 		
 		$maps = new stdClass();
@@ -59,10 +60,12 @@ class Spotmap_Public{
 				'date-range-from' => '',
 				'date' => '',
 				'date-range-to' => '',
+				'gpx-name' => [],
+				'gpx-url' => [],
 			), $atts );
 			// error_log(wp_json_encode($a));
 
-			foreach (['devices','splitlines','colors'] as $value) {
+			foreach (['devices','splitlines','colors','gpx-name','gpx-url'] as $value) {
 				if(!empty($a[$value])){
 					// error_log($a[$value]);
 					$a[$value] = explode(',',$a[$value]);
@@ -80,10 +83,18 @@ class Spotmap_Public{
 					];
 			}
 		}
+		$gpx = [];
+		if(!empty($a['gpx-url'])){
+			foreach ($a['gpx-url'] as $key => $value) {
+				$name = $a['gpx-name'][$key];
+				$gpx[$name] = $value;
+			}
+		}
 		// generate the option object for init the map
 		$options = wp_json_encode([
-			'devices' => $a['devices'],
+			'feeds' => $a['devices'],
 			'styles' => $styles,
+			'gpx' => $gpx,
 			'date' => $a['date'],
 			'dateRange' => [
 				'from' => $a['date-range-from'],
@@ -105,13 +116,10 @@ class Spotmap_Public{
 	public function the_action_function(){
 		// error_log(print_r($_POST,true));
 		$points = $this->db->get_points($_POST);
-		
-		if(empty($points)){
-			return ['error'=> true,
-				'title'=> "No data found",
-				'message'=> "Check your configuration"
-			];
+		if(isset($points['error'])){
+			wp_send_json($points);
 		}
+		
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;
 			$point->date = date_i18n( get_option('date_format'), $point->time );

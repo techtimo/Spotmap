@@ -81,14 +81,14 @@ class Spotmap_Database {
 
 	function rename_feed_name ($old_name,$new_name){
 		global $wpdb;
-		error_log('reanem feed');
+		// error_log('reanem feed');
 			$wpdb->query( $wpdb->prepare( "
 			UPDATE `{$wpdb->prefix}spotmap_points`
 			SET `feed_name` = %s
 			WHERE feed_name = %s",
 			[$new_name,$old_name]
 		) );
-		error_log(print_r($wpdb->queries,true));
+		// error_log(print_r($wpdb->queries,true));
 
 	}
 
