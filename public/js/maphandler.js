@@ -1,12 +1,12 @@
-function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all'}) {
+function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {} }) {
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
-    } catch (e){
+    } catch (e) {
         return;
     }
     var Marker = L.Icon.extend({
         options: {
-            shadowUrl: spotmapjsobj.url +'leaflet/images/marker-shadow.png',
+            shadowUrl: spotmapjsobj.url + 'leaflet/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
             popupAnchor: [1, -34],
@@ -21,32 +21,35 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
         }
     });
     // create markers
-    markers = {tiny:{}};
-    ['blue','gold','red','green','orange','yellow','violet','gray','black'].forEach(color => {
-        markers[color] = new Marker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-icon-'+color+'.png'});
-        markers.tiny[color] = new TinyMarker({iconUrl: spotmapjsobj.url +'leaflet/images/marker-tiny-icon-'+color+'.png'});
+    markers = { tiny: {} };
+    ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet', 'gray', 'black'].forEach(color => {
+        markers[color] = new Marker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png' });
+        markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
     });
 
-    var baseLayers = {"Mapbox Outdoors": L.tileLayer(
-        'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    var baseLayers = {
+        "Mapbox Outdoors": L.tileLayer(
+            'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
             tileSize: 512,
             accessToken: "pk.eyJ1IjoidGVjaHRpbW8iLCJhIjoiY2s2ODg4amxxMDJhYzNtcG03NnZoM2dyOCJ9.5hp1h0z5YPfqIpiP3UOs9w",
             zoomOffset: -1,
             attribution: '© <a href="https://apps.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        })};
-    for (var map in spotmapjsobj.maps){
+        })
+    };
+    for (var map in spotmapjsobj.maps) {
         baseLayers[map] = L.tileLayer(spotmapjsobj.maps[map])
     }
 
     baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
-    let data = { 
-        'action': 'get_positions', 
-        'date-range-from': options.dateRange.from, 
-        'date-range-to': options.dateRange.to, 
-        'date': options.date, 
+    // define obj to post data
+    let data = {
+        'action': 'get_positions',
+        'date-range-from': options.dateRange.from,
+        'date-range-to': options.dateRange.to,
+        'date': options.date,
     }
-    if(options.devices){
-        data.devices = options.devices;
+    if (options.feeds) {
+        data.feeds = options.feeds;
     }
     jQuery.post(spotmapjsobj.ajaxUrl, data, function (response) {
 
@@ -62,30 +65,30 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
         }
 
         var overlays = {},
-            devices = [response[0].device],
-            group = [], 
+            feeds = [response[0].feed_name],
+            group = [],
             line = [];
 
 
         // loop thru the data received from backend
-        response.forEach((entry,index) => {
+        response.forEach((entry, index) => {
             let color = 'blue';
-            if(options.styles[entry.device] && options.styles[entry.device].color)
-                color = options.styles[entry.device].color;
-            
-            // device changed in loop
-            if(devices[devices.length-1] != entry.device){
-                let lastDevice = devices[devices.length-1];
+            if (options.styles[entry.feed_name] && options.styles[entry.feed_name].color)
+                color = options.styles[entry.feed_name].color;
+
+            // feed changed in loop
+            if (feeds[feeds.length - 1] != entry.feed_name) {
+                let lastFeed = feeds[feeds.length - 1];
                 let color = 'blue';
-                if(options.styles[lastDevice] && options.styles[lastDevice].color)
-                    color = options.styles[lastDevice].color;
-                group.push(L.polyline(line, {color: color}))
-                overlays[lastDevice] = L.layerGroup(group);
+                if (options.styles[lastFeed] && options.styles[lastFeed].color)
+                    color = options.styles[lastFeed].color;
+                group.push(L.polyline(line, { color: color }))
+                overlays[lastFeed] = L.layerGroup(group);
                 line = [];
                 group = [];
-                devices.push(entry.device);
-            } else if (options.styles[entry.device] && options.styles[entry.device].splitLines && index > 0 && entry.unixtime - response[index-1].unixtime >= options.styles[entry.device].splitLines*60*60){
-                group.push(L.polyline(line, {color: color}));
+                feeds.push(entry.feed_name);
+            } else if (options.styles[entry.feed_name] && options.styles[entry.feed_name].splitLines && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
+                group.push(L.polyline(line, { color: color }));
                 // start the new line
                 line = [[entry.latitude, entry.longitude]];
             }
@@ -94,72 +97,77 @@ function initMap(options = {devices: [], styles: {},dateRange:{},mapcenter: 'all
                 // a normal iteration adding stuff with default values
                 line.push([entry.latitude, entry.longitude]);
             }
-            
+
             let message = '';
-            let tinyTypes = ['UNLIMITED-TRACK','STOP','EXTREME-TRACK','TRACK'];
-            if(options.styles[entry.device] && options.styles[entry.device].tinyTypes)
-                tinyTypes = options.styles[entry.device].tinyTypes;
-            
-            var option = {icon: markers[color]};
-            if(tinyTypes.includes(entry.type)){
+            let tinyTypes = ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
+            if (options.styles[entry.feed_name] && options.styles[entry.feed_name].tinyTypes)
+                tinyTypes = options.styles[entry.feed_name].tinyTypes;
+
+            var option = { icon: markers[color] };
+            if (tinyTypes.includes(entry.type)) {
                 option.icon = markers.tiny[color];
             } else {
-                message += "<b>"+entry.type+"</b><br>";
+                message += "<b>" + entry.type + "</b><br>";
             }
 
             message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-            if(entry.custom_message)
+            if (entry.custom_message)
                 message += 'Message: ' + entry.custom_message + '</br>';
-            if(entry.altitude > 0)
+            if (entry.altitude > 0)
                 message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-            if(entry.battery_status == 'LOW')
+            if (entry.battery_status == 'LOW')
                 message += 'Battery status is low!' + '</br>';
 
-            
+
             var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
             group.push(marker);
-                
-            
-            // for last iteration add the rest that is not caught with a device change
-            if(response.length == index+1){
-                group.push(L.polyline(line, {color: color}));
-                overlays[devices[devices.length-1]] = L.layerGroup(group);
+
+
+            // for last iteration add the rest that is not caught with a feed change
+            if (response.length == index + 1) {
+                group.push(L.polyline(line, { color: color }));
+                overlays[feeds[feeds.length - 1]] = L.layerGroup(group);
             }
         });
+        if(options.gpx)
+        for (let key in options.gpx) {
+            console.log(key, options.gpx[key]);
+            let track = new L.GPX(options.gpx[key], {async: true}).on('loaded', function(e) {
+                console.log(e.traget);
+            })
+            overlays[key] = L.layerGroup([track]);
+            L.control.layers(baseLayers, overlays).addTo(spotmap);
+          }
 
-        if(devices.length == 1)
-            L.control.layers(baseLayers).addTo(spotmap);
-        else
-            L.control.layers(baseLayers,overlays).addTo(spotmap);
-        
-        
-            var bounds = L.bounds([[0,0],[0,0]]);
-            let all = [];
-            // loop thru feeds to get the bounds
-            for (const feed in overlays) {
-                if (overlays.hasOwnProperty(feed)) {
-                    const element = overlays[feed];
-                    element.addTo(spotmap);
-                    const layers = element.getLayers();
-                    layers.forEach(element => {
-                        all.push(element);
-                    });
-                }
+
+
+        var bounds = L.bounds([[0, 0], [0, 0]]);
+        let all = [];
+        // loop thru feeds to get the bounds
+        for (const feed in overlays) {
+            if (overlays.hasOwnProperty(feed)) {
+                const element = overlays[feed];
+                element.addTo(spotmap);
+                const layers = element.getLayers();
+                layers.forEach(element => {
+                    all.push(element);
+                });
             }
-            if(options.mapcenter == 'all'){
+        }
+        if (options.mapcenter == 'all') {
             var group = new L.featureGroup(all);
             let bounds = group.getBounds();
             spotmap.fitBounds(bounds);
         } else {
             var lastPoint;
             var time = 0;
-            response.forEach((entry,index) => {
-                if( time < entry.unixtime){
+            response.forEach((entry, index) => {
+                if (time < entry.unixtime) {
                     time = entry.unixtime;
                     lastPoint = [entry.latitude, entry.longitude];
                 }
             });
-            spotmap.setView([lastPoint[0],lastPoint[1]], 13);
+            spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
 

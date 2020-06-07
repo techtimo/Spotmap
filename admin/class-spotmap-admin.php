@@ -106,7 +106,6 @@ class Spotmap_Admin {
 			}
 			$feed_id= get_option("spotmap_findmespot_id")[$index];
 			$result = $this->db->rename_feed_name($old_feed_name, $feed_name);
-			error_log($result);
 		}
 		return $new_feed_name;
 	}
