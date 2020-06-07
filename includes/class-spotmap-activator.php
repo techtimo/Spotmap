@@ -29,9 +29,9 @@ class Spotmap_Activator {
 		}
 		
 		// activate for first time
-		if(!get_option('spotmap_options')){
-			$data_r = ['findmespot' => 0];
-			add_option('spotmap_options', $data_r);
+		if(!get_option('spotmap_api_providers')){
+			$data_r = ['findmespot' => "Spot Feed"];
+			add_option('spotmap_api_providers', $data_r);
 
 		}
 		// activate for first time

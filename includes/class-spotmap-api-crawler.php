@@ -10,21 +10,25 @@ class Spotmap_Api_Crawler {
 		$this->api = $api_provider;
 	}
 	
-	public function get_data($api, $feed_name, $id, $pwd = ""){
+	public function get_data( $feed_name, $id, $pwd = ""){
 		if($this->api == 'findmespot'){
-			return $this->get_data_findmespot($feed_name, $id, $pwd = "");
+			// error_log($feed_name. $id.$pwd);
+			return $this->get_data_findmespot($feed_name, $id, $pwd);
 		} else{
 			trigger_error('API ${this->api} is unknown', E_USER_WARNING);
 		}
 	}
 
-	private function get_data_findmespot ($feed_name, $id, $pwd = ""){
+	private function get_data_findmespot ($feed_name, $id, $pwd){
+		// error_log($feed_name. $id.$pwd);
 		$i = 0;
 		while (true) {
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;
-			if ($pwd != "") {
+			if (!empty($pwd)) {
 				$feed_url .= '&feedPassword=' . $pwd;
 			}
+			
+			// error_log($feed_url);
 			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 	
 			$json = json_decode($jsonraw, true)['response'];
@@ -35,7 +39,7 @@ class Spotmap_Api_Crawler {
 				if ($error_code === "E-0195") {
 					return;
 				}
-				// trigger_error($json['errors']['error']['description'], E_USER_WARNING);
+				trigger_error($json['errors']['error']['description'], E_USER_WARNING);
 				return;
 			}
 			$messages = $json['feedMessageResponse']['messages']['message'];
