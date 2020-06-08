@@ -1,0 +1,36 @@
+{
+  "Outdoors": {
+    "url": "https://api.mapbox.com/styles/v1/mapbox/outdoors-v9/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+    "options": {
+      "tileSize": 512,
+      "mapboxToken": "",
+      "zoomOffset": -1,
+      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
+  "Satelite": {
+    "url": "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+    "options": {
+      "tileSize": 512,
+      "mapboxToken": "",
+      "zoomOffset": -1,
+      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
+  "Streets": {
+    "url": "https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+    "options": {
+      "tileSize": 512,
+      "mapboxToken": "",
+      "zoomOffset": -1,
+      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
+  "OpenStreetMap": {
+    "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "options": {
+      "maxZoom": 19,
+      "attribution": "© <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
+    }
+  }
+}

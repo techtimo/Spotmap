@@ -1,14 +1,14 @@
 === Spotmap ===
 Contributors: techtimo
 Donate link:
-Tags: findmespot, spotgen3, spotbeacon, topomap, liveposition
+Tags: findmespot, spotgen3, spot3, spot, spotbeacon, liveposition, gpx
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 4.7
 Tested up to: 5.4
-Stable tag: 0.1
+Stable tag: trunk
 
-See your Spot device movements on a topographic map inside your Blog! 🗺
+See your Spot device(s) movements on a embedded map inside your Blog! 🗺
 
 == Description ==
 
