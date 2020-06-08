@@ -65,13 +65,29 @@ class Spotmap_Admin {
 					'spotmap-settings-group',
 					'findmespot-feeds',
 					['spotmap_'.$key.'_password['.$i.']',get_option('spotmap_'.$key.'_password')[$i]]	
-					
 				);
-
+				
 			}
 		}
+		
+		register_setting( 'spotmap-settings-group', 'spotmap_mapbox_token');
+		add_settings_section(
+			'mapbox',
+			'Mapbox',
+			'',
+			'spotmap-settings-group'
+		);
+		add_settings_field(
+			'spotmap_mapbox_token',
+			'Mapbox API',
+			[$this, 'generate_text_field'],
+			'spotmap-settings-group',
+			'mapbox',
+			['spotmap_mapbox_token',
+			get_option('spotmap_mapbox_token')]
+		);
 	}
-
+	
 	function generate_text_field($args){
 		// get the value of the setting we've registered with register_setting()
 		$setting = $args[1];
@@ -92,7 +108,7 @@ class Spotmap_Admin {
 	}
 
 	function settings_section_findmespot($args){
-		echo '<p id='.$args['id'].'>Here goes a detailed description.</p>';
+		echo '<p id='.$args['id'].'>Enter your Feed details here</p>';
 	}
 	
 	function spotmap_validate_feed_name($new_feed_name){

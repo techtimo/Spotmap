@@ -1,4 +1,4 @@
-function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {} }) {
+function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {},maps:['OpenStreetMap']}) {
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
     } catch (e) {
@@ -27,20 +27,14 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
     });
 
-    var baseLayers = {
-        "Mapbox Outdoors": L.tileLayer(
-            'https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            tileSize: 512,
-            accessToken: "pk.eyJ1IjoidGVjaHRpbW8iLCJhIjoiY2s2ODg4amxxMDJhYzNtcG03NnZoM2dyOCJ9.5hp1h0z5YPfqIpiP3UOs9w",
-            zoomOffset: -1,
-            attribution: '© <a href="https://apps.mapbox.com/feedback/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        })
-    };
-    for (var map in spotmapjsobj.maps) {
-        baseLayers[map] = L.tileLayer(spotmapjsobj.maps[map])
-    }
+    var maps = spotmapjsobj.maps;
+    var baseLayers = {};
+    for (let mapName in maps) {
+        if(options.maps.includes(mapName))
+            baseLayers[mapName] = L.tileLayer(maps[mapName].url, maps[mapName].options);
+      }
 
-    baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
+   baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
     // define obj to post data
     let data = {
         'action': 'get_positions',
@@ -132,12 +126,12 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         if(options.gpx)
         for (let key in options.gpx) {
             console.log(key, options.gpx[key]);
-            let track = new L.GPX(options.gpx[key], {async: true}).on('loaded', function(e) {
-                console.log(e.traget);
+            let track = new L.GPX(options.gpx[key], {async: true,marker_options:{startIconUrl: '',endIconUrl: '',shadowUrl: '',}}).on('loaded', function(e) {
+                console.log(e.target.get_name());
             })
             overlays[key] = L.layerGroup([track]);
-            L.control.layers(baseLayers, overlays).addTo(spotmap);
-          }
+        }
+        L.control.layers(baseLayers, overlays).addTo(spotmap);
 
 
 
