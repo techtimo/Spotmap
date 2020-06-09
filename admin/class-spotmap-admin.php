@@ -183,7 +183,7 @@ class Spotmap_Admin {
 		}
 		// error_log("cron job started");
         if (!get_option('spotmap_options')) {
-			trigger_error('no values found');
+			// trigger_error('no values found');
 			return;
 		}
 		foreach (get_option("spotmap_options") as $key => $count) {

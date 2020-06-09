@@ -48,7 +48,7 @@ class Spotmap_Api_Crawler {
 			// loop through the data, if a msg is in the db all the others are there as well
 			foreach ((array)$messages as &$point) {
 				if ($this->db->does_point_exist($point['id'])) {
-					trigger_error($point['id']. " already exists", E_USER_WARNING);
+					// trigger_error($point['id']. " already exists", E_USER_WARNING);
 					return;
 				}
 				$point['feedName'] = $feed_name;

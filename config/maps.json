@@ -29,8 +29,14 @@
   "OpenStreetMap": {
     "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     "options": {
-      "maxZoom": 19,
       "attribution": "© <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
+    }
+  },
+  "OpenTopoMap": {
+    "url": "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+    "options": {
+      "maxZoom": 17,
+      "attribution": "© <a href='http://opentopomap.org/'>OpenTopoMap</a> <a href='https://creativecommons.org/licenses/by-sa/3.0/'>(CC-BY-SA)</a> | © <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
     }
   }
 }
