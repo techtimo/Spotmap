@@ -61,25 +61,34 @@ class Spotmap_Public{
 
 	function show_spotmap($atts,$content){
 		// if no attributes are provided use the default:
+			foreach ($atts as $key => &$values) {
+				if(is_array($values)){
+					foreach($values as &$entry){
+						$entry =_sanitize_text_fields($entry);
+					}
+				} else {
+					$values = _sanitize_text_fields($values);
+				}
+			}
 			error_log("TEST".wp_json_encode($atts));
-			$a = shortcode_atts( array(
+			$a = shortcode_atts( [
 				'height' => '500',
 				'mapcenter' => 'all',
 				'devices' => $this->db->get_all_feednames(),
 				'width' => 'normal',
 				'colors' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-				'splitlines' => [],
+				'splitlines' => '[12,12,12,12]',
 				'date-range-from' => '',
 				'date' => '',
 				'date-range-to' => '',
 				'gpx-name' => [],
 				'gpx-url' => [],
-				'maps' => 'OpenStreetMap'
-			), $atts );
+				'maps' => ['OpenStreetMap', 'OpenTopoMap']
+			], $atts );
 			error_log(wp_json_encode($a));
 
 			foreach (['devices','splitlines','colors','gpx-name','gpx-url','maps'] as $value) {
-				if(!empty($a[$value])){
+				if(!empty($a[$value]) && !is_array($a[$value])){
 					// error_log($a[$value]);
 					$a[$value] = explode(',',$a[$value]);
 				}
