@@ -1,4 +1,46 @@
-function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {},maps:['OpenStreetMap']}) {
+function getOption(option, optionObj, config = {}) {
+    if (option == 'maps') {
+        if (optionObj.maps) {
+            var baseLayers = {};
+            for (let mapName in spotmapjsobj.maps) {
+                if (optionObj.maps.includes(mapName)) {
+                    baseLayers[mapName] = L.tileLayer(spotmapjsobj.maps[mapName].url, spotmapjsobj.maps[mapName].options);
+                }
+            }
+            return baseLayers;
+        }
+        console.error("No Map defined");
+        return false;
+    }
+    if (option == 'color' && config.feed) {
+        if (optionObj.styles[config.feed] && optionObj.styles[config.feed].color)
+            return optionObj.styles[config.feed].color;
+        return 'blue';
+    }
+    if (option == 'color' && config.gpx) {
+        if (config.gpx.color)
+            return config.gpx.color;
+        return 'gold';
+    }
+    if (option == 'splitLines' && config.feed) {
+        if (optionObj.styles[config.feed] && optionObj.styles[config.feed].splitLines)
+            return optionObj.styles[config.feed].splitLines;
+        return 'false';
+    }
+    if (option == 'tinyTypes' && config.feed) {
+        if (optionObj.styles[config.feed] && optionObj.styles[config.feed].tinyTypes)
+            return optionObj.styles[config.feed].tinyTypes;
+        return ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
+    }
+    if (option == 'tinyTypes' && config.feed) {
+        if (optionObj.styles[config.feed] && optionObj.styles[config.feed].tinyTypes)
+            return optionObj.styles[config.feed].tinyTypes;
+        return ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
+    }
+}
+
+function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'] }) {
+    console.log(options);
     try {
         var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
     } catch (e) {
@@ -28,24 +70,20 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
     });
 
     var maps = spotmapjsobj.maps;
-    var baseLayers = {};
-    for (let mapName in maps) {
-        if(options.maps.includes(mapName))
-            baseLayers[mapName] = L.tileLayer(maps[mapName].url, maps[mapName].options);
-      }
+    var baseLayers = getOption('maps', options);
 
-   baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
+    baseLayers[options.maps[0]].addTo(spotmap);
     // define obj to post data
-    let data = {
+    let body = {
         'action': 'get_positions',
         'date-range-from': options.dateRange.from,
         'date-range-to': options.dateRange.to,
         'date': options.date,
     }
     if (options.feeds) {
-        data.feeds = options.feeds;
+        body.feeds = options.feeds;
     }
-    jQuery.post(spotmapjsobj.ajaxUrl, data, function (response) {
+    jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
 
         if (response.error) {
             spotmap.setView([51.505, -0.09], 13);
@@ -66,22 +104,18 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
 
         // loop thru the data received from backend
         response.forEach((entry, index) => {
-            let color = 'blue';
-            if (options.styles[entry.feed_name] && options.styles[entry.feed_name].color)
-                color = options.styles[entry.feed_name].color;
+            let color = getOption('color', options, { feed: entry.feed_name });
 
             // feed changed in loop
             if (feeds[feeds.length - 1] != entry.feed_name) {
                 let lastFeed = feeds[feeds.length - 1];
-                let color = 'blue';
-                if (options.styles[lastFeed] && options.styles[lastFeed].color)
-                    color = options.styles[lastFeed].color;
+                let color = getOption('color', options, { feed: lastFeed });
                 group.push(L.polyline(line, { color: color }))
                 overlays[lastFeed] = L.layerGroup(group);
                 line = [];
                 group = [];
                 feeds.push(entry.feed_name);
-            } else if (options.styles[entry.feed_name] && options.styles[entry.feed_name].splitLines && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
+            } else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
                 group.push(L.polyline(line, { color: color }));
                 // start the new line
                 line = [[entry.latitude, entry.longitude]];
@@ -93,13 +127,11 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             }
 
             let message = '';
-            let tinyTypes = ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
-            if (options.styles[entry.feed_name] && options.styles[entry.feed_name].tinyTypes)
-                tinyTypes = options.styles[entry.feed_name].tinyTypes;
+            let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
 
-            var option = { icon: markers[color] };
+            var markerOptions = { icon: markers[color] };
             if (tinyTypes.includes(entry.type)) {
-                option.icon = markers.tiny[color];
+                markerOptions.icon = markers.tiny[color];
             } else {
                 message += "<b>" + entry.type + "</b><br>";
             }
@@ -113,7 +145,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 message += 'Battery status is low!' + '</br>';
 
 
-            var marker = L.marker([entry.latitude, entry.longitude], option).bindPopup(message);
+            var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
             group.push(marker);
 
 
@@ -123,15 +155,39 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 overlays[feeds[feeds.length - 1]] = L.layerGroup(group);
             }
         });
-        if(options.gpx)
-        for (let key in options.gpx) {
-            console.log(key, options.gpx[key]);
-            let track = new L.GPX(options.gpx[key], {async: true,marker_options:{startIconUrl: '',endIconUrl: '',shadowUrl: '',}}).on('loaded', function(e) {
-                console.log(e.target.get_name());
-            })
-            overlays[key] = L.layerGroup([track]);
+        if (options.gpx)
+            for (const entry of options.gpx) {
+                console.log(entry);
+                let gpxOption = {
+                    async: true,
+                    marker_options: {
+                        startIconUrl: '',
+                        endIconUrl: '',
+                        shadowUrl: '',
+                    },
+                    polyline_options: {
+                        color: getOption('color', options, { gpx: entry })
+                    }
+                }
+                console.log('gpxoption', getOption('color', options, { gpx: entry }))
+                let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
+                    console.log(e.target.get_name());
+                })
+                if(overlays[entry.name]){
+                    // shit happens...
+                    // TODO merge into one layergroup
+
+                } else {
+                    overlays[entry.name] = L.layerGroup([track]);
+                }
+            }
+
+        if (Object.keys(overlays).length == 1) {
+            overlays[Object.keys(overlays)[0]].addTo(spotmap);
+            L.control.layers(baseLayers).addTo(spotmap);
+        } else {
+            L.control.layers(baseLayers, overlays).addTo(spotmap);
         }
-        L.control.layers(baseLayers, overlays).addTo(spotmap);
 
 
 

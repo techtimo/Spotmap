@@ -57,41 +57,42 @@ class Spotmap_Public{
 
 	public function register_shortcodes(){
 		add_shortcode('spotmap', [$this,'show_spotmap'] );
+		add_shortcode('Spotmap', [$this,'show_spotmap'] );
 	}
 
 	function show_spotmap($atts,$content){
-		// if no attributes are provided use the default:
-			foreach ($atts as $key => &$values) {
-				if(is_array($values)){
-					foreach($values as &$entry){
-						$entry =_sanitize_text_fields($entry);
-					}
-				} else {
-					$values = _sanitize_text_fields($values);
-				}
-			}
-			error_log("TEST".wp_json_encode($atts));
-			$a = shortcode_atts( [
-				'height' => '500',
-				'mapcenter' => 'all',
-				'devices' => $this->db->get_all_feednames(),
-				'width' => 'normal',
-				'colors' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-				'splitlines' => '[12,12,12,12]',
-				'date-range-from' => '',
-				'date' => '',
-				'date-range-to' => '',
-				'gpx-name' => [],
-				'gpx-url' => [],
-				'maps' => ['OpenStreetMap', 'OpenTopoMap']
-			], $atts );
-			error_log(wp_json_encode($a));
+		// error_log("Shortcode init vals: ".$atts);
+		$a = shortcode_atts( [
+			'height' => '500',
+			'mapcenter' => 'all',
+			'devices' => $this->db->get_all_feednames(),
+			'width' => 'normal',
+			'colors' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
+			'splitlines' => '[12,12,12,12]',
+			'date-range-from' => '',
+			'date' => '',
+			'date-range-to' => '',
+			'gpx-name' => [],
+			'gpx-url' => [],
+			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
+			'maps' => ['OpenStreetMap', 'OpenTopoMap']
+		], $atts );
+		error_log(wp_json_encode($a));
 
-			foreach (['devices','splitlines','colors','gpx-name','gpx-url','maps'] as $value) {
-				if(!empty($a[$value]) && !is_array($a[$value])){
-					// error_log($a[$value]);
-					$a[$value] = explode(',',$a[$value]);
+		foreach (['devices','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
+			if(!empty($a[$value]) && !is_array($a[$value])){
+				// error_log($a[$value]);
+				$a[$value] = explode(',',$a[$value]);
+			}
+		}
+		foreach ($atts as $key => &$values) {
+			if(is_array($values)){
+				foreach($values as &$entry){
+					$entry =_sanitize_text_fields($entry);
 				}
+			} else {
+				$values = _sanitize_text_fields($values);
+			}
 		}
 
 		// TODO test what happens if array lengths are different
@@ -107,9 +108,20 @@ class Spotmap_Public{
 		}
 		$gpx = [];
 		if(!empty($a['gpx-url'])){
-			foreach ($a['gpx-url'] as $key => $value) {
+			$number_of_tracks = count($a['gpx-url']);
+			if(count($a['gpx-color']) < $number_of_tracks){
+				$a['gpx-color'] = array_fill(0,$number_of_tracks, $a['gpx-color'][0]);
+			}
+			if(count($a['gpx-name']) < $number_of_tracks){
+				$a['gpx-name'] = array_fill(0,$number_of_tracks, $a['gpx-name'][0]);
+			}
+			foreach ($a['gpx-url'] as $key => $url) {
 				$name = $a['gpx-name'][$key];
-				$gpx[$name] = $value;
+				$gpx[] = [
+					'name' => $name,
+					'url' => $url,
+					"color" => $a['gpx-color'][$key]
+				];
 			}
 		}
 		// generate the option object for init the map
