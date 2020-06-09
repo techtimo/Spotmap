@@ -189,7 +189,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             L.control.layers(baseLayers, overlays).addTo(spotmap);
         }
 
-
+        console.log(overlays.frankreich.getLayers());
 
         var bounds = L.bounds([[0, 0], [0, 0]]);
         let all = [];

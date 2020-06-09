@@ -6,12 +6,16 @@ class Spotmap_Database {
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points");
 	}
+	public function get_all_types(){
+		global $wpdb;
+		return $wpdb->get_col("SELECT DISTINCT type FROM " . $wpdb->prefix . "spotmap_points");
+	}
 
-	public function get_points($filter){
+	public function get_points($filter,$select = '*',$order= 'feed_name, time'){
 		error_log(print_r($filter,true));
 		global $wpdb;
 		$where = '';
-		if(isset($filter['feeds'])){
+		if(!empty($filter['feeds'])){
 			$feeds_on_db = $this->get_all_feednames();
 			foreach ($filter['feeds'] as $value) {
 				if(!in_array($value,$feeds_on_db)){
@@ -20,7 +24,16 @@ class Spotmap_Database {
 			}
 			$where .= "AND feed_name IN ('".implode("','", $filter['feeds']). "') ";
 		}
-		
+		if(!empty($filter['type'])){
+			$feeds_on_db = $this->get_all_types();
+			foreach ($filter['type'] as $value) {
+				if(!in_array($value,$feeds_on_db)){
+					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
+				}
+			}
+			$where .= "AND type IN ('".implode("','", $filter['type']). "') ";
+		}
+
 		// either have a day or a range
 		$date;
 		if(!empty($filter['date'])){
@@ -44,8 +57,9 @@ class Spotmap_Database {
 			} 
 		}
 		error_log("Where: " .$where);
-		return $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY feed_name, time;");
+		return $wpdb->get_results("SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY ".$order);
 	}
+
 	public function insert_point($point,$multiple = false){
 		// TODO check if point is valid
 		global $wpdb;

@@ -58,8 +58,34 @@ class Spotmap_Public{
 	public function register_shortcodes(){
 		add_shortcode('spotmap', [$this,'show_spotmap'] );
 		add_shortcode('Spotmap', [$this,'show_spotmap'] );
+		add_shortcode('spotmessages', [$this,'show_point_overview'] );
+		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
 	}
-
+	function show_point_overview(){
+		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL']],"type AS Type, FROM_UNIXTIME(time) as Time, custom_message AS Message","time DESC LIMIT 10");
+		// start table
+		$html = '<table>';
+		// header row
+		$html .= '<tr>';
+		foreach($points[0] as $key=>$value){
+				$html .= '<th>' . htmlspecialchars($key) . '</th>';
+			}
+		$html .= '</tr>';
+	
+		// data rows
+		foreach( $points as $key=>$value){
+			$html .= '<tr>';
+			foreach($value as $key2=>$value2){
+				$html .= '<td>' . htmlspecialchars($value2) . '</td>';
+			}
+			$html .= '</tr>';
+		}
+	
+		// finish table and return it
+	
+		$html .= '</table>';
+		return $html;
+	}
 	function show_spotmap($atts,$content){
 		// error_log("Shortcode init vals: ".$atts);
 		$a = shortcode_atts( [
@@ -110,7 +136,7 @@ class Spotmap_Public{
 		if(!empty($a['gpx-url'])){
 			$number_of_tracks = count($a['gpx-url']);
 			if(count($a['gpx-color']) < $number_of_tracks){
-				$a['gpx-color'] = array_fill(0,$number_of_tracks, $a['gpx-color'][0]);
+				$a['gpx-color'] = array_fill(count($a['gpx-color']),$number_of_tracks, $a['gpx-color'][0]);
 			}
 			if(count($a['gpx-name']) < $number_of_tracks){
 				$a['gpx-name'] = array_fill(0,$number_of_tracks, $a['gpx-name'][0]);
