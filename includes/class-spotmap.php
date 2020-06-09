@@ -47,6 +47,7 @@ class Spotmap{
 		$this->loader->add_action( 'admin_menu', $spotmap_admin, 'add_options_page');
 		$this->loader->add_action( 'admin_init', $spotmap_admin, 'register_settings');
 		$this->loader->add_action('spotmap_cron_hook', $spotmap_admin, 'get_feed_data');
+		$this->loader->add_action('upload_mimes', $spotmap_admin, 'allow_gpx_upload');
 	}
 
 	/**

@@ -125,6 +125,7 @@ class Spotmap_Admin {
 		}
 		return $new_feed_name;
 	}
+	
 	function spotmap_validate_feed_id($new_feed_id){
 		foreach ($new_feed_id as $index => &$feed_id) {
 			$feed_id = sanitize_text_field($feed_id);
@@ -152,6 +153,10 @@ class Spotmap_Admin {
 		include_once  plugin_dir_path( dirname( __FILE__ ) ) . 'admin/partials/spotmap-admin-display.php';
 	}
 
+	function allow_gpx_upload($mime_types){
+		$mime_types['gpx'] = 'text/xml'; 
+		return $mime_types;
+	}
 	function settings_link( $links ) {
 		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">Settings</a>',];
 		return array_merge( $mylinks,$links );

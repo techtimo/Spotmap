@@ -8,17 +8,17 @@ class Spotmap_Database {
 	}
 
 	public function get_points($filter){
-		// error_log(print_r($filter,true));
+		error_log(print_r($filter,true));
 		global $wpdb;
 		$where = '';
-		if(isset($filter['devices'])){
-			$devices_on_db = $this->get_all_feednames();
-			foreach ($filter['devices'] as $value) {
-				if(!in_array($value,$devices_on_db)){
+		if(isset($filter['feeds'])){
+			$feeds_on_db = $this->get_all_feednames();
+			foreach ($filter['feeds'] as $value) {
+				if(!in_array($value,$feeds_on_db)){
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
 				}
 			}
-			$where .= "AND feed_name IN ('".implode("','", $filter['devices']). "') ";
+			$where .= "AND feed_name IN ('".implode("','", $filter['feeds']). "') ";
 		}
 		
 		// either have a day or a range
@@ -29,21 +29,21 @@ class Spotmap_Database {
 				$date = date_format( $date,"Y-m-d" );
 				$where .= "AND FROM_UNIXTIME(time) between '" . $date . " 00:00:00' and  '" . $date . " 23:59:59' ";
 			}
-		} else{
-			if(!empty($filter['date-range-to'])){
-				$date = date_create($filter['date-range-to']);
+		} else if(!empty($filter['date-range'])){
+			if(!empty($filter['date-range']['to'])){
+				$date = date_create($filter['date-range']['to']);
 				if($date != null){
 					$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
 				}
-			}
-			if(!empty($filter['date-range-from'])){
-				$date = date_create($filter['date-range-from']);
+			} 
+			if (!empty($filter['date-range']['from'])){
+				$date = date_create($filter['date-range']['from']);
 				if($date != null){
 					$where .= "AND FROM_UNIXTIME(time) >= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
 				}
-			}
+			} 
 		}
-		// error_log("Where: " .$where);
+		error_log("Where: " .$where);
 		return $wpdb->get_results("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY feed_name, time;");
 	}
 	public function insert_point($point,$multiple = false){
