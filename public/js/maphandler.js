@@ -152,12 +152,18 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             // for last iteration add the rest that is not caught with a feed change
             if (response.length == index + 1) {
                 group.push(L.polyline(line, { color: color }));
-                overlays[feeds[feeds.length - 1]] = L.layerGroup(group);
+                let htmlLine = ``;
+                if(options.feeds.length > 1)
+                    htmlLine = `<div class="leaflet-control-layers-separator"></div>`
+                overlays[feeds[feeds.length - 1] + htmlLine] = L.layerGroup(group);
             }
         });
+;
+
         if (options.gpx)
-            for (const entry of options.gpx) {
-                console.log(entry);
+            // reversed so the first one is added last == on top of all others
+            for (const entry of options.gpx.reverse()) {
+                let color = getOption('color', options, { gpx: entry });
                 let gpxOption = {
                     async: true,
                     marker_options: {
@@ -166,20 +172,31 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         shadowUrl: '',
                     },
                     polyline_options: {
-                        color: getOption('color', options, { gpx: entry })
+                        'color': color
                     }
                 }
-                console.log('gpxoption', getOption('color', options, { gpx: entry }))
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
-                    console.log(e.target.get_name());
+
+                    if (options.mapcenter == 'gpx'){
+                        // let gpxBounds = e.target.getBounds();
+                        // console.log(gpxBounds._northEast)
+                        // let point = L.point([gpxBounds._northEast.lat, gpxBounds._northEast.lng]);
+                        // let point2 = L.point([gpxBounds._southWest.lat, gpxBounds._southWest.lng]);
+                        // var bounds = L.bounds([point,point2]);
+                        // spotmap.fitBounds(bounds);
+                    }
                 })
-                if(overlays[entry.name]){
+                // track.bindPopup('Route 1');
+                let html = ` <span class="dot" style="height: 10px;width: 10px;background-color: `+color+`;border-radius: 50%;display: inline-block;"></span>`;
+                if(overlays[entry.name  + html ]){
+                    overlays[entry.name + html].addLayer(track)
                     // shit happens...
                     // TODO merge into one layergroup
 
                 } else {
-                    overlays[entry.name] = L.layerGroup([track]);
+                    overlays[entry.name + html] = L.layerGroup([track]);
                 }
+
             }
 
         if (Object.keys(overlays).length == 1) {
@@ -190,16 +207,17 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         }
 
 
-        var bounds = L.bounds([[0, 0], [0, 0]]);
+        
         let all = [];
-        // loop thru feeds to get the bounds
+        // loop thru feeds (not gpx) to get the bounds
         for (const feed in overlays) {
             if (overlays.hasOwnProperty(feed)) {
                 const element = overlays[feed];
                 element.addTo(spotmap);
                 const layers = element.getLayers();
                 layers.forEach(element => {
-                    all.push(element);
+                    if(!element._gpx)
+                        all.push(element);
                 });
             }
         }
@@ -207,7 +225,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             var group = new L.featureGroup(all);
             let bounds = group.getBounds();
             spotmap.fitBounds(bounds);
-        } else {
+        } else if (options.mapcenter == 'last') {
             var lastPoint;
             var time = 0;
             response.forEach((entry, index) => {
