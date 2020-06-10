@@ -69,18 +69,17 @@ class Spotmap_Database {
 	}
 
 	public function insert_point($point,$multiple = false){
+		error_log(print_r($point,true));
 		if($point['latitude'] > 90 || $point['latitude']< -90){
 			error_log("Here");
-			$last_point = $this->last_point($point['feedId']);
-			$point['latitude'] = $last_poin->latitude;
+			$last_point = $this->get_last_point($point['feedId']);
+			$point['latitude'] = $last_point->latitude;
 		}
 		if ($point['longitude'] > 180 || $point['longitude']< -180){
 			$last_point = $this->get_last_point($point['feedId']);
 			$point['longitude'] = $last_point->longitude;
 		}
 		global $wpdb;
-		if(empty($point['messageContent'])){}
-			$point['messageContent'] = null;
 		return $wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(

@@ -61,22 +61,30 @@ class Spotmap_Public{
 		add_shortcode('spotmessages', [$this,'show_point_overview'] );
 		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
 	}
-	function show_point_overview(){
-		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL']],"type AS Type, FROM_UNIXTIME(time) as Time, custom_message AS Message","time DESC LIMIT 10");
-		// start table
-		$html = '<table>';
+	function show_point_overview($atts){
+		$atts = shortcode_atts([],$atts);
+		error_log(wp_json_encode($atts));
+		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL']],"id,type, custom_message as Message, FROM_UNIXTIME(time) as Time,feed_name as name","time DESC LIMIT 10");
+		$show_columns = ['Time','Message'];
+		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
-		$html .= '<tr>';
-		foreach($points[0] as $key=>$value){
-				$html .= '<th>' . htmlspecialchars($key) . '</th>';
-			}
+		$html .= '<tr><th style="width:7em;"></th>';
+		foreach($points[0] as $type=>$value){
+			// error_log($type);
+			if(in_array($type,$show_columns))
+				$html .= '<th>' . htmlspecialchars($type) . '</th>';
+		}
 		$html .= '</tr>';
 	
 		// data rows
-		foreach( $points as $key=>$value){
-			$html .= '<tr>';
-			foreach($value as $key2=>$value2){
-				$html .= '<td>' . htmlspecialchars($value2) . '</td>';
+		foreach( $points as $key=>$row){
+			$html .= '<tr class="spotmap '. $row->type;
+			$html .= '" id="spotmap_'.$row->id.'">';
+			$html .= '<td>'.$row->type.'<br>'.$row->name.'</td>';
+			foreach($row as $type=>$value2){
+				if(in_array($type,$show_columns)){
+					$html .= '<td>' . htmlspecialchars($value2) . '</td>';
+				}
 			}
 			$html .= '</tr>';
 		}
