@@ -136,7 +136,11 @@ class Spotmap_Public{
 		if(!empty($a['gpx-url'])){
 			$number_of_tracks = count($a['gpx-url']);
 			if(count($a['gpx-color']) < $number_of_tracks){
-				$a['gpx-color'] = array_fill(count($a['gpx-color']),$number_of_tracks, $a['gpx-color'][0]);
+				$count_present_numbers = count($a['gpx-color']);
+				$fillup_array = array_fill($count_present_numbers, $number_of_tracks - $count_present_numbers, $a['gpx-color'][0]);
+				$a['gpx-color'] = array_merge($a['gpx-color'],$fillup_array);
+
+				error_log(print_r($a['gpx-color'],true));
 			}
 			if(count($a['gpx-name']) < $number_of_tracks){
 				$a['gpx-name'] = array_fill(0,$number_of_tracks, $a['gpx-name'][0]);
@@ -170,7 +174,7 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="spotmap-container" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {initMap('.$options.');});</script>';
+		return '<div id="spotmap-container" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {var spotmap = initMap('.$options.');});</script>';
 	}
 
 

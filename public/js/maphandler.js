@@ -189,7 +189,6 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             L.control.layers(baseLayers, overlays).addTo(spotmap);
         }
 
-        console.log(overlays.frankreich.getLayers());
 
         var bounds = L.bounds([[0, 0], [0, 0]]);
         let all = [];
@@ -220,6 +219,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
-
+        console.log(spotmap)
+        return spotmap;
     });
 }
