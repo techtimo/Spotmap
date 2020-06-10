@@ -10,6 +10,14 @@ class Spotmap_Database {
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT type FROM " . $wpdb->prefix . "spotmap_points");
 	}
+	public function get_last_point($feed_id = null){
+		global $wpdb;
+		$where = ' ';
+		if(isset($feed)){
+			$where .= "AND feed_id = '".$feed_id."' ";
+		}
+		return $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY id DESC LIMIT 1");
+	}
 
 	public function get_points($filter,$select = '*',$order= 'feed_name, time'){
 		error_log(print_r($filter,true));
@@ -61,11 +69,19 @@ class Spotmap_Database {
 	}
 
 	public function insert_point($point,$multiple = false){
-		// TODO check if point is valid
+		if($point['latitude'] > 90 || $point['latitude']< -90){
+			error_log("Here");
+			$last_point = $this->last_point($point['feedId']);
+			$point['latitude'] = $last_poin->latitude;
+		}
+		if ($point['longitude'] > 180 || $point['longitude']< -180){
+			$last_point = $this->get_last_point($point['feedId']);
+			$point['longitude'] = $last_point->longitude;
+		}
 		global $wpdb;
-		if(empty($point['messageContent']))
+		if(empty($point['messageContent'])){}
 			$point['messageContent'] = null;
-		$wpdb->insert(
+		return $wpdb->insert(
 			$wpdb->prefix."spotmap_points",
 			array(
 				'feed_name' => $point['feedName'],
