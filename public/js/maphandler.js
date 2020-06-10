@@ -41,8 +41,9 @@ function getOption(option, optionObj, config = {}) {
 
 function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'] }) {
     console.log(options);
+    var spotmap = null;
     try {
-        var spotmap = L.map('spotmap-container', { fullscreenControl: true, });
+        spotmap = L.map('spotmap-container', { fullscreenControl: true, });
     } catch (e) {
         return;
     }
@@ -147,18 +148,22 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
 
             var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
             group.push(marker);
+            jQuery("#spotmap_" + entry.id).click(function () {
+                marker.openPopup();
+                spotmap.panTo([entry.latitude, entry.longitude], 13)
+            });
 
 
             // for last iteration add the rest that is not caught with a feed change
             if (response.length == index + 1) {
                 group.push(L.polyline(line, { color: color }));
                 let htmlLine = ``;
-                if(options.feeds.length > 1)
+                if (options.feeds.length > 1)
                     htmlLine = `<div class="leaflet-control-layers-separator"></div>`
                 overlays[feeds[feeds.length - 1] + htmlLine] = L.layerGroup(group);
             }
         });
-;
+        ;
 
         if (options.gpx)
             // reversed so the first one is added last == on top of all others
@@ -176,19 +181,19 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                     }
                 }
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
-
-                    if (options.mapcenter == 'gpx'){
-                        // let gpxBounds = e.target.getBounds();
-                        // console.log(gpxBounds._northEast)
-                        // let point = L.point([gpxBounds._northEast.lat, gpxBounds._northEast.lng]);
-                        // let point2 = L.point([gpxBounds._southWest.lat, gpxBounds._southWest.lng]);
-                        // var bounds = L.bounds([point,point2]);
-                        // spotmap.fitBounds(bounds);
+                    e.target.getLayers()[0].bindPopup('entry.name');
+                    console.log(entry.name)
+                    if (options.mapcenter == 'gpx') {
+                        let gpxBounds = e.target.getBounds();
+                        let point = L.point([gpxBounds._northEast.lat, gpxBounds._northEast.lng]);
+                        let point2 = L.point([gpxBounds._southWest.lat, gpxBounds._southWest.lng]);
+                        var bounds = L.bounds([point, point2]);
+                        // e.target._map.fitBounds(bounds);
                     }
-                })
+                });
                 // track.bindPopup('Route 1');
-                let html = ` <span class="dot" style="height: 10px;width: 10px;background-color: `+color+`;border-radius: 50%;display: inline-block;"></span>`;
-                if(overlays[entry.name  + html ]){
+                let html = ` <span class="dot" style="height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                if (overlays[entry.name + html]) {
                     overlays[entry.name + html].addLayer(track)
                     // shit happens...
                     // TODO merge into one layergroup
@@ -207,7 +212,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         }
 
 
-        
+
         let all = [];
         // loop thru feeds (not gpx) to get the bounds
         for (const feed in overlays) {
@@ -216,7 +221,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 element.addTo(spotmap);
                 const layers = element.getLayers();
                 layers.forEach(element => {
-                    if(!element._gpx)
+                    if (!element._gpx)
                         all.push(element);
                 });
             }

@@ -6,3 +6,16 @@
 .leaflet-control-zoom-in .leaflet-control-zoom-out {
     text-decoration: none;
 }
+
+
+
+/*style the spot message table*/
+
+tr.spotmap.HELP-CANCEL {
+    background-color: rgb(142, 223, 89,0.4);
+    border-color: rgb(142, 223, 89);
+}
+tr.spotmap.HELP {
+    background-color: rgb(255, 0, 0);
+    border-color: rgb(255, 0, 0);
+}
