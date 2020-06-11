@@ -77,8 +77,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
     // define obj to post data
     let body = {
         'action': 'get_positions',
-        'date-range-from': options.dateRange.from,
-        'date-range-to': options.dateRange.to,
+        'date-range': {
+            from: options.dateRange.from,
+            to: options.dateRange.to,
+        },
         'date': options.date,
     }
     if (options.feeds) {
@@ -149,7 +151,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
             group.push(marker);
             jQuery("#spotmap_" + entry.id).click(function () {
-                marker.openPopup();
+                marker.togglePopup();
                 spotmap.panTo([entry.latitude, entry.longitude], 13)
             });
 
@@ -181,7 +183,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                     }
                 }
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
-                    e.target.getLayers()[0].bindPopup('entry.name');
+                    e.target.getLayers()[0].bindPopup(entry.name);
                     console.log(entry.name)
                     if (options.mapcenter == 'gpx') {
                         let gpxBounds = e.target.getBounds();
@@ -192,7 +194,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                     }
                 });
                 // track.bindPopup('Route 1');
-                let html = ` <span class="dot" style="height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                let html = ` <span class="dot" style="position: relative; right: 5px;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
                 if (overlays[entry.name + html]) {
                     overlays[entry.name + html].addLayer(track)
                     // shit happens...

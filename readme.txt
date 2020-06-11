@@ -1,7 +1,7 @@
 === Spotmap ===
 Contributors: techtimo
 Donate link:
-Tags: findmespot, spotgen3, spot3, spot, spotbeacon, liveposition, gpx
+Tags: findmespot, spotgen3, spot3, spot, spotbeacon, liveposition, gpx, gps, tracking, spottrace
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 4.7
@@ -26,7 +26,7 @@ After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. 
 
 Now you can enter your XML Feed Id here and give it a nice name. Soon Wordpress will download the points that are present in the XML Feed.
 
-In the mean time we can create an empty map with the Shortcode: `[Spotmap]`
+In the mean time we can create an empty map with the Shortcode: `[spotmap]`
 
 Congrats, you just created your own Spotmap.
 

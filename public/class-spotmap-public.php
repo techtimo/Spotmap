@@ -64,11 +64,11 @@ class Spotmap_Public{
 	function show_point_overview($atts){
 		$atts = shortcode_atts([],$atts);
 		error_log(wp_json_encode($atts));
-		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL']],"id,type, custom_message as Message, FROM_UNIXTIME(time) as Time,feed_name as name","time DESC LIMIT 10");
+		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"id,type, custom_message as Message, FROM_UNIXTIME(time) as Time,feed_name as name, time","time DESC LIMIT 10");
 		$show_columns = ['Time','Message'];
 		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
-		$html .= '<tr><th style="width:7em;"></th>';
+		$html .= '<tr><th>Type</th>';
 		foreach($points[0] as $type=>$value){
 			// error_log($type);
 			if(in_array($type,$show_columns))
@@ -83,7 +83,7 @@ class Spotmap_Public{
 			$html .= '<td>'.$row->type.'<br>'.$row->name.'</td>';
 			foreach($row as $type=>$value2){
 				if(in_array($type,$show_columns)){
-					$html .= '<td>' . htmlspecialchars($value2) . '</td>';
+					$html .= '<td class="spotmap-points "'.$type.'">' . htmlspecialchars($value2) . '</td>';
 				}
 			}
 			$html .= '</tr>';
@@ -189,15 +189,14 @@ class Spotmap_Public{
 	public function the_action_function(){
 		// error_log(print_r($_POST,true));
 		$points = $this->db->get_points($_POST);
+		// error_log(print_r($points,true));
+		if(empty($points)){
+			$points = ['error'=> true,'title'=>'No points to show (yet)','message'=> ""];
+		}
 		if(isset($points['error'])){
 			wp_send_json($points);
 		}
 		
-		foreach ($points as &$point){
-			$point->unixtime = $point->time;
-			$point->date = date_i18n( get_option('date_format'), $point->time );
-			$point->time = date_i18n( get_option('time_format'), $point->time );
-		}
 		wp_send_json($points);
 	}
 
