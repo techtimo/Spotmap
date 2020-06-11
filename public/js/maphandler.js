@@ -160,14 +160,14 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             if (response.length == index + 1) {
                 group.push(L.polyline(line, { color: color }));
                 let htmlLine = ``;
-                if (options.feeds.length > 1)
+                if (options.gpx.length > 1)
                     htmlLine = `<div class="leaflet-control-layers-separator"></div>`
                 overlays[feeds[feeds.length - 1] + htmlLine] = L.layerGroup(group);
             }
         });
         ;
-
-        if (options.gpx)
+        var gpxOverlays={};
+        if (options.gpx){
             // reversed so the first one is added last == on top of all others
             for (const entry of options.gpx.reverse()) {
                 let color = getOption('color', options, { gpx: entry });
@@ -190,21 +190,25 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         let point = L.point([gpxBounds._northEast.lat, gpxBounds._northEast.lng]);
                         let point2 = L.point([gpxBounds._southWest.lat, gpxBounds._southWest.lng]);
                         var bounds = L.bounds([point, point2]);
-                        // e.target._map.fitBounds(bounds);
                     }
                 });
                 // track.bindPopup('Route 1');
                 let html = ` <span class="dot" style="position: relative; right: 5px;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
-                if (overlays[entry.name + html]) {
-                    overlays[entry.name + html].addLayer(track)
+                if (gpxOverlays[entry.name + html]) {
+                    gpxOverlays[entry.name + html].addLayer(track)
                     // shit happens...
                     // TODO merge into one layergroup
 
                 } else {
-                    overlays[entry.name + html] = L.layerGroup([track]);
+                    gpxOverlays[entry.name + html] = L.layerGroup([track]);
                 }
 
             }
+        }
+        // reverse order in menu to have the first element added last but shown on the menu first again
+        gpxProps = Object.keys(gpxOverlays).reverse();
+        gpxProps.forEach(key =>{overlays[key] = gpxOverlays[key]})
+        // overlays = overlays.reverse();
 
         if (Object.keys(overlays).length == 1) {
             overlays[Object.keys(overlays)[0]].addTo(spotmap);
