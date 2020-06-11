@@ -11,11 +11,24 @@
 
 /*style the spot message table*/
 
-tr.spotmap.HELP-CANCEL {
+tr.spotmap td:first-child {
+    width:7em;
+    cursor: pointer;
+}
+tr.spotmap td:first-child:hover {
+    width:7em;
+    cursor: pointer;
+}
+tr.spotmap td:last-child {
+    width:7em;
+    cursor: pointer;
+}
+
+tr.spotmap.HELP-CANCEL td:first-child {
     background-color: rgb(142, 223, 89,0.4);
     border-color: rgb(142, 223, 89);
 }
-tr.spotmap.HELP {
+tr.spotmap.HELP td:first-child{
     background-color: rgb(255, 0, 0);
     border-color: rgb(255, 0, 0);
 }

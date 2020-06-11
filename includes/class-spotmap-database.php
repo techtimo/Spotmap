@@ -33,9 +33,9 @@ class Spotmap_Database {
 			$where .= "AND feed_name IN ('".implode("','", $filter['feeds']). "') ";
 		}
 		if(!empty($filter['type'])){
-			$feeds_on_db = $this->get_all_types();
+			$types_on_db = $this->get_all_types();
 			foreach ($filter['type'] as $value) {
-				if(!in_array($value,$feeds_on_db)){
+				if(!in_array($value,$types_on_db)){
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
 				}
 			}
@@ -65,7 +65,14 @@ class Spotmap_Database {
 			} 
 		}
 		error_log("Where: " .$where);
-		return $wpdb->get_results("SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY ".$order);
+		$points = $wpdb->get_results("SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where."ORDER BY ".$order);
+
+		foreach ($points as &$point){
+			$point->unixtime = $point->time;
+			$point->date = date_i18n( get_option('date_format'), $point->time );
+			$point->time = date_i18n( get_option('time_format'), $point->time );
+		}
+		return $points;
 	}
 
 	public function insert_point($point,$multiple = false){
