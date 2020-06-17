@@ -87,7 +87,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         body.feeds = options.feeds;
     }
     jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-
+        var overlays = {};
         if (response.error) {
             spotmap.setView([51.505, -0.09], 13);
             response.title = response.title || "No data found!";
@@ -96,11 +96,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 .setLatLng([51.5, -0.09])
                 .setContent("<b>" + response.title + "</b><br>" + response.message)
                 .openOn(spotmap);
-            return;
-        }
+        } else{
 
-        var overlays = {},
-            feeds = [response[0].feed_name],
+        
+            var feeds = [response[0].feed_name],
             group = [],
             line = [];
 
@@ -113,8 +112,9 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             if (feeds[feeds.length - 1] != entry.feed_name) {
                 let lastFeed = feeds[feeds.length - 1];
                 let color = getOption('color', options, { feed: lastFeed });
-                group.push(L.polyline(line, { color: color }))
-                overlays[lastFeed] = L.layerGroup(group);
+                group.push(L.polyline(line, { color: color }));
+                let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                overlays[lastFeed + html] = L.layerGroup(group);
                 line = [];
                 group = [];
                 feeds.push(entry.feed_name);
@@ -163,13 +163,16 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             // for last iteration add the rest that is not caught with a feed change
             if (response.length == index + 1) {
                 group.push(L.polyline(line, { color: color }));
-                let htmlLine = ``;
-                if (options.gpx.length > 1)
-                    htmlLine = `<div class="leaflet-control-layers-separator"></div>`
-                overlays[feeds[feeds.length - 1] + htmlLine] = L.layerGroup(group);
+                let html = ``;
+                if (options.gpx.length > 1){
+                    html = ` <span class="dot" style="position: relative; right: ;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                    html += `<div class="leaflet-control-layers-separator"></div>`
+                }
+                overlays[feeds[feeds.length - 1] + html] = L.layerGroup(group);
             }
         });
-        ;
+        }
+        var gpxBounds;
         var gpxOverlays={};
         if (options.gpx){
             // reversed so the first one is added last == on top of all others
@@ -186,23 +189,25 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         'color': color
                     }
                 }
+                
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
                     e.target.getLayers()[0].bindPopup(entry.name);
-                    console.log(entry.name)
-                    if (options.mapcenter == 'gpx') {
-                        let gpxBounds = e.target.getBounds();
-                        let point = L.point([gpxBounds._northEast.lat, gpxBounds._northEast.lng]);
-                        let point2 = L.point([gpxBounds._southWest.lat, gpxBounds._southWest.lng]);
-                        var bounds = L.bounds([point, point2]);
+                    // console.log(entry.name)
+                    if (options.mapcenter == 'gpx' || response.error) {
+                        let gpxBound = e.target.getBounds();
+                        let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
+                        let point2 = L.latLng(gpxBound._southWest.lat, gpxBound._southWest.lng);
+                        if(!gpxBounds){
+                            gpxBounds = L.latLngBounds([point, point2]);
+                        } else {
+                            gpxBounds.extend(L.latLngBounds([point, point2]))
+                        }
+                        spotmap.fitBounds(gpxBounds);
                     }
                 });
-                // track.bindPopup('Route 1');
-                let html = ` <span class="dot" style="position: relative; right: 5px;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
                 if (gpxOverlays[entry.name + html]) {
-                    gpxOverlays[entry.name + html].addLayer(track)
-                    // shit happens...
-                    // TODO merge into one layergroup
-
+                    gpxOverlays[entry.name + html].addLayer(track);
                 } else {
                     gpxOverlays[entry.name + html] = L.layerGroup([track]);
                 }
@@ -220,8 +225,6 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         } else {
             L.control.layers(baseLayers, overlays).addTo(spotmap);
         }
-
-
 
         let all = [];
         // loop thru feeds (not gpx) to get the bounds
@@ -252,7 +255,5 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
-        console.log(spotmap)
-        return spotmap;
     });
 }
