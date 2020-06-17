@@ -39,11 +39,11 @@ function getOption(option, optionObj, config = {}) {
     }
 }
 
-function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'] }) {
+function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'],mapId: "spotmap-container" }) {
     console.log(options);
     var spotmap = null;
     try {
-        spotmap = L.map('spotmap-container', { fullscreenControl: true, });
+        spotmap = L.map(options.mapId, { fullscreenControl: true, });
     } catch (e) {
         return;
     }
@@ -138,6 +138,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             } else {
                 message += "<b>" + entry.type + "</b><br>";
             }
+            if(entry.type == "HELP")
+                markerOptions = { icon: markers['red'] };
+            else if(entry.type == "HELP-CANCEL")
+                markerOptions = { icon: markers['green'] };
 
             message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
             if (entry.custom_message)
