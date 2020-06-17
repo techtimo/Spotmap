@@ -64,7 +64,7 @@ class Spotmap_Public{
 	function show_point_overview($atts){
 		$atts = shortcode_atts([],$atts);
 		error_log(wp_json_encode($atts));
-		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"id,type, custom_message as Message, FROM_UNIXTIME(time) as Time,feed_name as name, time","time DESC LIMIT 10");
+		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"id,type, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time","time DESC LIMIT 10");
 		$show_columns = ['Time','Message'];
 		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
@@ -95,14 +95,14 @@ class Spotmap_Public{
 		return $html;
 	}
 	function show_spotmap($atts,$content){
-		// error_log("Shortcode init vals: ".$atts);
+		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		$a = shortcode_atts( [
 			'height' => '500',
 			'mapcenter' => 'all',
 			'devices' => $this->db->get_all_feednames(),
 			'width' => 'normal',
 			'colors' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-			'splitlines' => '[12,12,12,12]',
+			'splitlines' => '12,12,12,12',
 			'date-range-from' => '',
 			'date' => '',
 			'date-range-to' => '',
@@ -111,7 +111,7 @@ class Spotmap_Public{
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
 			'maps' => ['OpenStreetMap', 'OpenTopoMap']
 		], $atts );
-		error_log(wp_json_encode($a));
+		// error_log(wp_json_encode($a));
 
 		foreach (['devices','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
@@ -162,6 +162,7 @@ class Spotmap_Public{
 				];
 			}
 		}
+		$map_id = "spotmap-container-".mt_rand();
 		// generate the option object for init the map
 		$options = wp_json_encode([
 			'feeds' => $a['devices'],
@@ -173,7 +174,8 @@ class Spotmap_Public{
 				'to' => $a['date-range-to']
 			],
 			'mapcenter' => $a['mapcenter'],
-			'maps' => $a['maps']
+			'maps' => $a['maps'],
+			'mapId' => $map_id
 		]);
 		// error_log($options);
 		
@@ -182,7 +184,7 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="spotmap-container" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {var spotmap = initMap('.$options.');});</script>';
+		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {var spotmap = initMap('.$options.');});</script>';
 	}
 
 
