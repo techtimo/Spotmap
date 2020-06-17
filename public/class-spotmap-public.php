@@ -64,7 +64,7 @@ class Spotmap_Public{
 	function show_point_overview($atts){
 		$atts = shortcode_atts([],$atts);
 		error_log(wp_json_encode($atts));
-		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"id,type, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time","time DESC LIMIT 10");
+		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"DISTINCT type,id, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time","time DESC LIMIT 10");
 		$show_columns = ['Time','Message'];
 		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
@@ -111,14 +111,14 @@ class Spotmap_Public{
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
 			'maps' => ['OpenStreetMap', 'OpenTopoMap']
 		], $atts );
-		// error_log(wp_json_encode($a));
-
+		
 		foreach (['devices','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
 			}
 		}
+		error_log(wp_json_encode($a));
 		foreach ($atts as $key => &$values) {
 			if(is_array($values)){
 				foreach($values as &$entry){
@@ -184,7 +184,7 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript>jQuery( document ).ready(function() {var spotmap = initMap('.$options.');});</script>';
+		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript> jQuery(()=>{initMap('.$options.')})</script>';
 	}
 
 
@@ -195,10 +195,6 @@ class Spotmap_Public{
 		if(empty($points)){
 			$points = ['error'=> true,'title'=>'No points to show (yet)','message'=> ""];
 		}
-		if(isset($points['error'])){
-			wp_send_json($points);
-		}
-		
 		wp_send_json($points);
 	}
 
