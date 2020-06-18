@@ -62,9 +62,32 @@ class Spotmap_Public{
 		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
 	}
 	function show_point_overview($atts){
-		$atts = shortcode_atts([],$atts);
-		error_log(wp_json_encode($atts));
-		$points = $this->db->get_points(['type'=>['HELP','OK','HELP-CANCEL','CUSTOM']],"DISTINCT type,id, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time","time DESC LIMIT 10");
+		$a = shortcode_atts([
+				'count'=>10,
+				'types'=>'HELP,HELP-CANCEL,OK,CUSTOM',
+				'group'=>'',
+			], $atts);
+		foreach (['types'] as $value) {
+			if(!empty($a[$value]) && !is_array($a[$value])){
+				// error_log($a[$value]);
+				$a[$value] = explode(',',$a[$value]);
+			}
+		}
+		foreach ($a as $key => &$values) {
+			if(is_array($values)){
+				foreach($values as &$entry){
+					$entry =_sanitize_text_fields($entry);
+				}
+			} else {
+				$values = _sanitize_text_fields($values);
+			}
+		}
+		
+		$types = $a['types'];
+		$points = $this->db->get_points(['type' => $types]," type,id, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+		if (!empty($points["error"]))
+			return wp_json_encode($points);
+		error_log(wp_json_encode($points));
 		$show_columns = ['Time','Message'];
 		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
@@ -94,6 +117,8 @@ class Spotmap_Public{
 		$html .= '</table>';
 		return $html;
 	}
+
+
 	function show_spotmap($atts,$content){
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		$a = shortcode_atts( [
@@ -101,7 +126,7 @@ class Spotmap_Public{
 			'mapcenter' => 'all',
 			'devices' => $this->db->get_all_feednames(),
 			'width' => 'normal',
-			'colors' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
+			'colors' => ['blue', 'green', 'red', 'orange', 'yellow', 'violet'],
 			'splitlines' => '12,12,12,12',
 			'date-range-from' => '',
 			'date' => '',
