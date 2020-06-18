@@ -84,33 +84,26 @@ class Spotmap_Public{
 		}
 		
 		$types = $a['types'];
-		$points = $this->db->get_points(['type' => $types]," type,id, custom_message as Message, CONVERT_TZ(FROM_UNIXTIME(time), @@session.time_zone,'+00:00') as Time,feed_name as name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+		$points = $this->db->get_points(['type' => $types]," type,id, custom_message as message,feed_name as name, time",$a['group'],"time DESC LIMIT ".$a['count']);
 		if (!empty($points["error"]))
 			return wp_json_encode($points);
 		error_log(wp_json_encode($points));
 		$show_columns = ['Time','Message'];
 		$html = '<table class="wp-list-table widefat striped crontrol-events">';
 		// header row
-		$html .= '<tr><th>Type</th>';
-		foreach($points[0] as $type=>$value){
-			// error_log($type);
-			if(in_array($type,$show_columns))
-				$html .= '<th>' . htmlspecialchars($type) . '</th>';
-		}
-		$html .= '</tr>';
+		$html .= '<tr><th>Type</th><th>Message</th><th>Time</th></tr>';
 	
 		// data rows
 		foreach( $points as $key=>$row){
 			$html .= '<tr class="spotmap '. $row->type;
 			$html .= '" id="spotmap_'.$row->id.'">';
-			$html .= '<td>'.$row->type.'<br>'.$row->name.'</td>';
-			foreach($row as $type=>$value2){
-				if(in_array($type,$show_columns)){
-					$html .= '<td class="spotmap-points "'.$type.'">' . htmlspecialchars($value2) . '</td>';
-				}
-			}
+			$html .= '<td>'.$row->name.'<br>'.$row->type.'</td>';
+			$html .= '<td>'.$row->message.'</td>';
+			$html .= '<td>'.$row->time.'<br>'.$row->date.'</td>';
+
 			$html .= '</tr>';
 		}
+	
 	
 		// finish table and return it
 	

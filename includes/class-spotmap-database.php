@@ -34,7 +34,7 @@ class Spotmap_Database {
 		}
 		if(!empty($filter['type'])){
 			$types_on_db = $this->get_all_types();
-			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','UNLIMITED-TRACK']);
+			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','UNLIMITED-TRACK','TRACK','HELP']);
 			foreach ($filter['type'] as $value) {
 				if(!in_array($value,$allowed_types)){
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
@@ -65,11 +65,12 @@ class Spotmap_Database {
 				}
 			} 
 		}
-		error_log("Where: " .$where);
 		if(!empty($group_by)){
-			$where.= " GROUP BY ".$group_by;
+			$where.= " and id in (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY ".$group_by." )";
 		}
-		$points = $wpdb->get_results("SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order);
+		$query = "SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order;
+		error_log("Query: " .$query);
+		$points = $wpdb->get_results($query);
 
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;

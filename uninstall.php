@@ -5,17 +5,13 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
-foreach (get_option("spotmap_options") as $key => $count) {
-    if($count < 1)
-        continue;
-    
-    for ($i=0; $i < $count; $i++) {
-        delete_option('spotmap_'.$key.'_name'.$i);
-        delete_option('spotmap_'.$key.'_id'.$i);
-        delete_option('spotmap_'.$key.'_password'.$i);
-    }
+foreach (get_option("spotmap_api_providers") as $key => $count) {
+    delete_option('spotmap_'.$key.'_name');
+    delete_option('spotmap_'.$key.'_id');
+    delete_option('spotmap_'.$key.'_password');
+
 }
-delete_option("spotmap_options");
+delete_option("spotmap_api_providers");
 
 global $wpdb;
 $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}spotmap_points");
