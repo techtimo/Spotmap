@@ -39,7 +39,7 @@ function getOption(option, optionObj, config = {}) {
     }
 }
 
-function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'],mapId: "spotmap-container" }) {
+function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'], mapId: "spotmap-container" }) {
     console.log(options);
     var spotmap = null;
     try {
@@ -92,89 +92,92 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             spotmap.setView([51.505, -0.09], 13);
             response.title = response.title || "No data found!";
             response.message = response.message || "";
-            var popup = L.popup()
-                .setLatLng([51.5, -0.09])
-                .setContent("<b>" + response.title + "</b><br>" + response.message)
-                .openOn(spotmap);
-        } else{
+            if(!options.gpx){
+                var popup = L.popup()
+                    .setLatLng([51.5, -0.09])
+                    .setContent("<b>" + response.title + "</b><br>" + response.message)
+                    .openOn(spotmap);
+                spotmap.setView([51.505, -0.09], 13);
+            }
+        } else {
 
-        
+
             var feeds = [response[0].feed_name],
-            group = [],
-            line = [];
-
-
-        // loop thru the data received from backend
-        response.forEach((entry, index) => {
-            let color = getOption('color', options, { feed: entry.feed_name });
-
-            // feed changed in loop
-            if (feeds[feeds.length - 1] != entry.feed_name) {
-                let lastFeed = feeds[feeds.length - 1];
-                let color = getOption('color', options, { feed: lastFeed });
-                group.push(L.polyline(line, { color: color }));
-                let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
-                overlays[lastFeed + html] = L.layerGroup(group);
+                group = [],
                 line = [];
-                group = [];
-                feeds.push(entry.feed_name);
-            } else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
-                group.push(L.polyline(line, { color: color }));
-                // start the new line
-                line = [[entry.latitude, entry.longitude]];
-            }
-
-            else {
-                // a normal iteration adding stuff with default values
-                line.push([entry.latitude, entry.longitude]);
-            }
-
-            let message = '';
-            let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
-
-            var markerOptions = { icon: markers[color] };
-            if (tinyTypes.includes(entry.type)) {
-                markerOptions.icon = markers.tiny[color];
-            } else {
-                message += "<b>" + entry.type + "</b><br>";
-            }
-            if(entry.type == "HELP")
-                markerOptions = { icon: markers['red'] };
-            else if(entry.type == "HELP-CANCEL")
-                markerOptions = { icon: markers['green'] };
-
-            message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-            if (entry.custom_message)
-                message += 'Message: ' + entry.custom_message + '</br>';
-            if (entry.altitude > 0)
-                message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-            if (entry.battery_status == 'LOW')
-                message += 'Battery status is low!' + '</br>';
 
 
-            var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
-            group.push(marker);
-            jQuery("#spotmap_" + entry.id).click(function () {
-                marker.togglePopup();
-                spotmap.panTo([entry.latitude, entry.longitude], 13)
-            });
+            // loop thru the data received from backend
+            response.forEach((entry, index) => {
+                let color = getOption('color', options, { feed: entry.feed_name });
 
-
-            // for last iteration add the rest that is not caught with a feed change
-            if (response.length == index + 1) {
-                group.push(L.polyline(line, { color: color }));
-                let html = ``;
-                if (options.gpx.length > 1){
-                    html = ` <span class="dot" style="position: relative; right: ;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
-                    html += `<div class="leaflet-control-layers-separator"></div>`
+                // feed changed in loop
+                if (feeds[feeds.length - 1] != entry.feed_name) {
+                    let lastFeed = feeds[feeds.length - 1];
+                    let color = getOption('color', options, { feed: lastFeed });
+                    group.push(L.polyline(line, { color: color }));
+                    let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                    overlays[lastFeed + html] = L.layerGroup(group);
+                    line = [];
+                    group = [];
+                    feeds.push(entry.feed_name);
+                } else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
+                    group.push(L.polyline(line, { color: color }));
+                    // start the new line
+                    line = [[entry.latitude, entry.longitude]];
                 }
-                overlays[feeds[feeds.length - 1] + html] = L.layerGroup(group);
-            }
-        });
+
+                else {
+                    // a normal iteration adding stuff with default values
+                    line.push([entry.latitude, entry.longitude]);
+                }
+
+                let message = '';
+                let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
+
+                var markerOptions = { icon: markers[color] };
+                if (tinyTypes.includes(entry.type)) {
+                    markerOptions.icon = markers.tiny[color];
+                } else {
+                    message += "<b>" + entry.type + "</b><br>";
+                }
+                if (entry.type == "HELP")
+                    markerOptions = { icon: markers['red'] };
+                else if (entry.type == "HELP-CANCEL")
+                    markerOptions = { icon: markers['green'] };
+
+                message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                if (entry.custom_message)
+                    message += 'Message: ' + entry.custom_message + '</br>';
+                if (entry.altitude > 0)
+                    message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+                if (entry.battery_status == 'LOW')
+                    message += 'Battery status is low!' + '</br>';
+
+
+                var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
+                group.push(marker);
+                jQuery("#spotmap_" + entry.id).click(function () {
+                    marker.togglePopup();
+                    spotmap.panTo([entry.latitude, entry.longitude], 13)
+                });
+
+
+                // for last iteration add the rest that is not caught with a feed change
+                if (response.length == index + 1) {
+                    group.push(L.polyline(line, { color: color }));
+                    let html = ``;
+                    if (options.gpx.length > 1) {
+                        html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
+                        html += `<div class="leaflet-control-layers-separator"></div>`
+                    }
+                    overlays[feeds[feeds.length - 1] + html] = L.layerGroup(group);
+                }
+            });
         }
         var gpxBounds;
-        var gpxOverlays={};
-        if (options.gpx){
+        var gpxOverlays = {};
+        if (options.gpx) {
             // reversed so the first one is added last == on top of all others
             for (const entry of options.gpx.reverse()) {
                 let color = getOption('color', options, { gpx: entry });
@@ -189,7 +192,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         'color': color
                     }
                 }
-                
+
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
                     e.target.getLayers()[0].bindPopup(entry.name);
                     // console.log(entry.name)
@@ -197,7 +200,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         let gpxBound = e.target.getBounds();
                         let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
                         let point2 = L.latLng(gpxBound._southWest.lat, gpxBound._southWest.lng);
-                        if(!gpxBounds){
+                        if (!gpxBounds) {
                             gpxBounds = L.latLngBounds([point, point2]);
                         } else {
                             gpxBounds.extend(L.latLngBounds([point, point2]))
@@ -216,7 +219,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         }
         // reverse order in menu to have the first element added last but shown on the menu first again
         gpxProps = Object.keys(gpxOverlays).reverse();
-        gpxProps.forEach(key =>{overlays[key] = gpxOverlays[key]})
+        gpxProps.forEach(key => { overlays[key] = gpxOverlays[key] })
         // overlays = overlays.reverse();
 
         if (Object.keys(overlays).length == 1) {

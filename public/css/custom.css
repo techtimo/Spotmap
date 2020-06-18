@@ -24,7 +24,8 @@ tr.spotmap td:last-child {
     cursor: pointer;
 }
 
-tr.spotmap.HELP-CANCEL td:first-child {
+tr.spotmap.HELP-CANCEL td:first-child,
+tr.spotmap.STATUS td:first-child {
     background-color: rgb(142, 223, 89,0.8);
     border-color: rgba(102, 255, 0, 0.8);
 }
