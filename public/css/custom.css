@@ -15,13 +15,9 @@ tr.spotmap td:first-child {
     width:7em;
     cursor: pointer;
 }
-tr.spotmap td:first-child:hover {
-    width:7em;
-    cursor: pointer;
-}
+
 tr.spotmap td:last-child {
     width:7em;
-    cursor: pointer;
 }
 
 tr.spotmap.HELP-CANCEL td:first-child,

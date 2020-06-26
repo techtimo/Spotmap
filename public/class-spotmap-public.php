@@ -208,7 +208,7 @@ class Spotmap_Public{
 
 	public function the_action_function(){
 		// error_log(print_r($_POST,true));
-		$points = $this->db->get_points($_POST);
+		$points = $this->db->get_points($_POST,'*',$_POST['groupBy'],$_POST['orderBy']);
 		// error_log(print_r($points,true));
 		if(empty($points)){
 			$points = ['error'=> true,'title'=>'No points to show (yet)','message'=> ""];

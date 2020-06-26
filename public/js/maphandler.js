@@ -82,12 +82,14 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             to: options.dateRange.to,
         },
         'date': options.date,
+        'orderBy': 'feed_name, time'
     }
     if (options.feeds) {
         body.feeds = options.feeds;
     }
     jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-        var overlays = {};
+        var overlays = {},
+            lastAdded = {marker: {},line:{}};
         if (response.error) {
             spotmap.setView([51.505, -0.09], 13);
             response.title = response.title || "No data found!";
@@ -110,25 +112,33 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             // loop thru the data received from backend
             response.forEach((entry, index) => {
                 let color = getOption('color', options, { feed: entry.feed_name });
+                lastAdded.marker[entry.feed_name] = entry.unixtime;
 
                 // feed changed in loop
                 if (feeds[feeds.length - 1] != entry.feed_name) {
                     let lastFeed = feeds[feeds.length - 1];
                     let color = getOption('color', options, { feed: lastFeed });
-                    group.push(L.polyline(line, { color: color }));
+                    lastAdded.line[lastFeed] = L.polyline(line, { color: color });
+                    group.push(lastAdded.line[lastFeed]);
                     let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
-                    overlays[lastFeed + html] = L.layerGroup(group);
+                    if(options.feeds.length > 1){
+                        overlays[lastFeed] = {"group": L.layerGroup(group), "label":lastFeed + html};
+                    } else {
+                        overlays[lastFeed] = {"group": L.layerGroup(group), "label":lastFeed};
+                    }
                     line = [];
                     group = [];
                     feeds.push(entry.feed_name);
-                } else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
+                } 
+                // do we need to split the line?
+                else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
                     group.push(L.polyline(line, { color: color }));
                     // start the new line
                     line = [[entry.latitude, entry.longitude]];
                 }
 
+                // a normal iteration adding stuff with default values
                 else {
-                    // a normal iteration adding stuff with default values
                     line.push([entry.latitude, entry.longitude]);
                 }
 
@@ -165,13 +175,14 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
 
                 // for last iteration add the rest that is not caught with a feed change
                 if (response.length == index + 1) {
-                    group.push(L.polyline(line, { color: color }));
+                    lastAdded.line[entry.feed_name] = L.polyline(line, { color: color });
+                    group.push(lastAdded.line[entry.feed_name]);
                     let html = ``;
                     if (options.gpx.length > 1) {
                         html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
                         html += `<div class="leaflet-control-layers-separator"></div>`
                     }
-                    overlays[feeds[feeds.length - 1] + html] = L.layerGroup(group);
+                    overlays[feeds[feeds.length - 1]] = {"group": L.layerGroup(group), "label":feeds[feeds.length - 1] + html};
                 }
             });
         }
@@ -209,10 +220,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                     }
                 });
                 let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
-                if (gpxOverlays[entry.name + html]) {
-                    gpxOverlays[entry.name + html].addLayer(track);
+                if (gpxOverlays[entry.name]) {
+                    gpxOverlays[entry.name].group.addLayer(track);
                 } else {
-                    gpxOverlays[entry.name + html] = L.layerGroup([track]);
+                    gpxOverlays[entry.name] = {group: L.layerGroup([track]), 'label': entry.name + html};
                 }
 
             }
@@ -221,19 +232,23 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         gpxProps = Object.keys(gpxOverlays).reverse();
         gpxProps.forEach(key => { overlays[key] = gpxOverlays[key] })
         // overlays = overlays.reverse();
+        displayOverlays = {};
+        for (let key in overlays) {
+            displayOverlays[overlays[key].label] = overlays[key].group;
+        }
 
         if (Object.keys(overlays).length == 1) {
             overlays[Object.keys(overlays)[0]].addTo(spotmap);
             L.control.layers(baseLayers).addTo(spotmap);
         } else {
-            L.control.layers(baseLayers, overlays).addTo(spotmap);
+            L.control.layers(baseLayers, displayOverlays).addTo(spotmap);
         }
 
         let all = [];
         // loop thru feeds (not gpx) to get the bounds
-        for (const feed in overlays) {
-            if (overlays.hasOwnProperty(feed)) {
-                const element = overlays[feed];
+        for (const feed in displayOverlays) {
+            if (displayOverlays.hasOwnProperty(feed)) {
+                const element = displayOverlays[feed];
                 element.addTo(spotmap);
                 const layers = element.getLayers();
                 layers.forEach(element => {
@@ -258,5 +273,47 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
+        var refresh = setInterval(function(){ 
+            body.groupBy = 'feed_name';
+            body.orderBy = 'time DESC';
+            jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                // console.log(response);
+                response.forEach((entry, index) => {
+                    if(lastAdded.marker[entry.feed_name] < entry.unixtime){
+                        let color = getOption('color', options, { feed: entry.feed_name });
+                        lastAdded.line[entry.feed_name].addLatLng([entry.latitude, entry.longitude]);
+
+                        let message = '';
+                        let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
+        
+                        var markerOptions = { icon: markers[color] };
+                        if (tinyTypes.includes(entry.type)) {
+                            markerOptions.icon = markers.tiny[color];
+                        } else {
+                            message += "<b>" + entry.type + "</b><br>";
+                        }
+                        if (entry.type == "HELP")
+                            markerOptions = { icon: markers['red'] };
+                        else if (entry.type == "HELP-CANCEL")
+                            markerOptions = { icon: markers['green'] };
+        
+                        message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                        if (entry.custom_message)
+                            message += 'Message: ' + entry.custom_message + '</br>';
+                        if (entry.altitude > 0)
+                            message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+                        if (entry.battery_status == 'LOW')
+                            message += 'Battery status is low!' + '</br>';
+
+                        let marker = L.marker([entry.latitude, entry.longitude], { icon: markers[color] }).bindPopup(message);
+                        overlays[entry.feed_name].group.addLayer(marker);
+                        if(options.mapcenter == 'last'){
+                            spotmap.setView([entry.latitude, entry.longitude], 13);
+                        }
+                    }
+                });
+                console.log(response)
+            });
+        }, 30000);
     });
 }
