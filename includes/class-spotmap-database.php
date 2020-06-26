@@ -74,14 +74,18 @@ class Spotmap_Database {
 
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;
-			$point->date = date_i18n( get_option('date_format'), $point->time );
-			$point->time = date_i18n( get_option('time_format'), $point->time );
+			$time = new DateTime();
+			$time->setTimestamp($point->unixtime);
+			$time->setTimezone(wp_timezone());
+			// error_log(wp_timezone_string());
+			$point->date = date_i18n( get_option('date_format'), $time );
+			$point->time = date_i18n( get_option('time_format'), $time );
 		}
 		return $points;
 	}
 
 	public function insert_point($point,$multiple = false){
-		error_log(print_r($point,true));
+		// error_log(print_r($point,true));
 		$last_point = $this->get_last_point($point['feedId']);
 		
 		if($point['latitude'] > 90 || $point['latitude']< -90){
