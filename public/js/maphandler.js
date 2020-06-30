@@ -39,8 +39,15 @@ function getOption(option, optionObj, config = {}) {
     }
 }
 
+function debug(message,debug=false){
+    if(debug){
+        console.log(message)
+    }
+}
+
 function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'all', gpx: {}, maps: ['OpenStreetMap'], mapId: "spotmap-container" }) {
-    console.log(options);
+    debug("Configuration for map setup:",options.debug);
+    debug(options,options.debug);
     var spotmap = null;
     try {
         spotmap = L.map(options.mapId, { fullscreenControl: true, });
@@ -70,7 +77,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
     });
 
-    var maps = spotmapjsobj.maps;
+    // load maps
     var baseLayers = getOption('maps', options);
 
     baseLayers[options.maps[0]].addTo(spotmap);
@@ -78,8 +85,8 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
     let body = {
         'action': 'get_positions',
         'date-range': {
-            from: options.dateRange.from,
-            to: options.dateRange.to,
+            'from': options.dateRange.from,
+            'to': options.dateRange.to,
         },
         'date': options.date,
         'orderBy': 'feed_name, time'
@@ -89,8 +96,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
     }
     jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
         var overlays = {},
-            lastAdded = {marker: {},line:{}};
+            lastAdded = {'marker': {},'line':{}};
         if (response.error) {
+            debug("There was an error in the response", options.debug);
+            debug(response, options.debug);
             spotmap.setView([51.505, -0.09], 13);
             response.title = response.title || "No data found!";
             response.message = response.message || "";
@@ -111,13 +120,13 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
 
             // loop thru the data received from backend
             response.forEach((entry, index) => {
-                let color = getOption('color', options, { feed: entry.feed_name });
+                let color = getOption('color', options, { 'feed': entry.feed_name });
                 lastAdded.marker[entry.feed_name] = entry.unixtime;
 
                 // feed changed in loop
                 if (feeds[feeds.length - 1] != entry.feed_name) {
                     let lastFeed = feeds[feeds.length - 1];
-                    let color = getOption('color', options, { feed: lastFeed });
+                    let color = getOption('color', options, { 'feed': lastFeed });
                     lastAdded.line[lastFeed] = L.polyline(line, { color: color });
                     group.push(lastAdded.line[lastFeed]);
                     let html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
@@ -131,7 +140,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                     feeds.push(entry.feed_name);
                 } 
                 // do we need to split the line?
-                else if (getOption('splitLines', options, { feed: entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
+                else if (getOption('splitLines', options, { 'feed': entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= options.styles[entry.feed_name].splitLines * 60 * 60) {
                     group.push(L.polyline(line, { color: color }));
                     // start the new line
                     line = [[entry.latitude, entry.longitude]];
@@ -143,7 +152,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 }
 
                 let message = '';
-                let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
+                let tinyTypes = getOption('tinyTypes', options, { 'feed': entry.feed_name });
 
                 var markerOptions = { icon: markers[color] };
                 if (tinyTypes.includes(entry.type)) {
@@ -175,10 +184,10 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
 
                 // for last iteration add the rest that is not caught with a feed change
                 if (response.length == index + 1) {
-                    lastAdded.line[entry.feed_name] = L.polyline(line, { color: color });
+                    lastAdded.line[entry.feed_name] = L.polyline(line, { 'color': color });
                     group.push(lastAdded.line[entry.feed_name]);
                     let html = ``;
-                    if (options.gpx.length > 1) {
+                    if (options.feeds.length > 1) {
                         html = ` <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ` + color + `;border-radius: 50%;display: inline-block;"></span>`;
                         html += `<div class="leaflet-control-layers-separator"></div>`
                     }
@@ -237,8 +246,8 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             displayOverlays[overlays[key].label] = overlays[key].group;
         }
 
-        if (Object.keys(overlays).length == 1) {
-            overlays[Object.keys(overlays)[0]].addTo(spotmap);
+        if (Object.keys(displayOverlays).length == 1) {
+            displayOverlays[Object.keys(displayOverlays)[0]].addTo(spotmap);
             L.control.layers(baseLayers).addTo(spotmap);
         } else {
             L.control.layers(baseLayers, displayOverlays).addTo(spotmap);
@@ -277,7 +286,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
             body.groupBy = 'feed_name';
             body.orderBy = 'time DESC';
             jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-                // console.log(response);
+                debug("Checking for new points ...",options.debug);
                 response.forEach((entry, index) => {
                     if(lastAdded.marker[entry.feed_name] < entry.unixtime){
                         let color = getOption('color', options, { feed: entry.feed_name });
@@ -312,7 +321,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         }
                     }
                 });
-                console.log(response)
+                
             });
         }, 30000);
     });
