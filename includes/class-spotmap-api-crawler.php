@@ -30,6 +30,10 @@ class Spotmap_Api_Crawler {
 			
 			// error_log($feed_url);
 			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
+			if(empty($jsonraw)){
+				error_log("Empty Response");
+				return false;
+			}
 	
 			$json = json_decode($jsonraw, true)['response'];
 
@@ -37,10 +41,10 @@ class Spotmap_Api_Crawler {
 				//E-0195 means the feed has no points to show
 				$error_code = $json['errors']['error']['code'];
 				if ($error_code === "E-0195") {
-					return;
+					return false;
 				}
 				trigger_error($json['errors']['error']['description'], E_USER_WARNING);
-				return;
+				return false;
 			}
 			$messages = $json['feedMessageResponse']['messages']['message'];
 			
@@ -56,6 +60,7 @@ class Spotmap_Api_Crawler {
 				$this->db->insert_point($point);
 			}
 			$i += $json['feedMessageResponse']['count'] + 1;
+			return true;
 		}
 
 	}
