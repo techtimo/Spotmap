@@ -71,22 +71,8 @@ class Spotmap_Database {
 		$query = "SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order;
 		error_log("Query: " .$query);
 		$points = $wpdb->get_results($query);
-		error_log(print_r($points[0],true ));
-		$date = new DateTime("@".$points[0]->time);
-		// $date->setTimestamp(intval($points[0]->time));
-		// error_log($date);
-
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;
-			$date = new DateTime();
-			// $date = date_create_from_format('U', $point->unixtime,);
-			// error_log(gettype($point->unixtime));
-			// date_timestamp_set($date, intval($point->unixtime));
-			// $date->setTimestamp($point->unixtime);
-			$date->setTimezone(wp_timezone());
-
-
-
 			// $point->date = date_i18n( get_option('date_format'), $date );
 			$point->date = wp_date(get_option('date_format'),intval($point->unixtime));
 			$point->time = wp_date(get_option('time_format'),intval($point->unixtime));
@@ -106,8 +92,7 @@ class Spotmap_Database {
 		}
 		global $wpdb;
 		return $wpdb->insert(
-			$wpdb->prefix."spotmap_points",
-			array(
+			$wpdb->prefix."spotmap_points",	[
 				'feed_name' => $point['feedName'],
 				'id' => $point['id'],
 				'type' => $point['messageType'],
@@ -118,10 +103,10 @@ class Spotmap_Database {
 				'battery_status' => $point['batteryState'],
 				'custom_message' => $point['messageContent'],
 				'feed_id' => $point['feedId']
-			)
+			]
 		);
 	}
-		/**
+	/**
 	 * This function checks if a point is stored is preseent in the db
      * @param $id int The id of the point to check
 	 *
