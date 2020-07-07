@@ -33,6 +33,10 @@ class Spotmap_Activator {
 			$data_r = ['findmespot' => "Spot Feed"];
 			add_option('spotmap_api_providers', $data_r);
 		}
+		if(!get_option('spotmap_custom_messages')){
+			$data_r = ['findmespot' => "Spot Feed"];
+			add_option('spotmap_custom_messages', []);
+		}
 
 	}
 }

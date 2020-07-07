@@ -76,6 +76,11 @@ class Spotmap_Database {
 			// $point->date = date_i18n( get_option('date_format'), $date );
 			$point->date = wp_date(get_option('date_format'),intval($point->unixtime));
 			$point->time = wp_date(get_option('time_format'),intval($point->unixtime));
+
+			if(!empty($point->custom_message)){
+				$value = !empty( get_option('spotmap_custom_messages')[$point->type] ) ? get_option('spotmap_custom_messages')[$point->type] : $point->custom_message;
+				$point->custom_message = $value;
+			}
 		}
 		return $points;
 	}

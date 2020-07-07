@@ -65,9 +65,10 @@ class Spotmap_Public{
 		$a = shortcode_atts([
 				'count'=>10,
 				'types'=>'HELP,HELP-CANCEL,OK,CUSTOM',
+				'devices' => $this->db->get_all_feednames(),
 				'group'=>'',
 			], $atts);
-		foreach (['types'] as $value) {
+		foreach (['types','devices'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -113,7 +114,7 @@ class Spotmap_Public{
 
 
 	function show_spotmap($atts,$content){
-		// error_log("Shortcode init vals: ".wp_json_encode($atts));
+		error_log("Shortcode init vals: ".wp_json_encode($atts));
 		$a = shortcode_atts( [
 			'height' => '500',
 			'mapcenter' => 'all',
@@ -127,7 +128,8 @@ class Spotmap_Public{
 			'gpx-name' => [],
 			'gpx-url' => [],
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-			'maps' => ['OpenStreetMap', 'OpenTopoMap']
+			'maps' => ['OpenStreetMap', 'OpenTopoMap'],
+			'debug'=> false,
 		], $atts );
 		
 		foreach (['devices','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
@@ -193,6 +195,7 @@ class Spotmap_Public{
 			],
 			'mapcenter' => $a['mapcenter'],
 			'maps' => $a['maps'],
+			'debug' => $a['debug'],
 			'mapId' => $map_id
 		]);
 		// error_log($options);
