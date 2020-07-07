@@ -27,9 +27,9 @@ class Spotmap_Admin {
 		foreach (get_option("spotmap_api_providers") as $key => $name) {
 			$ids = get_option("spotmap_".$key."_id");
 			$count = count($ids);
-			register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_name',['sanitize_callback'=>[$this, 'spotmap_validate_feed_name']]);
-			register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_id', ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
-			register_setting( 'spotmap-settings-group', 'spotmap_'.$key.'_password');
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_name',['sanitize_callback'=>[$this, 'spotmap_validate_feed_name']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_id', ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_password');
 			if($count < 1){
 				continue;
 			}
@@ -37,7 +37,7 @@ class Spotmap_Admin {
 				$key.'-feeds',
 				$name,
 				[$this,'settings_section_'.$key],
-				'spotmap-settings-group'
+				'spotmap-feed-group'
 			);
 			for ($i=0; $i < $count; $i++) { 
 				
@@ -45,7 +45,7 @@ class Spotmap_Admin {
 					'spotmap_'.$key.'_name['.$i.']',
 					'Feed Name',
 					[$this, 'generate_text_field'],
-					'spotmap-settings-group',
+					'spotmap-feed-group',
 					'findmespot-feeds',
 					['spotmap_'.$key.'_name['.$i.']',
 					get_option('spotmap_'.$key.'_name')[$i]]
@@ -54,7 +54,7 @@ class Spotmap_Admin {
 					'spotmap_'.$key.'_id['.$i.']',
 					'Feed Id',
 					[$this, 'generate_text_field'],
-					'spotmap-settings-group',
+					'spotmap-feed-group',
 					'findmespot-feeds',
 					['spotmap_'.$key.'_id['.$i.']',get_option('spotmap_'.$key.'_id')[$i]]
 				);
@@ -62,14 +62,32 @@ class Spotmap_Admin {
 					'spotmap_'.$key.'_password['.$i.']',
 					'Feed password',
 					[$this, 'generate_password_field'],
-					'spotmap-settings-group',
+					'spotmap-feed-group',
 					'findmespot-feeds',
 					['spotmap_'.$key.'_password['.$i.']',get_option('spotmap_'.$key.'_password')[$i]]	
 				);
 				
 			}
 		}
-		
+		register_setting( 'spotmap-messages-group', 'spotmap_custom_messages');
+		add_settings_section(
+			'spotmap-messages',
+			'Set Custom messages',
+			[$this,'settings_section_messages'],
+			'spotmap-messages-group'
+		);
+		foreach (['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEW-MOVEMENT'] as $index) {
+			$value = isset( get_option('spotmap_custom_messages')[$index] ) ? get_option('spotmap_custom_messages')[$index] : '';
+			add_settings_field(
+				'spotmap_custom_messages['.$index.']',
+				$index,
+				[$this, 'generate_text_field'],
+				'spotmap-messages-group',
+				'spotmap-messages',
+				['spotmap_custom_messages['.$index.']', $value
+				]
+			);
+		}
 		register_setting( 'spotmap-settings-group', 'spotmap_mapbox_token');
 		add_settings_section(
 			'mapbox',
@@ -91,7 +109,6 @@ class Spotmap_Admin {
 	function generate_text_field($args){
 		// get the value of the setting we've registered with register_setting()
 		$setting = $args[1];
-		// output the field
 		?>
 		<input type="text" name="<?php echo $args[0]?>" value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
 		<?php
@@ -100,7 +117,6 @@ class Spotmap_Admin {
 	function generate_password_field($args){
 		// get the value of the setting we've registered with register_setting()
 		$setting = $args[1];
-		// output the field
 		?>
 		<input type="password" name="<?php echo $args[0]?>"value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
 		<p class="description">Leave this empty if the feed is public</p>
@@ -109,6 +125,10 @@ class Spotmap_Admin {
 
 	function settings_section_findmespot($args){
 		echo '<p id='.$args['id'].'>Enter your Feed details here</p>';
+	}
+	
+	function settings_section_messages($args){
+		echo '<p id='.$args['id'].'>If you have sensitive Information in your custom messages, you can overide those messages here.</p>';
 	}
 	
 	function spotmap_validate_feed_name($new_feed_name){

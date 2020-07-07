@@ -204,9 +204,12 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 let gpxOption = {
                     async: true,
                     marker_options: {
+                        wptIconTypeUrls: {
+                            '': spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png'
+                        },
                         startIconUrl: '',
                         endIconUrl: '',
-                        shadowUrl: '',
+                        shadowUrl: spotmapjsobj.url + 'leaflet-gpx/pin-shadow.png',
                     },
                     polyline_options: {
                         'color': color
@@ -273,12 +276,14 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
         } else if (options.mapcenter == 'last') {
             var lastPoint;
             var time = 0;
-            response.forEach((entry, index) => {
-                if (time < entry.unixtime) {
-                    time = entry.unixtime;
-                    lastPoint = [entry.latitude, entry.longitude];
-                }
-            });
+            if (response.length){
+                response.forEach((entry, index) => {
+                    if (time < entry.unixtime) {
+                        time = entry.unixtime;
+                        lastPoint = [entry.latitude, entry.longitude];
+                    }
+                });
+            }
             spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
@@ -289,6 +294,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                 debug("Checking for new points ...",options.debug);
                 response.forEach((entry, index) => {
                     if(lastAdded.marker[entry.feed_name] < entry.unixtime){
+                        lastAdded.marker[entry.feed_name] = entry.unixtime;
                         let color = getOption('color', options, { feed: entry.feed_name });
                         lastAdded.line[entry.feed_name].addLatLng([entry.latitude, entry.longitude]);
 
@@ -314,7 +320,7 @@ function initMap(options = { feeds: [], styles: {}, dateRange: {}, mapcenter: 'a
                         if (entry.battery_status == 'LOW')
                             message += 'Battery status is low!' + '</br>';
 
-                        let marker = L.marker([entry.latitude, entry.longitude], { icon: markers[color] }).bindPopup(message);
+                        let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
                         overlays[entry.feed_name].group.addLayer(marker);
                         if(options.mapcenter == 'last'){
                             spotmap.setView([entry.latitude, entry.longitude], 13);
