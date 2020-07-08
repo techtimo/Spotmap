@@ -118,7 +118,7 @@ class Spotmap_Admin {
 		// get the value of the setting we've registered with register_setting()
 		$setting = $args[1];
 		?>
-		<textarea type="text" cols="50" rows=3 name="<?php echo $args[0]?>"><?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?></textarea>
+		<textarea type="text" maxlength="500" cols="50" rows=3 name="<?php echo $args[0]?>"><?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?></textarea>
 		<?php
 	}
 
