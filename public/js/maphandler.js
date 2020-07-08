@@ -173,8 +173,8 @@ function initMap(options) {
                     markerOptions = { icon: markers['green'] };
 
                 message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                if (entry.custom_message)
-                    message += 'Message: ' + entry.custom_message + '</br>';
+                if (entry.message)
+                    message += 'Message: ' + entry.message + '</br>';
                 if (entry.altitude > 0)
                     message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
                 if (entry.battery_status == 'LOW')
@@ -220,6 +220,9 @@ function initMap(options) {
                         //     '': spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png'
                         // },
                         wptIcons: {
+                            '': markers[color],
+                        },
+                        wptIconsType: {
                             '': markers[color],
                         },
                         startIconUrl: '',
@@ -328,8 +331,8 @@ function initMap(options) {
                             markerOptions = { icon: markers['green'] };
         
                         message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                        if (entry.custom_message)
-                            message += 'Message: ' + entry.custom_message + '</br>';
+                        if (entry.message)
+                            message += 'Message: ' + entry.message + '</br>';
                         if (entry.altitude > 0)
                             message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
                         if (entry.battery_status == 'LOW')
