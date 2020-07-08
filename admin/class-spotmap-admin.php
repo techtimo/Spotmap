@@ -76,12 +76,12 @@ class Spotmap_Admin {
 			[$this,'settings_section_messages'],
 			'spotmap-messages-group'
 		);
-		foreach (['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEW-MOVEMENT'] as $index) {
+		foreach (['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEWMOVEMENT','STOP'] as $index) {
 			$value = isset( get_option('spotmap_custom_messages')[$index] ) ? get_option('spotmap_custom_messages')[$index] : '';
 			add_settings_field(
 				'spotmap_custom_messages['.$index.']',
 				$index,
-				[$this, 'generate_text_field'],
+				[$this, 'generate_text_area'],
 				'spotmap-messages-group',
 				'spotmap-messages',
 				['spotmap_custom_messages['.$index.']', $value
@@ -113,6 +113,14 @@ class Spotmap_Admin {
 		<input type="text" name="<?php echo $args[0]?>" value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
 		<?php
 	}
+	
+	function generate_text_area($args){
+		// get the value of the setting we've registered with register_setting()
+		$setting = $args[1];
+		?>
+		<textarea type="text" cols="50" rows=3 name="<?php echo $args[0]?>"><?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?></textarea>
+		<?php
+	}
 
 	function generate_password_field($args){
 		// get the value of the setting we've registered with register_setting()
@@ -128,7 +136,8 @@ class Spotmap_Admin {
 	}
 	
 	function settings_section_messages($args){
-		echo '<p id='.$args['id'].'>If you have sensitive Information in your custom messages, you can overide those messages here.</p>';
+		echo '<p id='.$args['id'].'>If you have sensitive Information in your predefined messages, you can overide those messages here.<br>
+		</p>';
 	}
 	
 	function spotmap_validate_feed_name($new_feed_name){

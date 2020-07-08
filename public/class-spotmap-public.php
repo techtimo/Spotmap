@@ -85,7 +85,7 @@ class Spotmap_Public{
 		}
 		
 		$types = $a['types'];
-		$points = $this->db->get_points(['type' => $types]," type,id, custom_message as message,feed_name as name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+		$points = $this->db->get_points(['type' => $types]," type,id,message,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
 		if (!empty($points["error"]))
 			return wp_json_encode($points);
 		error_log(wp_json_encode($points));
@@ -98,7 +98,7 @@ class Spotmap_Public{
 		foreach( $points as $key=>$row){
 			$html .= '<tr class="spotmap '. $row->type;
 			$html .= '" id="spotmap_'.$row->id.'">';
-			$html .= '<td>'.$row->name.'<br>'.$row->type.'</td>';
+			$html .= '<td>'.$row->feed_name.'<br>'.$row->type.'</td>';
 			$html .= '<td>'.$row->message.'</td>';
 			$html .= '<td>'.$row->time.'<br>'.$row->date.'</td>';
 
