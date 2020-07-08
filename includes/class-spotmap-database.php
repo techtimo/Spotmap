@@ -68,7 +68,7 @@ class Spotmap_Database {
 		if(!empty($group_by)){
 			$where.= " and id in (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY ".$group_by." )";
 		}
-		$query = "SELECT ".$select." FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order;
+		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order;
 		error_log("Query: " .$query);
 		$points = $wpdb->get_results($query);
 		foreach ($points as &$point){
@@ -78,8 +78,10 @@ class Spotmap_Database {
 			$point->time = wp_date(get_option('time_format'),intval($point->unixtime));
 
 			if(!empty($point->custom_message)){
-				$value = !empty( get_option('spotmap_custom_messages')[$point->type] ) ? get_option('spotmap_custom_messages')[$point->type] : $point->custom_message;
-				$point->custom_message = $value;
+				$point->message = $point->custom_message;
+			}
+			if(!empty(get_option('spotmap_custom_messages')[$point->type])){
+				$point->message = get_option('spotmap_custom_messages')[$point->type];
 			}
 		}
 		return $points;
@@ -106,7 +108,8 @@ class Spotmap_Database {
 				'longitude' => $point['longitude'],
 				'altitude' => $point['altitude'],
 				'battery_status' => $point['batteryState'],
-				'custom_message' => $point['messageContent'],
+				'message' => $point['messageContent'],
+				'custom_message' => !empty( get_option('spotmap_custom_messages')[$point['messageType']] ) ? get_option('spotmap_custom_messages')[$point['messageType']] : NULL,
 				'feed_id' => $point['feedId']
 			]
 		);
