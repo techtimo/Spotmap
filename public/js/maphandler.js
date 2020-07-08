@@ -213,12 +213,6 @@ function initMap(options) {
                 let gpxOption = {
                     async: true,
                     marker_options: {
-                        // wptIconTypeUrls: {
-                        //     '': spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png'
-                        // },
-                        // wptIconUrls: {
-                        //     '': spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png'
-                        // },
                         wptIcons: {
                             '': markers[color],
                         },
@@ -235,8 +229,8 @@ function initMap(options) {
                 }
 
                 let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
-                    e.target.getLayers()[0].bindPopup(entry.name);
-                    // console.log(entry.name)
+                    // e.target.getLayers()[0].bindPopup(entry.name);
+                    // console.log(e)
                     if (options.mapcenter == 'gpx' || response.error) {
                         let gpxBound = e.target.getBounds();
                         let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
@@ -248,7 +242,14 @@ function initMap(options) {
                         }
                         spotmap.fitBounds(gpxBounds);
                     }
-                });
+                }).on('addpoint', function(e) {
+                    // console.log('Added ' + e.point_type + ' point: ' + e.point);
+                    // e.point.openPopup();
+                    console.log(e);
+                  }).on('addline', function(e) {
+                    e.line.bindPopup(entry.name);
+                    console.log(e);
+                  });
                 let html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
                 if (gpxOverlays[entry.name]) {
                     gpxOverlays[entry.name].group.addLayer(track);
