@@ -205,7 +205,7 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript> jQuery(()=>{initMap('.$options.')})</script>';
+		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript> jQuery(function(){initMap('.$options.')})</script>';
 	}
 
 
