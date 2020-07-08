@@ -63,12 +63,15 @@ class Spotmap_Public{
 	}
 	function show_point_overview($atts){
 		$a = shortcode_atts([
-				'count'=>10,
+				'count'=> 10,
 				'types'=>'HELP,HELP-CANCEL,OK,CUSTOM',
-				'devices' => $this->db->get_all_feednames(),
+				'feeds' => $this->db->get_all_feednames(),
 				'group'=>'',
+				'date-range-from' => '',
+				'date' => '',
+				'date-range-to' => '',
 			], $atts);
-		foreach (['types','devices'] as $value) {
+		foreach (['types','feeds','feeds'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -85,7 +88,15 @@ class Spotmap_Public{
 		}
 		
 		$types = $a['types'];
-		$points = $this->db->get_points(['type' => $types]," type,id,message,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+		$points = $this->db->get_points([
+			'type'=>$a['types'],
+			'feeds' => $a['feeds'],
+			'date-range' => [
+				'from' => $a['date-range-from'],
+				'to' => $a['date-range-to']
+			],
+			'date' => $a['date'],
+		]," type,id,message,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
 		if (!empty($points["error"]))
 			return wp_json_encode($points);
 		error_log(wp_json_encode($points));
@@ -115,10 +126,11 @@ class Spotmap_Public{
 
 	function show_spotmap($atts,$content){
 		error_log("Shortcode init vals: ".wp_json_encode($atts));
+		// $atts['feeds'] = $atts['devices'];
 		$a = shortcode_atts( [
 			'height' => '500',
 			'mapcenter' => 'all',
-			'devices' => $this->db->get_all_feednames(),
+			'feeds' => $this->db->get_all_feednames(),
 			'width' => 'normal',
 			'colors' => ['blue', 'green', 'red', 'orange', 'yellow', 'violet'],
 			'splitlines' => '12,12,12,12',
@@ -132,7 +144,7 @@ class Spotmap_Public{
 			'debug'=> false,
 		], $atts );
 		
-		foreach (['devices','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
+		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -152,8 +164,8 @@ class Spotmap_Public{
 		// TODO test what happens if array lengths are different
 	
 		$styles = [];
-		if(!empty($a['devices'])){
-			foreach ($a['devices'] as $key => $value) {
+		if(!empty($a['feeds'])){
+			foreach ($a['feeds'] as $key => $value) {
 				$styles[$value] = [
 					'color'=>$a['colors'][$key],
 					'splitLines' => $a['splitlines'][$key]
@@ -185,7 +197,7 @@ class Spotmap_Public{
 		$map_id = "spotmap-container-".mt_rand();
 		// generate the option object for init the map
 		$options = wp_json_encode([
-			'feeds' => $a['devices'],
+			'feeds' => $a['feeds'],
 			'styles' => $styles,
 			'gpx' => $gpx,
 			'date' => $a['date'],

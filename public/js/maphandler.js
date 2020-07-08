@@ -185,7 +185,11 @@ function initMap(options) {
                 group.push(marker);
                 jQuery("#spotmap_" + entry.id).click(function () {
                     marker.togglePopup();
-                    spotmap.panTo([entry.latitude, entry.longitude], 13)
+                    spotmap.panTo([entry.latitude, entry.longitude])
+                });
+                jQuery("#spotmap_" + entry.id).dblclick(function () {
+                    marker.togglePopup();
+                    spotmap.setView([entry.latitude, entry.longitude], 14)
                 });
 
 
@@ -242,14 +246,9 @@ function initMap(options) {
                         }
                         spotmap.fitBounds(gpxBounds);
                     }
-                }).on('addpoint', function(e) {
-                    // console.log('Added ' + e.point_type + ' point: ' + e.point);
-                    // e.point.openPopup();
-                    console.log(e);
-                  }).on('addline', function(e) {
+                }).on('addline', function(e) {
                     e.line.bindPopup(entry.name);
-                    console.log(e);
-                  });
+                });
                 let html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
                 if (gpxOverlays[entry.name]) {
                     gpxOverlays[entry.name].group.addLayer(track);
@@ -342,7 +341,7 @@ function initMap(options) {
                         let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
                         overlays[entry.feed_name].group.addLayer(marker);
                         if(options.mapcenter == 'last'){
-                            spotmap.setView([entry.latitude, entry.longitude], 13);
+                            spotmap.setView([entry.latitude, entry.longitude], 14);
                         }
                     }
                 });
