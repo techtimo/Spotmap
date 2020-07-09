@@ -128,19 +128,19 @@ class Spotmap_Public{
 		error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
 		$a = shortcode_atts( [
-			'height' => '500',
-			'mapcenter' => 'all',
+			'height' => !empty( get_option('spotmap_default_values')['height'] ) ?get_option('spotmap_default_values')['height'] : 500,
+			'mapcenter' => !empty( get_option('spotmap_default_values')['mapcenter'] ) ?get_option('spotmap_default_values')['mapcenter'] : 'all',
 			'feeds' => $this->db->get_all_feednames(),
-			'width' => 'normal',
-			'colors' => ['blue', 'green', 'red', 'orange', 'yellow', 'violet'],
-			'splitlines' => '12,12,12,12',
+			'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
+			'colors' => !empty(get_option('spotmap_default_values')['colors']) ?get_option('spotmap_default_values')['colors'] : 'blue,red',
+			'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
 			'date-range-from' => '',
 			'date' => '',
 			'date-range-to' => '',
 			'gpx-name' => [],
 			'gpx-url' => [],
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-			'maps' => ['OpenStreetMap', 'OpenTopoMap'],
+			'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'OpenStreetMap,OpenTopoMap',
 			'debug'=> false,
 		], $atts );
 		
@@ -165,6 +165,17 @@ class Spotmap_Public{
 	
 		$styles = [];
 		if(!empty($a['feeds'])){
+			$number_of_feeds = count($a['feeds']);
+			if(count($a['splitlines']) < $number_of_feeds){
+				$count_present_numbers = count($a['splitlines']);
+				$fillup_array = array_fill($count_present_numbers, $number_of_feeds - $count_present_numbers, $a['splitlines'][0]);
+				$a['splitlines'] = array_merge($a['splitlines'],$fillup_array);
+
+				error_log(print_r($a['splitlines'],true));
+			}
+			if(count($a['gpx-name']) < $number_of_feeds){
+				$a['gpx-name'] = array_fill(0,$number_of_feeds, $a['gpx-name'][0]);
+			}
 			foreach ($a['feeds'] as $key => $value) {
 				$styles[$value] = [
 					'color'=>$a['colors'][$key],
