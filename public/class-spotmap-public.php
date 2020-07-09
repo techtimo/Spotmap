@@ -25,9 +25,10 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_scripts(){
-        wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
+		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
+        wp_enqueue_script('leaflet-swisstopo',  'https://unpkg.com/leaflet-tilelayer-swiss@2.1.0/dist/Leaflet.TileLayer.Swiss.umd.js');
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
 		
 		wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
@@ -141,10 +142,11 @@ class Spotmap_Public{
 			'gpx-url' => [],
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
 			'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'OpenStreetMap,OpenTopoMap',
+			'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : '',
 			'debug'=> false,
 		], $atts );
 		
-		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps'] as $value) {
+		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -218,6 +220,7 @@ class Spotmap_Public{
 			],
 			'mapcenter' => $a['mapcenter'],
 			'maps' => $a['maps'],
+			'mapOverlays' => $a['map-overlays'],
 			'debug' => $a['debug'],
 			'mapId' => $map_id
 		]);

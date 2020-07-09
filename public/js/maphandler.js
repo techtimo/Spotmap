@@ -5,9 +5,15 @@ function getOption(option, optionObj, config) {
     if (option == 'maps') {
         if (optionObj.maps) {
             var baseLayers = {};
+            
+            if (optionObj.maps.includes('swisstopo')) {
+                baseLayers['swissTopo'] = L.tileLayer.swiss();
+                return baseLayers;
+            }
             for (let mapName in spotmapjsobj.maps) {
                 if (optionObj.maps.includes(mapName)) {
-                    baseLayers[mapName] = L.tileLayer(spotmapjsobj.maps[mapName].url, spotmapjsobj.maps[mapName].options);
+                    let map = spotmapjsobj.maps[mapName];
+                    baseLayers[map.label] = L.tileLayer(map.url, map.options);
                 }
             }
             return baseLayers;
@@ -55,12 +61,24 @@ function initMap(options) {
     }
     debug("Configuration for map setup:",options.debug);
     debug(options,options.debug);
+
+    // load maps
+    var baseLayers = getOption('maps', options);
+
     var spotmap = null;
+    var mapOptions = { 
+        fullscreenControl: true,
+        scrollWheelZoom: false,
+    };
+    if(Object.keys(baseLayers)[0].indexOf('swiss') > -1){
+        mapOptions.crs = L.CRS.EPSG2056;
+    }
     try {
-        spotmap = L.map(options.mapId, { fullscreenControl: true, });
+        spotmap = L.map(options.mapId, mapOptions);
     } catch (e) {
         return;
     }
+    baseLayers[Object.keys(baseLayers)[0]].addTo(spotmap);
     var Marker = L.Icon.extend({
         options: {
             shadowUrl: spotmapjsobj.url + 'leaflet/images/marker-shadow.png',
@@ -84,10 +102,8 @@ function initMap(options) {
         markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
     });
 
-    // load maps
-    var baseLayers = getOption('maps', options);
 
-    baseLayers[options.maps[0]].addTo(spotmap);
+
     // define obj to post data
     let body = {
         'action': 'get_positions',
@@ -210,7 +226,6 @@ function initMap(options) {
         var gpxOverlays = {};
         if (options.gpx) {
             // reversed so the first one is added last == on top of all others
-            // for (var entry of options.gpx.reverse()) {
             for (var i=options.gpx.length-1; i >= 0; i--) {
                 let entry = options.gpx[i];
                 let color = getOption('color', options, { gpx: entry });
@@ -267,13 +282,6 @@ function initMap(options) {
             displayOverlays[overlays[key].label] = overlays[key].group;
         }
 
-        if (Object.keys(displayOverlays).length == 1) {
-            displayOverlays[Object.keys(displayOverlays)[0]].addTo(spotmap);
-            L.control.layers(baseLayers).addTo(spotmap);
-        } else {
-            L.control.layers(baseLayers, displayOverlays).addTo(spotmap);
-        }
-
         let all = [];
         // loop thru feeds (not gpx) to get the bounds
         for (let feed in displayOverlays) {
@@ -305,6 +313,50 @@ function initMap(options) {
             spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
+        for (let index in options.mapOverlays) {
+            let overlay = options.mapOverlays[index];
+            if(overlay == 'openseamap'){
+                displayOverlays.OpenSeaMap = L.tileLayer('http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenSeaMap</a> contributors',
+                });
+            }
+        }
+
+        if(Object.keys(baseLayers).length == 1){
+            baseLayers = {};
+        }
+        if (Object.keys(displayOverlays).length == 1) {
+            displayOverlays[Object.keys(displayOverlays)[0]].addTo(spotmap);
+            L.control.layers(baseLayers).addTo(spotmap);
+        } else {
+            L.control.layers(baseLayers, displayOverlays).addTo(spotmap);
+        }
+        
+        // spotmap.on('baselayerchange', function(layer) {
+        //     let center = spotmap.getCenter();
+        //     let zoom = spotmap.getZoom();
+        //     console.log(spotmap.options.crs);
+
+        //     if (layer.name.indexOf('swiss') > -1 && spotmap.options.crs.code == "EPSG:2056"){
+        //         spotmap.options.crs = L.CRS.EPSG2056;
+        //         spotmap.options.tms = true;
+        //     } 
+        //     else if (layer.name.indexOf('swiss') > -1 && spotmap.options.crs.code == "EPSG:3857"){
+        //         spotmap.options.crs = L.CRS.EPSG2056;
+        //         spotmap.options.tms = true;
+        //         zoom += 7;
+        //     } 
+        //     else if (layer.name.indexOf('swiss') == -1 && spotmap.options.crs.code == "EPSG:2056") {
+        //         spotmap.options.crs = L.CRS.EPSG3857; "EPSG:3857"
+        //         spotmap.options.tms = false;
+        //         zoom -=
+        //     }
+        //     spotmap.setView(center);
+        //     spotmap._resetView(center, zoom, true);
+        //  })
+    
+        spotmap.once('focus', function() { spotmap.scrollWheelZoom.enable(); });
+
         var refresh = setInterval(function(){ 
             body.groupBy = 'feed_name';
             body.orderBy = 'time DESC';
