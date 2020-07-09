@@ -35,8 +35,24 @@ class Spotmap_Activator {
 			add_option('spotmap_api_providers', $data_r);
 		}
 		if(!get_option('spotmap_custom_messages')){
-			$data_r = ['findmespot' => "Spot Feed"];
 			add_option('spotmap_custom_messages', []);
+		}
+		$defaults = [
+			'maps' => "OpenStreetMap,OpenTopoMap",
+			'height' => 500,
+			'mapcenter' => 'all',
+			'width' => 'normal',
+			'color' => 'blue,red',
+			'splitlines' => '12',
+		];
+		if(!get_option('spotmap_default_values')){
+			add_option('spotmap_default_values', $defaults);
+		} else {
+			foreach (get_option('spotmap_default_values') as $index => &$value) {
+				if(empty($value)){
+					$value = $defaults[$index];
+				}
+			}
 		}
 
 	}

@@ -91,7 +91,7 @@ class Spotmap_Admin {
 		register_setting( 'spotmap-settings-group', 'spotmap_mapbox_token');
 		add_settings_section(
 			'mapbox',
-			'Mapbox',
+			'Mapbox API Token',
 			'',
 			'spotmap-settings-group'
 		);
@@ -104,6 +104,25 @@ class Spotmap_Admin {
 			['spotmap_mapbox_token',
 			get_option('spotmap_mapbox_token')]
 		);
+		add_settings_section(
+			'spotmap-defaults',
+			'Default Values',
+			[$this,'settings_section_defaults'],
+			'spotmap-defaults-group'
+		);
+		register_setting( 'spotmap-defaults-group', 'spotmap_default_values');
+		foreach (get_option('spotmap_default_values') as $index => $value) {
+			// echo '                                      '.$value;
+			add_settings_field(
+				'spotmap_default_values['.$index.']',
+				$index,
+				[$this, 'generate_text_field'],
+				'spotmap-defaults-group',
+				'spotmap-defaults',
+				['spotmap_default_values['.$index.']', $value
+				]
+			);
+		}
 	}
 	
 	function generate_text_field($args){
@@ -137,6 +156,11 @@ class Spotmap_Admin {
 	
 	function settings_section_messages($args){
 		echo '<p id='.$args['id'].'>If you have sensitive Information in your predefined messages, you can overide those messages here.<br>
+		</p>';
+	}
+	
+	function settings_section_defaults($args){
+		echo '<p id='.$args['id'].'>Change the default values for shortcodes attributes.<br>Are you sure waht you are doing?<br>Changes made here could lead to malfunctions.
 		</p>';
 	}
 	
