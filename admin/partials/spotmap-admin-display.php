@@ -5,8 +5,8 @@
  * Date: 6/19/2019
  * Time: 11:34 PM
  */
-$active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'feed';
-$tabs = array( 'feed' => 'Feed', 'settings' => 'General', 'defaults' => 'Defaults' );
+	$active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'feed';
+	$tabs = [ 'feed' => 'Feed', 'messages' => 'Messages', 'defaults' => 'Defaults' ,'thirdparties' => "Third party"];
 ?>
 
 <div class="wrap">
@@ -32,11 +32,12 @@ $tabs = array( 'feed' => 'Feed', 'settings' => 'General', 'defaults' => 'Default
 					echo '<option name="spotmap_options" value="'.$key.'">'.$name.'</option>';
 				} ?>			 </select><div class="button button-secondary" id="spotmap-add-feed-button">Add Feed</div>
 			</td></tr></tbody></table>
-		<?php } else if ($active_tab == 'settings'){ ?>
-			<?php settings_fields( 'spotmap-settings-group' );
-			do_settings_sections( 'spotmap-settings-group' ); ?>
+		<?php } else if ($active_tab == 'messages'){ ?>
 			<?php settings_fields( 'spotmap-messages-group' );
 			do_settings_sections( 'spotmap-messages-group' ); ?>
+		<?php } else if ($active_tab == 'thirdparties'){ ?>
+			<?php settings_fields( 'spotmap-thirdparties-group' );
+			do_settings_sections( 'spotmap-thirdparties-group' ); ?>
 		<?php } else if ($active_tab == 'defaults'){ ?>
 			<?php settings_fields( 'spotmap-defaults-group' );
 			do_settings_sections( 'spotmap-defaults-group' ); ?>

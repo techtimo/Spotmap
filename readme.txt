@@ -1,10 +1,10 @@
 === Spotmap ===
 Contributors: techtimo
-Donate link:
-Tags: findmespot, spot gen 3, spot3, spot, spotbeacon, liveposition, gpx, gps, tracking, spottrace, saved by spot, spotwalla
+Donate link: paypal.me/ebaytimo
+Tags: findmespot, spot gen 3, spot3, spot, spotbeacon, liveposition, gpx, gps, tracking, tracker, spottrace, saved by spot, spotwalla
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 5
+Requires at least: 5.3
 Tested up to: 5.4
 Stable tag: trunk
 
@@ -19,9 +19,13 @@ It supports different devices (They can even belong to different accounts).
 With a shortcode you can add an embedded map to your post or page. By default it will show all positions ever sent.
 If needed the map can show a subset of the data. i.e. the last weekend getaway.
 
-Next planned features: 
+Next planned features (Not necessarily in right order): 
+- grouping of points
+- support of other tracking devices (Garmin InReach, ...)
 - Translatable version of the plugin
-- Full support of the Spotmap block for Gutenberg.
+- Full support of the Spotmap block for Gutenberg
+- delete/move points from the Dashboard
+- export to gpx files 
 
 If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change it. 😉
 
@@ -38,23 +42,28 @@ In the mean time we can create an empty map with the Shortcode:
 🎉 Congrats! You just created your first Spotmap. 🎉
 
 To fine tune the map, there are some attributes we can pass with the shortcode:
-`maps=OpenTopoMap` will show only the OpenTopoMap as map. Default `"OpenStreetMap,OpenTopoMap"`
-If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `Outdoors,Streets,Satelite` 
-Use it like this: `maps="Satelite,Streets,OpenStreetMap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (Streets, OpenStreetMap).
-`height=600` can define the height of the map in pixels. Default is `400`.
-`width=full` if you add this the map will appear in full width. Default is `normal`
-`mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations)
+`maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`
+If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `outdoors,streets,satelite` 
+Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
+`map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
+`height=600` can define the height of the map in pixels. 
+`width=full` if you add this the map will appear in full width. Default is `normal`.
+`mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
 `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
-`date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future)
+`date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
 `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
+`auto-reload=1` will auto update the map without the need to reload the page. 
+`feeds` can be set, if multiple feeds get used. (See example below)
 
 The following attributes can be used to show GPX tracks:
-`gpx-name="Track 1,Track 2"` give the tracks a nice name
-`gpx-url="wordpress.com/gpx/track1.gpx,wordpress.com/gpx/track2.gpx" specify the URL of the GPX files.
+`gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
+`gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx" specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
 `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
 
-If there are areas where tracks overlap each other, the track named first will be on top of the other.
+If there are areas where tracks overlap each other, the track named first will be on top of the others.
 
+
+Note: all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
 
 Note: `feeds` must always match your feed name.
 This will show a bigger map and the points are all in yellow:
@@ -86,17 +95,19 @@ Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB
 = Which 3rd Party Services are getting used? =
 The plugin uses the following thrid party services:
 1.  From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) to get the points.
-2. (OPTIONALLY) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sing up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). Make sure to restrict the token usage to your domain only!
+1. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
+1. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
+1. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
 
 
 = Can I use/add other maps? =
-Have you created your mapbox API key yet? If not this is a good way to get awesome looking maps.
-If you still search for another map [here](https://wiki.openstreetmap.org/wiki/Tiles).
+Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles.
+If you still search for another map [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
 If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
 = I have a question, an idea, ... =
 Head over to the wordpress.org [support forum](https://wordpress.org/support/plugin/spotmap/), and ask your question there. I am happy to assist you.
-If you found a bug, you can open an issue on my [GitHub Repo](https://github.com/techtimo/spotmap). (But you can also mentioned it in the forum 😉).
+If you found a bug, you can open an issue on the [GitHub Repo](https://github.com/techtimo/spotmap). (But you can also mentioned it in the forum 😉).
 
 == Screenshots ==
  
@@ -105,21 +116,19 @@ If you found a bug, you can open an issue on my [GitHub Repo](https://github.com
 
 == Changelog ==
 = 0.9 =
+
+If you upgrade to this version from a previous one please delete and reinstall the plugin.
+WARNING: all data will be lost. if you like to upgrade please post in the support forum.
+
 - new shortcode to show table of messages
 - add gpx overlays
-- new maps available
+- new maps available (mapbox, thunderforest, swisstopo)
+
 = 0.7 =
 - added support for multiple feeds
 - filter for certain date ranges
 - added a Gutenberg Block (still experimental!)
 
-If you upgrade to this version from a previous one please deactivate and activate the plugin.
-If you wish to keep the points from the db, you have to run the following SQL snippet:
-```
-ALTER TABLE {$PREFIX}spotmap_points` 
-ADD COLUMN `device` VARCHAR(100) NULL AFTER `custom_message`;
-UPDATE {$PREFIX}spotmap_points SET device = '{$new_feedname}' where 1;
-```
 
 = 0.3 =
 - First working draft
@@ -131,7 +140,7 @@ If you upgrade to this version from a previous, please uninstall the plugin firs
 If you have data in the db you don't want to loose, please create a post in the support forum.
 
 Adding Gpx support to show a planned route. Adding different maps.
-Adding a table to quickly see the last sent messages.
+Adding a table to quickly see the last sent messages. ([spotmessages])
 
 = 0.7 =
 redoing the whole frontend part. Now it looks much better!

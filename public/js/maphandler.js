@@ -112,7 +112,8 @@ function initMap(options) {
             'to': options.dateRange.to,
         },
         'date': options.date,
-        'orderBy': 'feed_name, time'
+        'orderBy': 'feed_name, time',
+        'groupBy': '',
     }
     if (options.feeds) {
         body.feeds = options.feeds;
@@ -188,7 +189,9 @@ function initMap(options) {
                 else if (entry.type == "HELP-CANCEL")
                     markerOptions = { icon: markers['green'] };
 
-                message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                message += 'Time: ' + entry.time + '</br>Date: ' + entry.date + '</br>';
+                if(entry.local_timezone && !(entry.localdate == entry.date && entry.localtime == entry.time ))
+                    message += 'Local Time: ' + entry.localtime + '</br>Local Date: ' + entry.localdate + '</br>';
                 if (entry.message)
                     message += 'Message: ' + entry.message + '</br>';
                 if (entry.altitude > 0)
@@ -226,7 +229,7 @@ function initMap(options) {
         var gpxOverlays = {};
         if (options.gpx) {
             // reversed so the first one is added last == on top of all others
-            for (var i=options.gpx.length-1; i >= 0; i--) {
+            for (var i=0; i < options.gpx.length; i++) {
                 let entry = options.gpx[i];
                 let color = getOption('color', options, { gpx: entry });
                 let gpxOption = {
@@ -274,7 +277,7 @@ function initMap(options) {
             }
         }
         // reverse order in menu to have the first element added last but shown on the menu first again
-        gpxProps = Object.keys(gpxOverlays).reverse();
+        gpxProps = Object.keys(gpxOverlays);
         gpxProps.forEach(function(key) { overlays[key] = gpxOverlays[key] })
         // overlays = overlays.reverse();
         displayOverlays = {};
@@ -285,9 +288,9 @@ function initMap(options) {
         let all = [];
         // loop thru feeds (not gpx) to get the bounds
         for (let feed in displayOverlays) {
+            const element = displayOverlays[feed];
+            element.addTo(spotmap);
             if (displayOverlays.hasOwnProperty(feed)) {
-                const element = displayOverlays[feed];
-                element.addTo(spotmap);
                 const layers = element.getLayers();
                 layers.forEach(function(element) {
                     if (!element._gpx)
@@ -302,15 +305,15 @@ function initMap(options) {
         } else if (options.mapcenter == 'last') {
             var lastPoint;
             var time = 0;
-            if (response.length){
+            if (response.length > 0 && !response.error){
                 response.forEach(function(entry, index) {
                     if (time < entry.unixtime) {
                         time = entry.unixtime;
                         lastPoint = [entry.latitude, entry.longitude];
                     }
                 });
+                spotmap.setView([lastPoint[0], lastPoint[1]], 13);
             }
-            spotmap.setView([lastPoint[0], lastPoint[1]], 13);
 
         }
         for (let index in options.mapOverlays) {
@@ -357,48 +360,50 @@ function initMap(options) {
     
         spotmap.once('focus', function() { spotmap.scrollWheelZoom.enable(); });
 
-        var refresh = setInterval(function(){ 
-            body.groupBy = 'feed_name';
-            body.orderBy = 'time DESC';
-            jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-                debug("Checking for new points ...",options.debug);
-                response.forEach(function(entry, index) {
-                    if(lastAdded.marker[entry.feed_name] < entry.unixtime){
-                        lastAdded.marker[entry.feed_name] = entry.unixtime;
-                        let color = getOption('color', options, { feed: entry.feed_name });
-                        lastAdded.line[entry.feed_name].addLatLng([entry.latitude, entry.longitude]);
+        if(options.autoReload == true){
+            var refresh = setInterval(function(){ 
+                body.groupBy = 'feed_name';
+                body.orderBy = 'time DESC';
+                jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                    debug("Checking for new points ...",options.debug);
+                    response.forEach(function(entry, index) {
+                        if(lastAdded.marker[entry.feed_name] < entry.unixtime){
+                            lastAdded.marker[entry.feed_name] = entry.unixtime;
+                            let color = getOption('color', options, { feed: entry.feed_name });
+                            lastAdded.line[entry.feed_name].addLatLng([entry.latitude, entry.longitude]);
 
-                        let message = '';
-                        let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
-        
-                        var markerOptions = { icon: markers[color] };
-                        if (tinyTypes.includes(entry.type)) {
-                            markerOptions.icon = markers.tiny[color];
-                        } else {
-                            message += "<b>" + entry.type + "</b><br>";
-                        }
-                        if (entry.type == "HELP")
-                            markerOptions = { icon: markers['red'] };
-                        else if (entry.type == "HELP-CANCEL")
-                            markerOptions = { icon: markers['green'] };
-        
-                        message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                        if (entry.message)
-                            message += 'Message: ' + entry.message + '</br>';
-                        if (entry.altitude > 0)
-                            message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-                        if (entry.battery_status == 'LOW')
-                            message += 'Battery status is low!' + '</br>';
+                            let message = '';
+                            let tinyTypes = getOption('tinyTypes', options, { feed: entry.feed_name });
+            
+                            var markerOptions = { icon: markers[color] };
+                            if (tinyTypes.includes(entry.type)) {
+                                markerOptions.icon = markers.tiny[color];
+                            } else {
+                                message += "<b>" + entry.type + "</b><br>";
+                            }
+                            if (entry.type == "HELP")
+                                markerOptions = { icon: markers['red'] };
+                            else if (entry.type == "HELP-CANCEL")
+                                markerOptions = { icon: markers['green'] };
+            
+                            message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
+                            if (entry.message)
+                                message += 'Message: ' + entry.message + '</br>';
+                            if (entry.altitude > 0)
+                                message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+                            if (entry.battery_status == 'LOW')
+                                message += 'Battery status is low!' + '</br>';
 
-                        let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
-                        overlays[entry.feed_name].group.addLayer(marker);
-                        if(options.mapcenter == 'last'){
-                            spotmap.setView([entry.latitude, entry.longitude], 14);
+                            let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
+                            overlays[entry.feed_name].group.addLayer(marker);
+                            if(options.mapcenter == 'last'){
+                                spotmap.setView([entry.latitude, entry.longitude], 14);
+                            }
                         }
-                    }
-                });
-                
-            });
-        }, 30000);
+                    });
+                    
+                }); 
+            }, 30000);
+        }
     });
 }

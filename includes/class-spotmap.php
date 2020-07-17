@@ -46,7 +46,8 @@ class Spotmap{
 		$this->loader->add_filter( "plugin_action_links_spotmap/spotmap.php", $spotmap_admin, 'settings_link');
 		$this->loader->add_action( 'admin_menu', $spotmap_admin, 'add_options_page');
 		$this->loader->add_action( 'admin_init', $spotmap_admin, 'register_settings');
-		$this->loader->add_action('spotmap_cron_hook', $spotmap_admin, 'get_feed_data');
+		$this->loader->add_action('spotmap_api_crawler_hook', $spotmap_admin, 'get_feed_data');
+		$this->loader->add_action('spotmap_get_timezone_hook', $spotmap_admin, 'get_local_timezone');
 		$this->loader->add_action('upload_mimes', $spotmap_admin, 'allow_gpx_upload');
 	}
 
