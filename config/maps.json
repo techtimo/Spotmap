@@ -29,6 +29,33 @@
       "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
     }
   },
+  "tf-landscape": {
+    "label": "Landscape",
+    "url": "https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+    "options": {
+      "maxZoom": 22,
+      "thunderforestToken": "",
+      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
+  "tf-outdoors": {
+    "label": "Outdoors",
+    "url": "https://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+    "options": {
+      "maxZoom": 22,
+      "thunderforestToken": "",
+      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
+  "tf-cycle": {
+    "label": "OpenCycleMap",
+    "url": "https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+    "options": {
+      "maxZoom": 22,
+      "thunderforestToken": "",
+      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+    }
+  },
   "openstreetmap": {
     "label": "OpenStreetMap",
     "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",

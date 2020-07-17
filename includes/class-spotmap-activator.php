@@ -17,6 +17,9 @@ class Spotmap_Activator {
             `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             `feed_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             `feed_id` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `model` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `device_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+            `local_timezone` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `id_UNIQUE` (`id`) 
             )$charset_collate";
@@ -25,8 +28,11 @@ class Spotmap_Activator {
 		dbDelta( $sql );
 
 		//activate cron for every 2.5min to get latest data from feed
-		if ( ! wp_next_scheduled( 'spotmap_cron_hook' ) ) {
-			wp_schedule_event( time(), 'twohalf_min', 'spotmap_cron_hook' );
+		if ( ! wp_next_scheduled( 'spotmap_api_crawler_hook' ) ) {
+			wp_schedule_event( time(), 'twohalf_min', 'spotmap_api_crawler_hook' );
+		}
+		if ( ! wp_next_scheduled( 'spotmap_get_timezone_hook' ) ) {
+			wp_schedule_single_event( time(),'spotmap_get_timezone_hook' );
 		}
 		
 		// activate for first time
@@ -38,7 +44,7 @@ class Spotmap_Activator {
 			add_option('spotmap_custom_messages', []);
 		}
 		$defaults = [
-			'maps' => "OpenStreetMap,OpenTopoMap",
+			'maps' => "openstreetmap,opentopomap",
 			'height' => 500,
 			'mapcenter' => 'all',
 			'width' => 'normal',

@@ -74,8 +74,13 @@ class Spotmap_Database {
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;
 			// $point->date = date_i18n( get_option('date_format'), $date );
-			$point->date = wp_date(get_option('date_format'),intval($point->unixtime));
-			$point->time = wp_date(get_option('time_format'),intval($point->unixtime));
+			$point->date = wp_date(get_option('date_format'),$point->unixtime);
+			$point->time = wp_date(get_option('time_format'),$point->unixtime);
+			if(!empty($point->local_timezone)){
+				$timezone = new DateTimeZone($point->local_timezone);
+				$point->localdate = wp_date(get_option('date_format'),$point->unixtime,$timezone);
+				$point->localtime = wp_date(get_option('time_format'),$point->unixtime,$timezone);
+			}
 
 			if(!empty($point->custom_message)){
 				$point->message = $point->custom_message;
@@ -98,7 +103,7 @@ class Spotmap_Database {
 			$point['longitude'] = $last_point->longitude;
 		}
 		global $wpdb;
-		return $wpdb->insert(
+		$result = $wpdb->insert(
 			$wpdb->prefix."spotmap_points",	[
 				'feed_name' => $point['feedName'],
 				'id' => $point['id'],
@@ -106,16 +111,22 @@ class Spotmap_Database {
 				'time' => $point['unixTime'],
 				'latitude' => $point['latitude'],
 				'longitude' => $point['longitude'],
+				'local_timezone' => NULL,
+				'model' => $point['modelId'],
+				'device_name' => $point['messengerName'],
 				'altitude' => $point['altitude'],
 				'battery_status' => $point['batteryState'],
-				'message' => $point['messageContent'],
+				'message' => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
 				'custom_message' => !empty( get_option('spotmap_custom_messages')[$point['messageType']] ) ? get_option('spotmap_custom_messages')[$point['messageType']] : NULL,
 				'feed_id' => $point['feedId']
 			]
 		);
+		// schedule event to calc local timezone 
+		wp_schedule_single_event( time(), 'spotmap_get_timezone_hook' );
+		return $result;
 	}
 	/**
-	 * This function checks if a point is stored is preseent in the db
+	 * This function checks if a point is preseent in the db
      * @param $id int The id of the point to check
 	 *
 	 * @return bool true if point with same id is in db else false

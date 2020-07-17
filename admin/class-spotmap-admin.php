@@ -10,7 +10,7 @@ class Spotmap_Admin {
 	}
 	
 	public function enqueue_scripts(){
-		wp_enqueue_script('spotmap-settings', plugins_url('js/settings.js', __FILE__), array('jquery'), false, true);
+		wp_enqueue_script('spotmap-settings', plugins_url('js/settings.js', __FILE__), ['jquery'], false, true);
 	}
 	public function add_cron_schedule($schedules){
 		$schedules['twohalf_min'] = array(
@@ -20,10 +20,12 @@ class Spotmap_Admin {
 		return $schedules;
 	}
 	public function add_options_page(){
-		add_options_page( 'Spotmap Options', 'Spotmap', 'manage_options', 'spotmap', [$this,'display_options_page'] );
+		add_options_page( 'Spotmap Options', 'Spotmap 🗺', 'manage_options', 'spotmap', [$this,'display_options_page'] );
 	}
 
 	public function register_settings(){
+
+		// FEED SECTION
 		foreach (get_option("spotmap_api_providers") as $key => $name) {
 			$ids = get_option("spotmap_".$key."_id");
 			$count = count($ids);
@@ -69,6 +71,8 @@ class Spotmap_Admin {
 				
 			}
 		}
+
+		// GENERAL SECTION
 		register_setting( 'spotmap-messages-group', 'spotmap_custom_messages');
 		add_settings_section(
 			'spotmap-messages',
@@ -88,22 +92,27 @@ class Spotmap_Admin {
 				]
 			);
 		}
-		register_setting( 'spotmap-settings-group', 'spotmap_mapbox_token');
+		register_setting( 'spotmap-thirdparties-group', 'spotmap_api_tokens');
 		add_settings_section(
-			'mapbox',
-			'Mapbox API Token',
+			'spotmap-thirdparty',
+			'Thirdparty API Tokens',
 			'',
-			'spotmap-settings-group'
+			'spotmap-thirdparties-group'
 		);
-		add_settings_field(
-			'spotmap_mapbox_token',
-			'Mapbox API',
-			[$this, 'generate_text_field'],
-			'spotmap-settings-group',
-			'mapbox',
-			['spotmap_mapbox_token',
-			get_option('spotmap_mapbox_token')]
-		);
+		foreach (['mapbox','thunderforest','timezonedb'] as $index) {
+			$value = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
+			add_settings_field(
+				'spotmap_api_tokens['.$index.']',
+				$index,
+				[$this, 'generate_text_field'],
+				'spotmap-thirdparties-group',
+				'spotmap-thirdparty',
+				['spotmap_api_tokens['.$index.']', $value
+				]
+			);
+		}
+		// DEFAULT SECTION
+		// register_setting( 'spotmap-defaults-group', 'spotmap_mapbox_token');
 		add_settings_section(
 			'spotmap-defaults',
 			'Default Values',
@@ -220,6 +229,7 @@ class Spotmap_Admin {
 	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
 	 */
 	function get_feed_data(){
+		error_log("Checking for new feed data ...");
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
 		foreach (get_option("spotmap_api_providers") as $key => $name) {
 			$ids = get_option("spotmap_".$key."_id");
@@ -251,5 +261,32 @@ class Spotmap_Admin {
 			
 		}
 	}
+	function get_local_timezone(){
+		global $wpdb;
+		$row = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE local_timezone IS NULL ORDER BY time DESC LIMIT 1;");
+		error_log('get tz data');
 
+		if(empty($row)){
+			return;
+		}
+		$token = get_option('spotmap_api_tokens')['timezonedb'];
+		$url = "http://api.timezonedb.com/v2.1/get-time-zone?key=".get_option('spotmap_api_tokens')["timezonedb"]."&format=json&by=position&lat=".$row->latitude."&lng=".$row->longitude;
+		$response = wp_remote_get( $url );
+		// error_log( wp_remote_retrieve_response_code($response) );
+		$json = wp_remote_retrieve_body( $response );
+		if ( wp_remote_retrieve_response_code($response) != 200){
+			// wait a sec longer ....
+			wp_schedule_single_event( time()+8, 'spotmap_get_timezone_hook' );
+			return;
+		}
+		$response = json_decode($json, true);
+		// error_log(print_r(json_decode($json, true),true));
+		$wpdb->query( $wpdb->prepare( "
+			UPDATE `{$wpdb->prefix}spotmap_points`
+			SET `local_timezone` = %s
+			WHERE id = %s",
+			[$response['zoneName'],$row->id] ) 
+		);
+		wp_schedule_single_event( time()+2, 'spotmap_get_timezone_hook' );
+	}
 }

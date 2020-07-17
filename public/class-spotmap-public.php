@@ -29,30 +29,40 @@ class Spotmap_Public{
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
         wp_enqueue_script('leaflet-swisstopo',  'https://unpkg.com/leaflet-tilelayer-swiss@2.1.0/dist/Leaflet.TileLayer.Swiss.umd.js');
-        wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), array('jquery'), false, true);
+        wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
 		
-		wp_localize_script('spotmap-handler', 'spotmapjsobj', array(
+		wp_localize_script('spotmap-handler', 'spotmapjsobj', [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'maps' => $this->get_maps(),
 			'url' =>  plugin_dir_url( __FILE__ )
 
-		));
+		]);
 	}
 
 	public function get_maps(){
 		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
 		if(file_exists($maps_file)){
 			$maps = json_decode(file_get_contents($maps_file),true);
-			$token = get_option('spotmap_mapbox_token');
+			// error_log(print_r($maps,true));
+			$api_tokens = get_option('spotmap_api_tokens');
 			foreach ($maps as $name => &$data) {
-				// error_log(print_r($data,true));
-				if(!empty($token)){
-					$data['options']['mapboxToken'] = $token;
-				} else if(isset($data['options']['mapboxToken'])){
+				// error_log(print_r($data['options']['mapboxToken'],true));
+				if(isset($data['options']['mapboxToken'])){
+					if(!empty($api_tokens['mapbox'])){
+						$data['options']['mapboxToken'] = $api_tokens['mapbox'];
+						continue;
+					}
+					unset($maps[$name]);
+				}
+				else if(isset($data['options']['thunderforestToken'])){
+					if(!empty($api_tokens['thunderforest'])){
+						$data['options']['thunderforestToken'] = $api_tokens['thunderforest'];
+						continue;
+					}
 					unset($maps[$name]);
 				}
 			}
-			return $maps;
+			return ($maps);
 		}
 	}
 
@@ -97,14 +107,13 @@ class Spotmap_Public{
 				'to' => $a['date-range-to']
 			],
 			'date' => $a['date'],
-		]," type,id,message,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+		]," type,id,message,local_timezone,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
 		if (!empty($points["error"]))
 			return wp_json_encode($points);
 		error_log(wp_json_encode($points));
-		$show_columns = ['Time','Message'];
-		$html = '<table class="wp-list-table widefat striped crontrol-events">';
+		$html = '<table class="wp-list-table">';
 		// header row
-		$html .= '<tr><th>Type</th><th>Message</th><th>Time</th></tr>';
+		$html .= '<tr><th>Type</th><th>Message</th><th>Time</th><th>Local Time</th></tr>';
 	
 		// data rows
 		foreach( $points as $key=>$row){
@@ -113,6 +122,7 @@ class Spotmap_Public{
 			$html .= '<td>'.$row->feed_name.'<br>'.$row->type.'</td>';
 			$html .= '<td>'.$row->message.'</td>';
 			$html .= '<td>'.$row->time.'<br>'.$row->date.'</td>';
+			$html .= '<td>'.$row->localtime.'<br>'.$row->localdate.'</td>';
 
 			$html .= '</tr>';
 		}
@@ -133,23 +143,29 @@ class Spotmap_Public{
 			'mapcenter' => !empty( get_option('spotmap_default_values')['mapcenter'] ) ?get_option('spotmap_default_values')['mapcenter'] : 'all',
 			'feeds' => $this->db->get_all_feednames(),
 			'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
-			'colors' => !empty(get_option('spotmap_default_values')['colors']) ?get_option('spotmap_default_values')['colors'] : 'blue,red',
+			'colors' => !empty(get_option('spotmap_default_values')['color']) ?get_option('spotmap_default_values')['color'] : 'blue,red',
 			'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
-			'date-range-from' => '',
-			'date' => '',
-			'date-range-to' => '',
+			'auto-reload' => '0',
+			'date-range-from' => NULL,
+			'date' => NULL,
+			'date-range-to' => NULL,
 			'gpx-name' => [],
 			'gpx-url' => [],
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-			'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'OpenStreetMap,OpenTopoMap',
-			'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : '',
-			'debug'=> false,
+			'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'openstreetmap,opentopomap',
+			'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : NULL,
+			'debug'=> '0',
 		], $atts );
 		
 		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
+				foreach ($a[$value] as $key => &$data) {
+					if (empty($data)){
+						unset($a[$value][$key]);
+					}
+				}
 			}
 		}
 		error_log(wp_json_encode($a));
@@ -162,21 +178,20 @@ class Spotmap_Public{
 				$values = _sanitize_text_fields($values);
 			}
 		}
-
-		// TODO test what happens if array lengths are different
 	
+		// valid inputs for feeds?
 		$styles = [];
 		if(!empty($a['feeds'])){
 			$number_of_feeds = count($a['feeds']);
-			if(count($a['splitlines']) < $number_of_feeds){
-				$count_present_numbers = count($a['splitlines']);
+			$count_present_numbers = count($a['splitlines']);
+			if($count_present_numbers < $number_of_feeds){
 				$fillup_array = array_fill($count_present_numbers, $number_of_feeds - $count_present_numbers, $a['splitlines'][0]);
 				$a['splitlines'] = array_merge($a['splitlines'],$fillup_array);
 
-				error_log(print_r($a['splitlines'],true));
+				// error_log(print_r($a['splitlines'],true));
 			}
-			if(count($a['gpx-name']) < $number_of_feeds){
-				$a['gpx-name'] = array_fill(0,$number_of_feeds, $a['gpx-name'][0]);
+			if(count($a['color']) < $number_of_feeds){
+				$a['color'] = array_fill(0,$number_of_feeds, $a['color'][0]);
 			}
 			foreach ($a['feeds'] as $key => $value) {
 				$styles[$value] = [
@@ -185,11 +200,13 @@ class Spotmap_Public{
 					];
 			}
 		}
+
+		// valid inputs for gpx tracks?
 		$gpx = [];
 		if(!empty($a['gpx-url'])){
 			$number_of_tracks = count($a['gpx-url']);
-			if(count($a['gpx-color']) < $number_of_tracks){
-				$count_present_numbers = count($a['gpx-color']);
+			$count_present_numbers = count($a['gpx-color']);
+			if($count_present_numbers < $number_of_tracks){
 				$fillup_array = array_fill($count_present_numbers, $number_of_tracks - $count_present_numbers, $a['gpx-color'][0]);
 				$a['gpx-color'] = array_merge($a['gpx-color'],$fillup_array);
 
@@ -221,6 +238,7 @@ class Spotmap_Public{
 			'mapcenter' => $a['mapcenter'],
 			'maps' => $a['maps'],
 			'mapOverlays' => $a['map-overlays'],
+			'autoReload' => $a['auto-reload'],
 			'debug' => $a['debug'],
 			'mapId' => $map_id
 		]);
