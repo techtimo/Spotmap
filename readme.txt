@@ -31,7 +31,7 @@ If you feel like this plugin is missing importants part, let me know. Maybe I ha
 
 
 == Installation ==
-
+### Test
 After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. Add a feed by selecting `findmespot` from the dropdown and hit "Add Feed".
 
 Now you can enter your XML Feed Id, a name for the feed and a password if you have one.  Press "Save". A few minutes later Wordpress will download the points that are present in the XML Feed.
@@ -42,52 +42,52 @@ In the mean time we can create an empty map with the Shortcode:
 🎉 Congrats! You just created your first Spotmap. 🎉
 
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
-
+= Additional attributes =
 **To fine tune the map, there are some attributes we can pass with the shortcode:**
-`maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`
-If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `outdoors,streets,satelite` 
-Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
-`map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
-`height=600` can define the height of the map in pixels. 
-`width=full` if you add this the map will appear in full width. Default is `normal`.
-`mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
-`splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
-`date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
-`date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
-`auto-reload=1` will auto update the map without the need to reload the page.
-`tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
-`feeds` can be set, if multiple feeds get used. (See example below)
-
-The following attributes can be used to show GPX tracks:
-
+- `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`.
+  If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `mb-outdoors,mb-streets,mb-satelite` 
+  Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
+- `map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
+- `height=600` can define the height of the map in pixels. 
+- `width=full` if you add this the map will appear in full width. Default is `normal`.
+- `mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
+- `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
+- `date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
+- `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
+- `auto-reload=1` will auto update the map without the need to reload the page.
+- `tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
+- `feeds` can be set, if multiple feeds get used. (See example below)
+= GPX =
+**The following attributes can be used to show GPX tracks:**
 `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
 `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx" specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
 `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
 
 If there are areas where tracks overlap each other, the track named first will be on top of the others.
 
+_Note:_ all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
 
-Note: all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
-
-Note: `feeds` must always match your feed name.
+_Note:_ `feeds` must always match your feed name.
 This will show a bigger map and the points are all in yellow:
+
 ```
 [spotmap height=600 width=full feeds=spot colors=yellow]
 ```
 
 
 This will show a map where we zoom into the last known position, and we only show data from the the first of May:
+
 ```
 [spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]
 ```
 
 
 We can also show multiple feeds in different colors on a same day:
+
 ```
 [spotmap mapcenter=last feeds=spot,spot2 colors=gray,green date="2020-06-01"]
 ``` 
-= GPX =
-test
+
 
 == Frequently Asked Questions ==
 
