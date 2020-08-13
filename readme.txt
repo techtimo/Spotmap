@@ -27,7 +27,7 @@ Next planned features (Not necessarily in right order):
 - delete/move points from the Dashboard
 - export to gpx files 
 
-If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change it. 😉
+If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
 
 
 == Installation ==
@@ -43,8 +43,7 @@ In the mean time we can create an empty map with the Shortcode:
 
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
 
-To fine tune the map, there are some attributes we can pass with the shortcode:
-
+**To fine tune the map, there are some attributes we can pass with the shortcode:**
 `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`
 If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `outdoors,streets,satelite` 
 Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
@@ -60,6 +59,7 @@ Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a
 `feeds` can be set, if multiple feeds get used. (See example below)
 
 The following attributes can be used to show GPX tracks:
+
 `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
 `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx" specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
 `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
@@ -106,7 +106,7 @@ The plugin uses the following thrid party services:
 
 = Can I use/add other maps? =
 Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles.
-If you still search for another map [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
+If you still search for another map search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
 If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
 = I have a question, an idea, ... =
