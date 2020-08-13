@@ -5,7 +5,7 @@ Tags: findmespot, spot gen 3, spot3, spot, spotbeacon, liveposition, gpx, gps, t
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
-Tested up to: 5.4
+Tested up to: 5.5
 Stable tag: trunk
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
@@ -30,7 +30,7 @@ Next planned features (Not necessarily in right order):
 If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
 
 
-== Installation ==
+## Installation
 ### Test
 After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. Add a feed by selecting `findmespot` from the dropdown and hit "Add Feed".
 
@@ -70,16 +70,12 @@ _Note:_ all the Default values of the attributes can be changed in the settings 
 _Note:_ `feeds` must always match your feed name.
 This will show a bigger map and the points are all in yellow:
 
-```
-[spotmap height=600 width=full feeds=spot colors=yellow]
-```
+``` [spotmap height=600 width=full feeds=spot colors=yellow] ```
 
 
 This will show a map where we zoom into the last known position, and we only show data from the the first of May:
 
-```
-[spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]
-```
+`[spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]`
 
 
 We can also show multiple feeds in different colors on a same day:
@@ -99,9 +95,9 @@ Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB
 = Which 3rd Party Services are getting used? =
 The plugin uses the following thrid party services:
 1.  From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) to get the points.
-1. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
-1. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
-1. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
+2. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
+3. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
+4. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
 
 
 = Can I use/add other maps? =
