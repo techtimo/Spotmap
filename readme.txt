@@ -41,7 +41,10 @@ In the mean time we can create an empty map with the Shortcode:
 
 🎉 Congrats! You just created your first Spotmap. 🎉
 
+👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
+
 To fine tune the map, there are some attributes we can pass with the shortcode:
+
 `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`
 If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `outdoors,streets,satelite` 
 Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
@@ -52,7 +55,8 @@ Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a
 `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
 `date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
 `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
-`auto-reload=1` will auto update the map without the need to reload the page. 
+`auto-reload=1` will auto update the map without the need to reload the page.
+`tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
 `feeds` can be set, if multiple feeds get used. (See example below)
 
 The following attributes can be used to show GPX tracks:

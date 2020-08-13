@@ -38,7 +38,7 @@ class Spotmap_Public{
 
 		]);
 	}
-
+// TODO: move to admin class
 	public function get_maps(){
 		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
 		if(file_exists($maps_file)){
@@ -145,6 +145,7 @@ class Spotmap_Public{
 			'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
 			'colors' => !empty(get_option('spotmap_default_values')['color']) ?get_option('spotmap_default_values')['color'] : 'blue,red',
 			'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
+			'tiny-types' => !empty(get_option('spotmap_default_values')['tiny-types']) ?get_option('spotmap_default_values')['tiny-types'] : NULL,
 			'auto-reload' => '0',
 			'date-range-from' => NULL,
 			'date' => NULL,
@@ -157,7 +158,7 @@ class Spotmap_Public{
 			'debug'=> '0',
 		], $atts );
 		
-		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays'] as $value) {
+		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays','tiny-types'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -190,13 +191,14 @@ class Spotmap_Public{
 
 				// error_log(print_r($a['splitlines'],true));
 			}
-			if(count($a['color']) < $number_of_feeds){
-				$a['color'] = array_fill(0,$number_of_feeds, $a['color'][0]);
+			if(count($a['colors']) < $number_of_feeds){
+				$a['colors'] = array_fill(0,$number_of_feeds, $a['colors'][0]);
 			}
 			foreach ($a['feeds'] as $key => $value) {
 				$styles[$value] = [
 					'color'=>$a['colors'][$key],
-					'splitLines' => $a['splitlines'][$key]
+					'splitLines' => $a['splitlines'][$key],
+					'tinyTypes' => $a['tiny-types']
 					];
 			}
 		}
@@ -249,11 +251,11 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript> jQuery(function(){initMap('.$options.')})</script>';
+		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options.');spotmap.initMap()})</script>';
 	}
 
 
-	public function the_action_function(){
+	public function get_positions(){
 		// error_log(print_r($_POST,true));
 		$points = $this->db->get_points($_POST,'*',$_POST['groupBy'],$_POST['orderBy']);
 		// error_log(print_r($points,true));
