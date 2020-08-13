@@ -1,7 +1,7 @@
-# Spotmap
+=== Spotmap ===
 Contributors: techtimo
 Donate link: paypal.me/ebaytimo
-Tags: findmespot, spot gen 3, spot3, spot, spotbeacon, liveposition, gpx, gps, tracking, tracker, spottrace, saved by spot, spotwalla
+Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeacon, liveposition, gpx, gps tracking, gps tracker, spottrace, spotwalla
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
