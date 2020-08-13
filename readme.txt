@@ -19,14 +19,20 @@ With a shortcode you can add an embedded map to your post or page. By default it
 If needed the map can show a subset of the data. i.e. the last weekend getaway.
 
 Next planned features (Not necessarily in right order): 
+
 - grouping of points
+
 - support of other tracking devices (Garmin InReach, ...)
+
 - Translatable version of the plugin
+
 - Full support of the Spotmap block for Gutenberg
+
 - delete/move points from the Dashboard
+
 - export to gpx files 
 
-If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
+👉 If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
 
 
 ## Installation
@@ -42,48 +48,63 @@ In the mean time we can create an empty map with the Shortcode:
 
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
 ### Additional attributes
-**To fine tune the map, there are some attributes we can pass with the shortcode:**
+
+To fine tune the map, there are some attributes we can pass with the shortcode:
+
+_Note:_ all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
+
+#### Map
+
 - `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`.
   If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `mb-outdoors,mb-streets,mb-satelite` 
   Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
+
 - `map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
+
 - `height=600` can define the height of the map in pixels. 
+
 - `width=full` if you add this the map will appear in full width. Default is `normal`.
+
 - `mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
+
+### Feeds
+
 - `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
+
 - `date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
+
 - `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
+
 - `auto-reload=1` will auto update the map without the need to reload the page.
 
 - `tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
 
 - `feeds` can be set, if multiple feeds get used. (See example below)
+
 #### GPX
 **The following attributes can be used to show GPX tracks:**
+
 - `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
 
-- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx" specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
+- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
 
 - `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
 
 If there are areas where tracks overlap each other, the track named first will be on top of the others.
 
-_Note:_ all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
-
 _Note:_ `feeds` must always match your feed name.
 This will show a bigger map and the points are all in yellow:
 
-`[spotmap height=600 width=full feeds=spot colors=yellow]`
-
+`[spotmap height=600 width=full feeds="My Spot Feed" colors=yellow]`
 
 This will show a map where we zoom into the last known position, and we only show data from the the first of May:
 
-`[spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]`
+`[spotmap mapcenter=last feeds="My Spot" colors=red date-range-from="2020-05-01"]`
 
 
 We can also show multiple feeds in different colors on a same day:
 
-`[spotmap mapcenter=last feeds=spot,spot2 colors=gray,green date="2020-06-01"]` 
+`[spotmap mapcenter=last feeds="My first spot,My other Device" colors="gray,green" date="2020-06-01"]` 
 
 
 ## Frequently Asked Questions
@@ -148,5 +169,3 @@ redoing the whole frontend part. Now it looks much better!
  
 = 0.3 =
 This version fixes a security related bug.  Upgrade immediately.
-
-## My custom area
