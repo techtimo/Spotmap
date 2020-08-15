@@ -1,4 +1,4 @@
-var _ = lodash
+let _ = lodash
 function debug(message,debug){
     if(debug == true){
         console.log(message)
