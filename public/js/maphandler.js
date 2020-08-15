@@ -1,4 +1,6 @@
-let _ = lodash
+// TODO: further investigation
+// overides underscore.js needed for some gutenberg stuff
+// let _ = lodash
 function debug(message,debug){
     if(debug == true){
         console.log(message)
@@ -14,7 +16,7 @@ class Spotmap {
 
     initMap(){
 
-        this.debug("Lodash version: " + _.VERSION);
+        this.debug("Lodash version: " + lodash.VERSION);
     
         // load maps
         var baseLayers = this.getOption('maps');
@@ -229,7 +231,7 @@ class Spotmap {
                 }
             }
             // reverse order in menu to have the first element added last but shown on the menu first again
-            _.forEachRight(gpxOverlays, function(value,key) { overlays[key] = value });
+            lodash.forEachRight(gpxOverlays, function(value,key) { overlays[key] = value });
             var displayOverlays = {};
             for (let key in overlays) {
                 displayOverlays[overlays[key].label] = overlays[key].group;
