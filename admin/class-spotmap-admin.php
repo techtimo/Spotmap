@@ -107,8 +107,7 @@ class Spotmap_Admin {
 				[$this, 'generate_text_field'],
 				'spotmap-thirdparties-group',
 				'spotmap-thirdparty',
-				['spotmap_api_tokens['.$index.']', $value
-				]
+				['spotmap_api_tokens['.$index.']', $value]
 			);
 		}
 		// DEFAULT SECTION
@@ -128,8 +127,7 @@ class Spotmap_Admin {
 				[$this, 'generate_text_field'],
 				'spotmap-defaults-group',
 				'spotmap-defaults',
-				['spotmap_default_values['.$index.']', $value
-				]
+				['spotmap_default_values['.$index.']', $value]
 			);
 		}
 	}

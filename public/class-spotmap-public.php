@@ -100,6 +100,7 @@ class Spotmap_Public{
 		
 		$types = $a['types'];
 		$points = $this->db->get_points([
+			'select' => "type,id,message,local_timezone,feed_name, time",
 			'type'=>$a['types'],
 			'feeds' => $a['feeds'],
 			'date-range' => [
@@ -107,7 +108,10 @@ class Spotmap_Public{
 				'to' => $a['date-range-to']
 			],
 			'date' => $a['date'],
-		]," type,id,message,local_timezone,feed_name, time",$a['group'],"time DESC LIMIT ".$a['count']);
+			'orderBy' => "time DESC",
+			'limit' => $a['count'],
+			'groupBy' => $a['group'],
+		]);
 		if (!empty($points["error"]))
 			return wp_json_encode($points);
 		error_log(wp_json_encode($points));
@@ -257,7 +261,7 @@ class Spotmap_Public{
 
 	public function get_positions(){
 		// error_log(print_r($_POST,true));
-		$points = $this->db->get_points($_POST,'*',$_POST['groupBy'],$_POST['orderBy']);
+		$points = $this->db->get_points($_POST);
 		// error_log(print_r($points,true));
 		if(empty($points)){
 			$points = ['error'=> true,'title'=>'No points to show (yet)','message'=> ""];
