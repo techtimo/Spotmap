@@ -420,7 +420,11 @@ class Spotmap {
         }
         var self = this;
         jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-            jQuery('#' + id).text("test")
+            let table = jQuery('#' + id);
+            table.append(jQuery("<tr><th>Type</th><th>Message</th><th>Time</th><th>Local Time</th></tr>"));
+            lodash.forEach(response,function(entry){
+                table.append(jQuery("<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td><td>"+entry.localtime+"<br>"+entry.localdate+"</td></tr>"))
+            })
         })
     }
 }
