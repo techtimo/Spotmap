@@ -82,7 +82,7 @@ class Spotmap_Public{
 				'date' => '',
 				'date-range-to' => '',
 			], $atts);
-		foreach (['types','feeds','feeds'] as $value) {
+		foreach (['types','feeds'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -98,8 +98,7 @@ class Spotmap_Public{
 			}
 		}
 		
-		$types = $a['types'];
-		$points = $this->db->get_points([
+		$options = [
 			'select' => "type,id,message,local_timezone,feed_name, time",
 			'type'=>$a['types'],
 			'feeds' => $a['feeds'],
@@ -111,31 +110,10 @@ class Spotmap_Public{
 			'orderBy' => "time DESC",
 			'limit' => $a['count'],
 			'groupBy' => $a['group'],
-		]);
-		if (!empty($points["error"]))
-			return wp_json_encode($points);
-		error_log(wp_json_encode($points));
-		$html = '<table class="wp-list-table">';
-		// header row
-		$html .= '<tr><th>Type</th><th>Message</th><th>Time</th><th>Local Time</th></tr>';
-	
-		// data rows
-		foreach( $points as $key=>$row){
-			$html .= '<tr class="spotmap '. $row->type;
-			$html .= '" id="spotmap_'.$row->id.'">';
-			$html .= '<td>'.$row->feed_name.'<br>'.$row->type.'</td>';
-			$html .= '<td>'.$row->message.'</td>';
-			$html .= '<td>'.$row->time.'<br>'.$row->date.'</td>';
-			$html .= '<td>'.$row->localtime.'<br>'.$row->localdate.'</td>';
+		];
+		return '<table id=spotmap-1234></table>'
+			.'<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('. wp_json_encode($options).');spotmap.initTable("spotmap-1234")})</script>';
 
-			$html .= '</tr>';
-		}
-	
-	
-		// finish table and return it
-	
-		$html .= '</table>';
-		return $html;
 	}
 
 
