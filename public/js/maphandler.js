@@ -59,10 +59,8 @@ class Spotmap {
         // define obj to post data
         let body = {
             'action': 'get_positions',
-            'date-range': {
-                'from': this.options.dateRange.from,
-                'to': this.options.dateRange.to,
-            },
+            'select': "*",
+            'date-range': this.options.dateRange,
             'date': this.options.date,
             'orderBy': 'feed_name, time',
             'groupBy': '',
@@ -405,5 +403,24 @@ class Spotmap {
     debug(message){
         if(this.options.debug)
             console.log(message)
+    }
+
+    initTable(id){
+        // define obj to post data
+        let body = {
+            'action': 'get_positions',
+            'date-range': this.options.dateRange,
+            'date': this.options.date,
+            'orderBy': this.options.orderBy,
+            'limit': this.options.limit,
+            'groupBy': this.options.groupBy,
+        }
+        if (this.options.feeds) {
+            body.feeds = this.options.feeds;
+        }
+        var self = this;
+        jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+            jQuery('#' + id).text("test")
+        })
     }
 }

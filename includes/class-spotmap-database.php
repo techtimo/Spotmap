@@ -19,8 +19,14 @@ class Spotmap_Database {
 		return $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY id DESC LIMIT 1");
 	}
 
-	public function get_points($filter,$select = '*',$group_by='',$order= 'feed_name, time'){
-		error_log(print_r($filter,true));
+
+	public function get_points($filter){
+		// error_log(print_r($filter,true));
+
+		$select = empty($filter['select']) ? "*": $filter['select'];
+		$group_by = empty($filter['groupBy']) ? NULL: $filter['groupBy'];
+		$order = empty($filter['orderBy']) ? NULL: "ORDER BY " . $filter['orderBy'];
+		$limit = empty($filter['limit']) ? NULL: "LIMIT " . $filter['limit'];
 		global $wpdb;
 		$where = '';
 		if(!empty($filter['feeds'])){
@@ -68,7 +74,7 @@ class Spotmap_Database {
 		if(!empty($group_by)){
 			$where.= " and id in (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY ".$group_by." )";
 		}
-		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ORDER BY ".$order;
+		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
 		error_log("Query: " .$query);
 		$points = $wpdb->get_results($query);
 		foreach ($points as &$point){
