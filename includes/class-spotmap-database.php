@@ -100,6 +100,9 @@ class Spotmap_Database {
 
 	public function insert_point($point,$multiple = false){
 		// error_log(print_r($point,true));
+		if($point['unixTime'] == 1){
+			return 0;
+		}
 		$last_point = $this->get_last_point($point['feedId']);
 		
 		if($point['latitude'] > 90 || $point['latitude']< -90){
