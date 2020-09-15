@@ -1,11 +1,6 @@
 // TODO: further investigation
 // overides underscore.js needed for some gutenberg stuff
 // let _ = lodash
-function debug(message,debug){
-    if(debug == true){
-        console.log(message)
-    }
-}
 
 class Spotmap {
     constructor (options) {
@@ -407,7 +402,7 @@ class Spotmap {
 
     initTable(id){
         // define obj to post data
-        let body = {
+        var body = {
             'action': 'get_positions',
             'date-range': this.options.dateRange,
             'date': this.options.date,
@@ -420,11 +415,71 @@ class Spotmap {
         }
         var self = this;
         jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
-            let table = jQuery('#' + id);
-            table.append(jQuery("<tr><th>Type</th><th>Message</th><th>Time</th><th>Local Time</th></tr>"));
-            lodash.forEach(response,function(entry){
-                table.append(jQuery("<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td><td>"+entry.localtime+"<br>"+entry.localdate+"</td></tr>"))
+            let headerElements = ["Type", "Message", "Time"];
+            let hasLocaltime = false;
+            if (lodash.find(response, function(o) { return o.local_timezone; })){
+                headerElements.push("Local Time");
+                hasLocaltime = true;
+            }
+            var table = jQuery('#' + id);
+            let row = '<tr>';
+            lodash.each(headerElements,function(element){
+                row += '<th>' + element + '</th>'
             })
-        })
+            row += '<tr>'
+            table.append(jQuery(row));
+            lodash.forEach(response,function(entry){
+                if(!entry.local_timezone){
+                    entry.localdate = '';
+                    entry.localtime = '';
+                }
+                if(!entry.message)
+                    entry.message = '';
+                let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
+                if (hasLocaltime)
+                    row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
+                row += "</tr>";
+                table.append(jQuery(row))
+            });
+            if(self.options.autoReload == true){
+                var oldResponse = response;
+                var refresh = setInterval(function(){ 
+                    jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                        if( lodash.head(oldResponse).unixtime < lodash.head(response).unixtime){
+                            var table = jQuery('#' + id);
+                            table.empty();
+                            let headerElements = ["Type", "Message", "Time"];
+                            let hasLocaltime = false;
+                            if (lodash.find(response, function(o) { return o.local_timezone; })){
+                                headerElements.push("Local Time");
+                                hasLocaltime = true;
+                            }
+                            let row = '<tr>';
+                            lodash.each(headerElements,function(element){
+                                row += '<th>' + element + '</th>'
+                            })
+                            row += '<tr>'
+                            table.append(jQuery(row));
+                            lodash.forEach(response,function(entry){
+                                if(!entry.local_timezone){
+                                    entry.localdate = '';
+                                    entry.localtime = '';
+                                }
+                                if(!entry.message)
+                                    entry.message = '';
+                                let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
+                                if (hasLocaltime)
+                                    row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
+                                row += "</tr>";
+                                table.append(jQuery(row));
+                            });
+                        } else {
+                            console.log('same response!');
+                        }
+                        
+                    }); 
+                }, 10000);
+            }
+        });
     }
 }

@@ -81,6 +81,7 @@ class Spotmap_Public{
 				'date-range-from' => '',
 				'date' => '',
 				'date-range-to' => '',
+				'auto-reload' => '0',
 			], $atts);
 		foreach (['types','feeds'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
@@ -110,9 +111,11 @@ class Spotmap_Public{
 			'orderBy' => "time DESC",
 			'limit' => $a['count'],
 			'groupBy' => $a['group'],
+			'autoReload' => $a['auto-reload'],
 		];
-		return '<table id=spotmap-1234></table>'
-			.'<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('. wp_json_encode($options).');spotmap.initTable("spotmap-1234")})</script>';
+		$table_id = "spotmap-table-".mt_rand();
+		return '<table id='.$table_id.'></table>'
+			.'<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('. wp_json_encode($options).');spotmap.initTable("'.$table_id.'")})</script>';
 
 	}
 
