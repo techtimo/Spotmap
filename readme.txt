@@ -137,6 +137,12 @@ If you found a bug, you can open an issue on the [GitHub Repo](https://github.co
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
+= 0.9.1 =
+
+Fix Gutenberg editor issue
+spotmessages supports auto update
+
+
 = 0.9 =
 
 If you upgrade to this version from a previous one please delete and reinstall the plugin.
@@ -167,5 +173,3 @@ Adding a table to quickly see the last sent messages. ([spotmessages])
 = 0.7 =
 redoing the whole frontend part. Now it looks much better!
  
-= 0.3 =
-This version fixes a security related bug.  Upgrade immediately.
