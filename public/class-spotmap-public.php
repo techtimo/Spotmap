@@ -103,7 +103,7 @@ class Spotmap_Public{
 			'select' => "type,id,message,local_timezone,feed_name, time",
 			'type'=>$a['types'],
 			'feeds' => $a['feeds'],
-			'date-range' => [
+			'dateRange' => [
 				'from' => $a['date-range-from'],
 				'to' => $a['date-range-to']
 			],
