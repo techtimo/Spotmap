@@ -53,8 +53,11 @@ We can also show multiple tracks in different colors on a same day:
  
 ## FAQ
 ### How do I get my Feed ID
-First of all you need to create a XML Feed in your Spot account. If you have multiple devices, select only one.
-The link to the newly created feed looks similar to the following link: `http://share.findmespot.com/shared/faces/viewspots.jsp?glId=0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
-Everthing after the `=` is your feed id:
-`0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+You need to create an XML Feed in your spot account. ([See here](https://github.com/techtimo/spotmap/issues/4#issuecomment-638001718) for more details)
+Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently. 
+Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+### Can I use/add other maps?
+Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles.
+If you still search for another map search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
+If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
