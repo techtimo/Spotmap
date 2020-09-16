@@ -308,6 +308,9 @@ class Spotmap {
                     body.groupBy = 'feed_name';
                     body.orderBy = 'time DESC';
                     jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                        if(response.error){
+                            return;
+                        }
                         // debug("Checking for new points ...",self.options.debug);
                         response.forEach(function(entry, index) {
                             if(lastAdded.marker[entry.feed_name] < entry.unixtime){
@@ -428,19 +431,24 @@ class Spotmap {
             })
             row += '<tr>'
             table.append(jQuery(row));
-            lodash.forEach(response,function(entry){
-                if(!entry.local_timezone){
-                    entry.localdate = '';
-                    entry.localtime = '';
-                }
-                if(!entry.message)
-                    entry.message = '';
-                let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
-                if (hasLocaltime)
-                    row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
-                row += "</tr>";
-                table.append(jQuery(row))
-            });
+            if(response.error = true){
+                self.options.autoReload = false;
+                table.append(jQuery("<tr><td></td><td>No data found</td><td></td></tr>"))
+                return;
+            } else 
+                lodash.forEach(response,function(entry){
+                    if(!entry.local_timezone){
+                        entry.localdate = '';
+                        entry.localtime = '';
+                    }
+                    if(!entry.message)
+                        entry.message = '';
+                    let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
+                    if (hasLocaltime)
+                        row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
+                    row += "</tr>";
+                    table.append(jQuery(row))
+                });
             if(self.options.autoReload == true){
                 var oldResponse = response;
                 var refresh = setInterval(function(){ 
