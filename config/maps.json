@@ -70,5 +70,29 @@
       "maxZoom": 17,
       "attribution": "© <a href='http://opentopomap.org/'>OpenTopoMap</a> <a href='https://creativecommons.org/licenses/by-sa/3.0/'>(CC-BY-SA)</a> | © <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
     }
+  },
+  "spain-ign-topo": {
+    "wms": "true",
+    "label": "Spain IGN Topo",
+    "url": "http://www.ign.es/wms-inspire/mapa-raster",
+    "options": {
+      "layers": "mtn_rasterizado",
+      "format": "image/jpeg",
+      "transparent": "false",
+      "continuousWorld" : "true",
+      "attribution": "© <a href='http://www.ign.es/ign/main/index.do' target='_blank'>Instituto Geográfico Nacional de España</a>"
+    }
+  },
+  "france-ign-topo": {
+    "label": "France IGN Topo",
+    "url": "https://wxs.ign.fr/{geoportailToken}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+    "options": {
+      "geoportailToken": "choisirgeoportail",
+      "format": "image/jpeg",
+      "transparent": "false",
+      "attribution": "<a target='_blank' href='https://www.geoportail.gouv.fr/'>Geoportail France</a>",
+      "layer": "GEOGRAPHICALGRIDSYSTEMS.MAPS"
+    }
   }
 }
+
