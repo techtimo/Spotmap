@@ -369,7 +369,11 @@ class Spotmap {
                 for (let mapName in spotmapjsobj.maps) {
                     if (this.options.maps.includes(mapName)) {
                         let map = spotmapjsobj.maps[mapName];
-                        baseLayers[map.label] = L.tileLayer(map.url, map.options);
+                        if(map.wms){
+                            baseLayers[map.label] = L.tileLayer.wms(map.url, map.options);
+                        } else {
+                            baseLayers[map.label] = L.tileLayer(map.url, map.options);
+                        }
                     }
                 }
                 return baseLayers;
