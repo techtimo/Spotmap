@@ -64,7 +64,7 @@ class Spotmap {
             body.feeds = this.options.feeds;
         }
         var self = this;
-        jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+        this.getPoints(function (response) {
             
             var overlays = {},
                 lastAdded = {'marker': {},'line':{}};
@@ -307,7 +307,7 @@ class Spotmap {
                 var refresh = setInterval(function(){ 
                     body.groupBy = 'feed_name';
                     body.orderBy = 'time DESC';
-                    jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                    self.getPoints(function (response) {
                         if(response.error){
                             return;
                         }
@@ -348,10 +348,10 @@ class Spotmap {
                             }
                         });
                         
-                    }); 
+                    },{body: body, filter: self.options.filterPoints});
                 }, 30000);
             }
-        });
+        },{body: body, filter: this.options.filterPoints});
     }
 
     getOption(option, config) {
@@ -407,6 +407,35 @@ class Spotmap {
             console.log(message)
     }
 
+    getPoints(callback,options){
+        jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response){
+            // filter out close by points, never filter if group option is set
+            if(options.filter && ! options.body.groupBy){
+                response = lodash.each(response, function (element, index){
+                    // if we spliced the array, loop to the end with undefinded elements
+                    if(!element)
+                        return
+                    // continue so we can check against another value
+                    if(index == 0)
+                        return;
+                    let lastPoint;
+                    for (let i = index; i <= response.length; i++) {
+                        if(response[index-i]){
+                            lastPoint = [response[index-i].latitude,response[index-i].longitude]
+                            break;
+                        }
+                    }
+                    let dif = L.latLng(element.latitude, element.longitude).distanceTo(lastPoint);
+                    console.log(dif)
+                    if(dif < options.filter){
+                        response.splice(index,1)
+                    }
+                })
+                
+            }
+            callback(response);
+        });
+    }
     initTable(id){
         // define obj to post data
         var body = {
@@ -421,7 +450,7 @@ class Spotmap {
             body.feeds = this.options.feeds;
         }
         var self = this;
-        jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+        this.getPoints(function (response) {
             let headerElements = ["Type", "Message", "Time"];
             let hasLocaltime = false;
             if (lodash.find(response, function(o) { return o.local_timezone; })){
@@ -435,7 +464,7 @@ class Spotmap {
             })
             row += '<tr>'
             table.append(jQuery(row));
-            if(response.error = true){
+            if(response.error == true){
                 self.options.autoReload = false;
                 table.append(jQuery("<tr><td></td><td>No data found</td><td></td></tr>"))
                 return;
@@ -456,7 +485,7 @@ class Spotmap {
             if(self.options.autoReload == true){
                 var oldResponse = response;
                 var refresh = setInterval(function(){ 
-                    jQuery.post(spotmapjsobj.ajaxUrl, body, function (response) {
+                    self.getPoints(function (response) {
                         if( lodash.head(oldResponse).unixtime < lodash.head(response).unixtime){
                             var table = jQuery('#' + id);
                             table.empty();
@@ -486,12 +515,12 @@ class Spotmap {
                                 table.append(jQuery(row));
                             });
                         } else {
-                            console.log('same response!');
+                            self.debug('same response!');
                         }
                         
-                    }); 
+                    },{body: body, filter: self.options.filterPoints}); 
                 }, 10000);
             }
-        });
+        },{body: body, filter: this.options.filterPoints});
     }
 }
