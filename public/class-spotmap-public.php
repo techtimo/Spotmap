@@ -82,6 +82,7 @@ class Spotmap_Public{
 				'date' => '',
 				'date-range-to' => '',
 				'auto-reload' => '0',
+				'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
 			], $atts);
 		foreach (['types','feeds'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
@@ -102,6 +103,7 @@ class Spotmap_Public{
 		$options = [
 			'select' => "type,id,message,local_timezone,feed_name, time",
 			'type'=>$a['types'],
+			'filterPoints' => $a['filter-points'],
 			'feeds' => $a['feeds'],
 			'dateRange' => [
 				'from' => $a['date-range-from'],
@@ -140,6 +142,7 @@ class Spotmap_Public{
 			'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
 			'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'openstreetmap,opentopomap',
 			'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : NULL,
+			'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
 			'debug'=> '0',
 		], $atts );
 		
@@ -199,6 +202,9 @@ class Spotmap_Public{
 
 				error_log(print_r($a['gpx-color'],true));
 			}
+			if(empty($a['gpx-name'])){
+				$a['gpx-name'][0] = "GPX";
+			}
 			if(count($a['gpx-name']) < $number_of_tracks){
 				$a['gpx-name'] = array_fill(0,$number_of_tracks, $a['gpx-name'][0]);
 			}
@@ -215,6 +221,7 @@ class Spotmap_Public{
 		// generate the option object for init the map
 		$options = wp_json_encode([
 			'feeds' => $a['feeds'],
+			'filterPoints' => $a['filter-points'],
 			'styles' => $styles,
 			'gpx' => $gpx,
 			'date' => $a['date'],
