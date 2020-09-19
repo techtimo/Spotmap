@@ -339,6 +339,8 @@ class Spotmap {
                                     message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
                                 if (entry.battery_status == 'LOW')
                                     message += 'Battery status is low!' + '</br>';
+                                if (entry.hiddenPoints)
+                                    message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a raduis of'+ entry.hiddenPoints.radius+' meters</br>';
     
                                 let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
                                 overlays[entry.feed_name].group.addLayer(marker);
@@ -411,6 +413,7 @@ class Spotmap {
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response){
             // filter out close by points, never filter if group option is set
             if(options.filter && ! options.body.groupBy){
+                let indexesToBeDeleted = [];
                 response = lodash.each(response, function (element, index){
                     // if we spliced the array, loop to the end with undefinded elements
                     if(!element)
@@ -420,16 +423,20 @@ class Spotmap {
                         return;
                     let lastPoint;
                     for (let i = index; i <= response.length; i++) {
-                        if(response[index-i]){
-                            lastPoint = [response[index-i].latitude,response[index-i].longitude]
+                        if(!lodash.includes(indexesToBeDeleted, index)){
+                            lastPoint = [response[index-i].latitude,response[index-i].longitude];
+                            response[index-i].hiddenPoints = {count: i,radius: options.filter};
                             break;
                         }
                     }
                     let dif = L.latLng(element.latitude, element.longitude).distanceTo(lastPoint);
                     console.log(dif)
                     if(dif < options.filter){
-                        response.splice(index,1)
+                        indexesToBeDeleted.push(index);
                     }
+                });
+                lodash.each(indexesToBeDeleted,function(element){
+                    response.splice(element,1);
                 })
                 
             }
@@ -441,6 +448,7 @@ class Spotmap {
         var body = {
             'action': 'get_positions',
             'date-range': this.options.dateRange,
+            'type': this.options.type,
             'date': this.options.date,
             'orderBy': this.options.orderBy,
             'limit': this.options.limit,
