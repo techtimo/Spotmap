@@ -145,7 +145,9 @@ class Spotmap {
                         message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
                     if (entry.battery_status == 'LOW')
                         message += 'Battery status is low!' + '</br>';
-    
+                    if (entry.hiddenPoints)
+                        message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a radius of '+ entry.hiddenPoints.radius+' meters</br>';
+
     
                     var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
                     group.push(marker);
@@ -340,7 +342,7 @@ class Spotmap {
                                 if (entry.battery_status == 'LOW')
                                     message += 'Battery status is low!' + '</br>';
                                 if (entry.hiddenPoints)
-                                    message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a raduis of'+ entry.hiddenPoints.radius+' meters</br>';
+                                    message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a radius of '+ entry.hiddenPoints.radius+' meters</br>';
     
                                 let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
                                 overlays[entry.feed_name].group.addLayer(marker);
@@ -432,12 +434,16 @@ class Spotmap {
                     let dif = L.latLng(element.latitude, element.longitude).distanceTo(lastPoint);
                     console.log(dif)
                     if(dif < options.filter){
-                        indexesToBeDeleted.push(index);
+                        // indexesToBeDeleted.push(index);
+                        response[index] = undefined;
                     }
                 });
-                lodash.each(indexesToBeDeleted,function(element){
-                    response.splice(element,1);
-                })
+                // lodash.each(indexesToBeDeleted,function(element){
+                //     response[element] = undefined;
+                // });
+                response = response.filter(function( element ) {
+                    return element !== undefined;
+                 });
                 
             }
             callback(response);
