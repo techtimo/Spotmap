@@ -412,7 +412,7 @@ class Spotmap {
     getPoints(callback,options){
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response){
             // filter out close by points, never filter if group option is set
-            if(options.filter && ! options.body.groupBy){
+            if(options.filter && ! options.body.groupBy && !response.error){
                 let indexesToBeDeleted = [];
                 response = lodash.each(response, function (element, index){
                     // if we spliced the array, loop to the end with undefinded elements
