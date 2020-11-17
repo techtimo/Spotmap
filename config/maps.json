@@ -60,6 +60,7 @@
     "label": "OpenStreetMap",
     "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     "options": {
+      "maxZoom": 19,
       "attribution": "© <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
     }
   },

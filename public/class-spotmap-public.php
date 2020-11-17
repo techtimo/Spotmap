@@ -124,8 +124,9 @@ class Spotmap_Public{
 			'autoReload' => $a['auto-reload'],
 		];
 		$table_id = "spotmap-table-".mt_rand();
-		return '<table id='.$table_id.'></table>'
-			.'<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('. wp_json_encode($options).');spotmap.initTable("'.$table_id.'")})</script>';
+		return '
+	<table id='.$table_id.'></table>
+	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('. wp_json_encode($options).');spotmap.initTable("'.$table_id.'")})</script>';
 
 	}
 
@@ -263,7 +264,9 @@ class Spotmap_Public{
 			$css .= "max-width: 100%;";
 		}
 
-		return '<div id="'.$map_id.'" style="'.$css.'"></div><script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options.');spotmap.initMap()})</script>';
+		return '
+	<div id="'.$map_id.'" style="'.$css.'"></div>
+	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options.');spotmap.initMap()})</script>';
 	}
 
 
