@@ -3,13 +3,14 @@
  * Plugin Name:       Spotmap
  * Plugin URI:        https://github.com/techtimo/spotmap
  * Description:       Add an embedded map that shows the movement of a Spot device
- * Version:           0.9.2
+ * Version:           0.9.3
  * Author:            Timo Giese
  * Author URI:        https://github.com/techtimo
  * License:           GPL2
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       spotmap
  * Domain Path:       /languages
+ * GitHub Plugin URI: https://github.com/techtimo/spotmap
  */
 
 
