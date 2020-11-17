@@ -5,6 +5,7 @@
     "options": {
       "tileSize": 512,
       "mapboxToken": "",
+      "maxZoom": 23,
       "zoomOffset": -1,
       "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
     }
@@ -15,6 +16,7 @@
     "options": {
       "tileSize": 512,
       "mapboxToken": "",
+      "maxZoom": 23,
       "zoomOffset": -1,
       "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
     }
@@ -25,6 +27,7 @@
     "options": {
       "tileSize": 512,
       "mapboxToken": "",
+      "maxZoom": 23,
       "zoomOffset": -1,
       "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
     }
@@ -80,6 +83,7 @@
       "layers": "mtn_rasterizado",
       "format": "image/jpeg",
       "transparent": "false",
+      "maxZoom": 20,
       "continuousWorld" : "true",
       "attribution": "© <a href='http://www.ign.es/ign/main/index.do' target='_blank'>Instituto Geográfico Nacional de España</a>"
     }
@@ -91,6 +95,7 @@
       "geoportailToken": "choisirgeoportail",
       "format": "image/jpeg",
       "transparent": "false",
+      "maxZoom": 16,
       "attribution": "© <a target='_blank' href='https://www.geoportail.gouv.fr/'>Geoportail France</a>",
       "layer": "GEOGRAPHICALGRIDSYSTEMS.MAPS"
     }
@@ -110,7 +115,7 @@
     "url": "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
     "options": {
       "attribution": "Tiles © Esri — National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC",
-      "maxZoom": "16"
+      "maxZoom": "12"
     }
   }
 }
