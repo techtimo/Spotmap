@@ -1,0 +1,5 @@
+- name: get latest version for 2-camp.com
+  uses: satak/webrequest-action@master
+  with:
+    url: https://2-camp.com/wp-json/github-updater/v1/update/?key=${{ secrets.git_remote_updater_key }}&plugin=spotmap
+    method: GET
