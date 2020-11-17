@@ -245,6 +245,9 @@ class Spotmap {
                     });
                 }
             }
+            if(self.options.mapcenter == 'gpx' && self.options.gpx.length == 0){
+                self.options.mapcenter = 'all';
+            }
             if (self.options.mapcenter == 'all') {
                 var group = new L.featureGroup(all);
                 let bounds = group.getBounds();
@@ -271,13 +274,15 @@ class Spotmap {
                     });
                 }
             }
-    
+            
+            // hide map option, if only one
             if(Object.keys(baseLayers).length == 1){
                 baseLayers = {};
             }
             if (Object.keys(displayOverlays).length == 1) {
                 displayOverlays[Object.keys(displayOverlays)[0]].addTo(self.map);
-                L.control.layers(baseLayers).addTo(self.map);
+                if(Object.keys(baseLayers).length > 1)
+                    L.control.layers(baseLayers).addTo(self.map);
             } else {
                 L.control.layers(baseLayers, displayOverlays).addTo(self.map);
             }
