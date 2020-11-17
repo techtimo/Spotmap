@@ -59,13 +59,24 @@ class Spotmap_Database {
 			}
 		} else if(!empty($filter['date-range'])){
 			if(!empty($filter['date-range']['to'])){
+				
 				$date = date_create($filter['date-range']['to']);
+				if(substr($filter['date-range']['to'],0,5) == 'last-'){
+					$rel_string = substr($filter['date-range']['to'],5);
+					$rel_string = str_replace("-"," ",$rel_string);
+					$date = date_create("@".strtotime('-'.$rel_string));
+				}
 				if($date != null){
 					$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
 				}
 			} 
 			if (!empty($filter['date-range']['from'])){
 				$date = date_create($filter['date-range']['from']);
+				if(substr($filter['date-range']['from'],0,5) == 'last-'){
+					$rel_string = substr($filter['date-range']['from'],5);
+					$rel_string = str_replace("-"," ",$rel_string);
+					$date = date_create("@".strtotime('-'.$rel_string));
+				}
 				if($date != null){
 					$where .= "AND FROM_UNIXTIME(time) >= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
 				}
