@@ -1,0 +1,15 @@
+name: get latest version for 2-camp.com
+on:
+  push:
+    branches:
+    - master
+jobs:
+  master:
+    name: get latest
+    runs-on: ubuntu-latest  
+    steps:
+    - name: get latest version for 2-camp.com
+      uses: satak/webrequest-action@master      
+      with:
+        url: https://2-camp.com/wp-json/github-updater/v1/update/?key=${{ secrets.GIT_REMOTE_UPDATER_KEY }}&plugin=spotmap
+        method: GET
