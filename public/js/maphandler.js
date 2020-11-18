@@ -5,12 +5,14 @@
 class Spotmap {
     constructor (options) {
         this.options = options;
+        this.mapcenter = {};
         this.debug("Spotmap obj created.");
         this.debug(this.options);
     }
-
+    
     initMap(){
-
+        var self = this;
+        
         this.debug("Lodash version: " + lodash.VERSION);
     
         // load maps
@@ -24,6 +26,39 @@ class Spotmap {
         }
         this.map = L.map(this.options.mapId, mapOptions);
         this.map.once('focus', function() { self.map.scrollWheelZoom.enable(); });
+
+        let last = L.easyButton({
+            states: [{
+              stateName: 'all',
+              icon: 'dashicons dashicons-admin-site-alt3',
+              title: 'show all points',
+              onClick: function(control) {
+                self.map.fitBounds(self.mapcenter.all);
+                control.state('last');
+              }
+            }, {
+              icon: 'dashicons dashicons-location',
+              stateName: 'last',
+              onClick: function(control) {
+                self.map.setView(self.mapcenter.last, 14);
+                if(self.mapcenter.gpx)
+                    control.state('gpx');
+                else
+                    control.state('all');
+              },
+              title: 'show last point'
+            }, {
+              icon: 'dashicons dashicons-location-alt',
+              stateName: 'gpx',
+              onClick: function(control) {
+                self.map.fitBounds(self.mapcenter.gpx);
+                control.state('all');
+              },
+              title: 'show gpx tracks'
+            }]
+          });
+
+        L.easyBar([last]).addTo(this.map);
 
         baseLayers[Object.keys(baseLayers)[0]].addTo(this.map);
         var Marker = L.Icon.extend({
@@ -63,7 +98,6 @@ class Spotmap {
         if (this.options.feeds) {
             body.feeds = this.options.feeds;
         }
-        var self = this;
         this.getPoints(function (response) {
             
             var overlays = {},
@@ -202,15 +236,16 @@ class Spotmap {
                     let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
                         // e.target.getLayers()[0].bindPopup(entry.name);
                         // console.log(e)
+                        let gpxBound = e.target.getBounds();
+                        let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
+                        let point2 = L.latLng(gpxBound._southWest.lat, gpxBound._southWest.lng);
+                        if (!gpxBounds) {
+                            gpxBounds = L.latLngBounds([point, point2]);
+                        } else {
+                            gpxBounds.extend(L.latLngBounds([point, point2]))
+                        }
+                        self.mapcenter.gpx = gpxBounds;
                         if (self.options.mapcenter == 'gpx' || response.error) {
-                            let gpxBound = e.target.getBounds();
-                            let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
-                            let point2 = L.latLng(gpxBound._southWest.lat, gpxBound._southWest.lng);
-                            if (!gpxBounds) {
-                                gpxBounds = L.latLngBounds([point, point2]);
-                            } else {
-                                gpxBounds.extend(L.latLngBounds([point, point2]))
-                            }
                             self.map.fitBounds(gpxBounds);
                         }
                     }).on('addline', function(e) {
@@ -245,26 +280,29 @@ class Spotmap {
                     });
                 }
             }
+            var group = new L.featureGroup(all);
+            let bounds = group.getBounds();
+            self.mapcenter.all = bounds;
+            
+            
+            var lastPoint;
+            var time = 0;
+            if (response.length > 0 && !response.error){
+                response.forEach(function(entry, index) {
+                    if (time < entry.unixtime) {
+                        time = entry.unixtime;
+                        lastPoint = [entry.latitude, entry.longitude];
+                    }
+                });
+            }
+            self.mapcenter.last = lastPoint;
             if(self.options.mapcenter == 'gpx' && self.options.gpx.length == 0){
                 self.options.mapcenter = 'all';
             }
             if (self.options.mapcenter == 'all') {
-                var group = new L.featureGroup(all);
-                let bounds = group.getBounds();
                 self.map.fitBounds(bounds);
             } else if (self.options.mapcenter == 'last') {
-                var lastPoint;
-                var time = 0;
-                if (response.length > 0 && !response.error){
-                    response.forEach(function(entry, index) {
-                        if (time < entry.unixtime) {
-                            time = entry.unixtime;
-                            lastPoint = [entry.latitude, entry.longitude];
-                        }
-                    });
-                    self.map.setView([lastPoint[0], lastPoint[1]], 13);
-                }
-    
+                self.map.setView([lastPoint[0], lastPoint[1]], 13);
             }
             for (let index in self.options.mapOverlays) {
                 let overlay = self.options.mapOverlays[index];
