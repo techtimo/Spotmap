@@ -34,3 +34,10 @@ tr.spotmap.CUSTOM td:first-child{
     background-color: rgb(255, 255, 0.85);
     border-color: rgb(255, 255, 0.85);
 }
+
+
+
+div.easy-button-container > button.easy-button-button.leaflet-bar-part {
+    background-color: white;
+    padding: 0px;
+}

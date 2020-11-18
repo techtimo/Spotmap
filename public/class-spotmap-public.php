@@ -9,9 +9,10 @@ class Spotmap_Public{
     }
 
 	public function enqueue_styles() {
-		wp_enqueue_style( 'leafletcss', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
+		wp_enqueue_style( 'leaflet', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
-        wp_enqueue_style( 'leafletfullscreencss', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
+        wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
+		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
     }
 
 	public function enqueue_block_editor_assets(){
@@ -25,18 +26,18 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_scripts(){
-		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
-        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
-        wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
-        wp_enqueue_script('leaflet-swisstopo',  'https://unpkg.com/leaflet-tilelayer-swiss@2.1.0/dist/Leaflet.TileLayer.Swiss.umd.js');
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
-		
 		wp_localize_script('spotmap-handler', 'spotmapjsobj', [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'maps' => $this->get_maps(),
-			'url' =>  plugin_dir_url( __FILE__ )
+			'url' =>  plugin_dir_url( __FILE__ ),
+		]);		
+		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
+        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
+        wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
+        wp_enqueue_script('leaflet-easybutton',plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js');
+        wp_enqueue_script('leaflet-swisstopo',  'https://unpkg.com/leaflet-tilelayer-swiss@2.1.0/dist/Leaflet.TileLayer.Swiss.umd.js');
 
-		]);
 	}
 // TODO: move to admin class
 	public function get_maps(){
