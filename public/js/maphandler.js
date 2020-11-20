@@ -9,7 +9,7 @@ class Spotmap {
         this.debug("Spotmap obj created.");
         this.debug(this.options);
     }
-    
+
     initMap(){
         var self = this;
         
@@ -413,8 +413,9 @@ class Spotmap {
                     baseLayers['swissTopo'] = L.tileLayer.swiss();
                     return baseLayers;
                 }
-                for (let mapName in spotmapjsobj.maps) {
-                    if (this.options.maps.includes(mapName)) {
+                for (let mapName in this.options.maps) {
+                    mapName = this.options.maps[mapName];
+                    if (lodash.keys(spotmapjsobj.maps).includes(mapName)) {
                         let map = spotmapjsobj.maps[mapName];
                         if(map.wms){
                             baseLayers[map.label] = L.tileLayer.wms(map.url, map.options);
@@ -450,7 +451,7 @@ class Spotmap {
         }
     }
     debug(message){
-        if(this.options.debug)
+        if(this.options && this.options.debug)
             console.log(message)
     }
 
@@ -475,7 +476,7 @@ class Spotmap {
                         }
                     }
                     let dif = L.latLng(element.latitude, element.longitude).distanceTo(lastPoint);
-                    console.log(dif)
+                    // console.log(dif)
                     if(dif < options.filter){
                         // indexesToBeDeleted.push(index);
                         response[index] = undefined;
