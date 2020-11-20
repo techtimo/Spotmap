@@ -13,6 +13,7 @@ class Spotmap_Public{
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
         wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
 		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
+		wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
     }
 
 	public function enqueue_block_editor_assets(){
@@ -21,16 +22,33 @@ class Spotmap_Public{
 		wp_enqueue_script(
 			'spotmap-block',
 			plugins_url('js/block.js', __FILE__),
-			['wp-blocks', 'wp-element']
+			[
+				'wp-blocks',
+				'wp-element',
+				'wp-editor',
+				'wp-components',
+				'wp-compose',
+			]
 		);
+
+
+		register_block_type( 'spotmap/spotmap', array(
+			'editor_script' => 'spotmap-block',
+			'render_callback' => [$this, 'show_spotmap'],
+		) );
 	}
 
+	// public function block_test($block_attributes, $content){
+	// 	error_log(print_r($block_attributes,true));
+	// 	return [$this, show_spotmap($block_attributes,$content = null)];
+	// }
 	public function enqueue_scripts(){
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
 		wp_localize_script('spotmap-handler', 'spotmapjsobj', [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'maps' => $this->get_maps(),
 			'url' =>  plugin_dir_url( __FILE__ ),
+			'feeds' => $this->db->get_all_feednames(),
 		]);		
 		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
@@ -132,7 +150,7 @@ class Spotmap_Public{
 	}
 
 
-	function show_spotmap($atts,$content){
+	public function show_spotmap($atts,$content = null){
 		error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
 		$a = array_merge(
@@ -266,7 +284,7 @@ class Spotmap_Public{
 		}
 
 		return '
-	<div id="'.$map_id.'" style="'.$css.'"></div>
+	<div id="'.$map_id.'" class=align'.$a['align'].' style="'.$css.'"></div>
 	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options.');spotmap.initMap()})</script>';
 	}
 
