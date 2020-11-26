@@ -102,7 +102,7 @@
                 type: 'object',
             },
             gpx: {
-                type: 'object',
+                type: 'array',
             },
             mapcenter: {
                 type: 'string',
