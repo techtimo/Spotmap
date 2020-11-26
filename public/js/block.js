@@ -1,203 +1,63 @@
 // block.js
-(function (blocks, element, i18n, editor, components, compose) {
+(function (blocks, element, i18n, blockEditor, components, compose) {
     var el = element.createElement;
     const { __ } = i18n;
-    const { RichText, InspectorControls } = editor;
+    const { InspectorControls } = blockEditor;
     const { FormTokenField } = components;
-    const { SelectControl, TextControl, ToggleControl, Panel, PanelBody, PanelRow, } = components;
-
+    const { SelectControl, TextControl, TextareaControl, ToggleControl, ColorPalette, PanelBody, PanelRow, DateTimePicker , RadioGroup, UnitControl,  } = components;
+    
     blocks.registerBlockType('spotmap/spotmap', {
         title: __('Spotmap'),
         supports: {
-            align: true
+            align: ['full','wide']
         },
         icon: 'location-alt',
         category: 'embed',
         edit: function (props) {
-            let feeds = props.attributes.feeds || spotmapjsobj.feeds;
-            if(!props.attributes.feeds){
+            // if edit was called first time
+            if (props.attributes.height == '-10'){
+                // set all default variables
+                let mapId = 'spotmap-container-' + Math.random()*10E17;
+                props.setAttributes({ mapId:  mapId});
+                props.setAttributes({ maps: ['opentopomap', 'openstreetmap',] });
                 props.setAttributes({ feeds: spotmapjsobj.feeds });
+                props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'12'})) });
+                props.setAttributes({ autoReload: false });
+                props.setAttributes({ debug: false });
+                props.setAttributes({ height: 450 });
+                props.setAttributes({ dateRange: {to:'',from:'', }});
+                props.setAttributes({ mapcenter: 'all' });
+                return [el('div', {
+                    id: mapId,
+                    style: {
+                        class: 'align' + props.attributes.align,
+                        'z-index': 0,
+                    },
+                }, ''
+                ),]
             }
-            let styles = {};
-            for (let i = 0; i < feeds.length; i++) {
-                const element = feeds[i];
-                let color;
-                if(props.attributes.color && props.attributes.color[i]){
-                    color = props.attributes.color[i]
-                }
-                let splitLines;
-                if(props.attributes.splitLines && props.attributes.splitLines[i]){
-                    splitLines = props.attributes.splitLines[i]
-                }
-                styles[element] = {
-                    color: color || 'blue',
-                    splitLines: splitLines || 10,
-                    tinyTypes: null,
-                }
-            }
-            // let gpx = [];
-            // for (let i = 0; i < props.attributes["gpx-url"].length; i++) {
-            //     const element = props.attributes["gpx-url"][i];
-            //     gpx.push({
-            //         name: props.attributes["gpx-name"][i],
-            //         url: props.attributes["gpx-url"][i],
-            //         color: props.attributes["gpx-color"][i],
-            //     });
-            // }
-            var spotmap = new Spotmap({
-                mapId: 'spotmap-container',
-                feeds: props.attributes.feeds || spotmapjsobj.feeds,
-                styles: styles,
-                gpx: [],
-                filterPoints: 5,
-                mapcenter: props.attributes.mapcenter || 'all',
-                maps: props.attributes.maps || 'opentopomap',
-                
-            });
+            var spotmap = new Spotmap (props.attributes);
             // jQuery("#spotmap-container").empty().removeClass();
             try {
-                spotmap.initMap();
+                setTimeout(function(){
+                    spotmap.initMap();
+                },500);
             } catch (e) {console.log(e) }
+            // console.log('test');
             return [el('div', {
-                id: 'spotmap-container',
+                id: props.attributes.mapId,
                 style: {
-                    'height': props.attributes.height + 'px'
+                    'height': props.attributes.height + 'px',
+                    class: 'align' + props.attributes.align,
+                    'z-index': 0,
                 },
-                "z-index": 0,
-            },'Click here'
+            }, ''
             ),
             el(InspectorControls, {},
-                el(PanelBody, { title: 'General Settings', initialOpen: true },
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "maps",
-                            suggestions: Object.keys(spotmapjsobj.maps),
-                            onChange: (value) => {
-                                props.setAttributes({ maps: value });
-                            },
-                            value: props.attributes.maps,
-                            help: "test"
-                        })
-                    ),
-
-
-                    /* Text Field */
-                    el(PanelRow, {},
-                        el(SelectControl,
-                            {
-                                label: 'Zoom to',
-                                onChange: (value) => {
-                                    props.setAttributes({ mapcenter: value });
-                                },
-                                value: props.attributes.mapcenter,
-                                options: [
-                                    { label: 'all points', value: 'all' },
-                                    { label: 'latest point', value: 'last' },
-                                    { label: 'GPX tracks', value: 'gpx' }
-                                ],
-                                labelPosition: "side",
-
-                            }
-                        )
-                    ),
-
-                    /* Text Field */
-                    el(PanelRow, {},
-                        el(TextControl,
-                            {
-                                label: 'height',
-                                onChange: (value) => {
-                                    props.setAttributes({ height: value });
-                                },
-                                value: props.attributes.height
-                            }
-                        )
-                    ),
-
-                ),
-                el(PanelBody, { title: 'Feed Settings', initialOpen: true },
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "Feeds",
-                            suggestions: Object.keys(spotmapjsobj.feeds),
-                            onChange: (value) => {
-                                props.setAttributes({ feeds: value });
-                            },
-                            value: props.attributes.feeds,
-                        })
-                    ),
-
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "Colors",
-                            suggestions: ["black", "blue", "gold", "green", "grey", "onratechange", "ReadableStream", "violet", "yellow"],
-                            onChange: (value) => {
-                                props.setAttributes({ colors: value });
-                            },
-                            value: props.attributes.colors,
-                        })
-                    ),
-
-                    /* Text Field */
-                    el(PanelRow, {},
-                        el(FormTokenField,
-                            {
-                                label: 'Splitlines',
-                                onChange: (value) => {
-                                    props.setAttributes({ splitLines: value });
-                                },
-                                value: props.attributes.splitLines
-                            }
-                        )
-                    ),
-
-                    /* Toggle Field */
-                    el(PanelRow, {},
-                        el(ToggleControl,
-                            {
-                                label: 'enable automatic reload',
-                                onChange: (value) => {
-                                    props.setAttributes({ 'auto-reload': value });
-                                },
-                                checked: props.attributes["auto-reload"],
-                            }
-                        )
-                    )
-                ),
-                el(PanelBody, { title: 'GPX Settings', initialOpen: false },
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "Names",
-                            suggestions: Object.keys(spotmapjsobj.feeds),
-                            onChange: (value) => {
-                                props.setAttributes({ "gpx-name": value });
-                            },
-                            value: props.attributes["gpx-name"],
-                        }),
-                    ),
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "URLs",
-                            suggestions: Object.keys(spotmapjsobj.feeds),
-                            onChange: (value) => {
-                                props.setAttributes({ "gpx-url": value });
-                            },
-                            value: props.attributes["gpx-url"],
-                        })
-                    ),
-                    el(PanelRow, {},
-                        el(FormTokenField, {
-                            label: "Colors",
-                            suggestions: Object.keys(spotmapjsobj.feeds),
-                            onChange: (value) => {
-                                props.setAttributes({ "gpx-color": value });
-                            },
-                            value: props.attributes["gpx-color"],
-                        })
-                    ),
-                ),
-                el(PanelBody, { title: 'Advanced', initialOpen: false },
-                    /* Toggle Field */
+                generalSettings(props),
+                feedPanel(props),
+                el(PanelBody, { title: 'Experimental', initialOpen: false },
+                    // /* Toggle Field TODO: use form toggle instead
                     el(PanelRow, {},
                         el(ToggleControl,
                             {
@@ -208,55 +68,286 @@
                                 checked: props.attributes.debug,
                             }
                         )
-                    )
+                    ),
+                    /* Toggle Field */
+                    el(PanelRow, {},
+                        el(ToggleControl,
+                            {
+                                label: 'automatic reload',
+                                onChange: (value) => {
+                                    props.setAttributes({ 'autoReload': value });
+                                },
+                                checked: props.attributes["autoReload"],
+                                help: "If enabled this will create"
+                            }
+                        )
+                    ),
                 ),
             )]
         },
         attributes: {
             maps: {
                 type: 'array',
-                default: ['opentopomap', 'openstreetmap',],
+                // default: ['opentopomap', 'openstreetmap',],
             },
             feeds: {
                 type: 'array',
+                // default: spotmapjsobj.feeds
             },
-            colors: {
-                type: 'array',
+            styles: {
+                type: 'object',
+                // default: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'12'})),
             },
-            'gpx-color': {
-                type: 'array',
+            dateRange: {
+                type: 'object',
             },
-            'gpx-name': {
-                type: 'array',
-            },
-            'gpx-url': {
-                type: 'array',
+            gpx: {
+                type: 'object',
             },
             mapcenter: {
                 type: 'string',
-                //default: 'all',
             },
             height: {
                 type: 'string',
-                default: '450',
+                default: '-10',
             },
             debug: {
-                type: 'string',
+                type: 'boolean',
             },
-            'auto-reload': {
-                type: 'string',
+            autoReload: {
+                type: 'boolean',
             },
-            splitLines: {
-                type: 'array',
+            mapId: {
+                type: 'string',
             },
         },
         keywords: ['findmespot', 'spot', 'gps', 'spotmap', 'gpx', __('map')],
     });
+
+    function generalSettings(props){
+        let panels = [];
+        let general = el(PanelBody, { title: __('General Settings'), initialOpen: false },
+            el(PanelRow, {},
+                el(FormTokenField, {
+                    label: "Feeds",
+                    suggestions: Object.keys(spotmapjsobj.feeds),
+                    onChange: (value) => {
+                        props.setAttributes({ feeds: value });
+                    },
+                    value: props.attributes.feeds,
+                })
+            ),
+
+            el(PanelRow, {},
+                el(FormTokenField, {
+                    label: "maps",
+                    suggestions: Object.keys(spotmapjsobj.maps),
+                    onChange: (value) => {
+                        props.setAttributes({ maps: value });
+                    },
+                    value: props.attributes.maps,
+                    help: "test"
+                })
+            ),
+            
+            /* Text Field */
+            el(PanelRow, {},
+                el(SelectControl,
+                    {
+                        label: 'Zoom to',
+                        onChange: (value) => {
+                            props.setAttributes({ mapcenter: value });
+                        },
+                        value: props.attributes.mapcenter,
+                        options: [
+                            { label: 'all points', value: 'all' },
+                            { label: 'latest point', value: 'last' },
+                            { label: 'GPX tracks', value: 'gpx' }
+                        ],
+                        labelPosition: "side",
+
+                    }
+                )
+            ),
+
+            /* Text Field */
+            el(PanelRow, {},
+                el(TextControl,
+                    {
+                        label: 'height',
+                        onChange: (value) => {
+                            props.setAttributes({ height: value });
+                        },
+                        value: props.attributes.height
+                    }
+                )
+            ),
+        );
+        panels.push(general);
+        let options = [
+            { label: 'don\'t filter', value: '' },
+            { label: 'last week', value: 'last-1-week' },
+            { label: 'last 10 days', value: 'last-10-days' },
+            { label: 'last 2 weeks', value: 'last-2-weeks' },
+            { label: 'last month', value: 'last-1-month' },
+            { label: 'last year', value: 'last-1-year' },
+            { label: 'a specific date', value: 'specific' },
+        ];
+        if(!lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.from}) ){
+            options.push({ label: props.attributes.dateRange.from, value:  props.attributes.dateRange.from})
+        } 
+        let dateFrom = [
+            el(PanelRow, {},
+                el(SelectControl,
+                    {
+                        label: 'Show points from',
+                        onChange: (value) => {
+                            let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                            returnArray.from = value;
+                            props.setAttributes({ dateRange: returnArray});
+                        },
+                        value: props.attributes.dateRange.from,
+                        options: options,
+                        labelPosition: "side",
+                    }
+                )
+            ),];
+        
+        if(props.attributes.dateRange.from === 'specific'){
+            dateFrom.push( 
+                el(DateTimePicker,
+                {
+                    onChange: (currentDate) => {
+                        console.log(currentDate);
+                        let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                        returnArray.from = currentDate;
+                        props.setAttributes({ dateRange: returnArray});
+                    },
+                    currentDate: new Date(),
+                }
+                )
+            )
+        }
+
+        options = [
+            { label: 'don\'t filter', value: '' },
+            { label: 'last 30 minutes', value: 'last-30-minutes' },
+            { label: 'last hour', value: 'last-1-hour' },
+            { label: 'last 2 hours', value: 'last-2-hour' },
+            { label: 'last day', value: 'last-1-day' },
+            { label: 'a specific date', value: 'specific' },
+        ];
+        if(!lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.to}) ){
+            options.push({ label: props.attributes.dateRange.to, value:  props.attributes.dateRange.to})
+        } 
+        let dateTo = [
+            el(PanelRow, {},
+                el(SelectControl,
+                    {
+                        label: 'Show points to',
+                        onChange: (value) => {
+                            let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                            returnArray.to = value;
+                            props.setAttributes({ dateRange: returnArray});
+                        },
+                        value: props.attributes.dateRange.to,
+                        options: options,
+                        labelPosition: "side",
+                    }
+                )
+            ),];
+        
+        if(props.attributes.dateRange.to === 'specific'){
+            dateTo.push( 
+                el(DateTimePicker,
+                {
+                    onChange: (currentDate) => {
+                        console.log(currentDate);
+                        let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                        returnArray.to = currentDate;
+                        props.setAttributes({ dateRange: returnArray});
+                    },
+                    currentDate: new Date(),
+                }
+                )
+            )
+        }
+        panels.push(el(PanelBody, { title: 'Point Filering', initialOpen: true },dateFrom,dateTo));
+        return panels;
+
+    }
+
+    function feedPanel(props) {
+        let ui;
+        let panels = [];
+        if( !props.attributes.feeds){
+            return [];
+        }
+        // console.log(props)
+        for (let i = 0; i < props.attributes.feeds.length; i++) {
+            const feed = props.attributes.feeds[i];
+            // console.log(feed);
+            
+            if (!props.attributes.styles[feed]){
+                let returnArray = lodash.cloneDeep(props.attributes.styles);
+                returnArray[feed] = {color: 'blue', splitLines: 12};
+                props.setAttributes({ styles: returnArray});
+            }
+            ui = el(PanelBody, { title: feed +' Feed', initialOpen: false }, 
+                el(PanelRow, {},
+                    el(ColorPalette , {
+                        label: "Colors",
+                        colors: [
+                        {name: "black", color: "black"},
+                        {name: "blue", color: "blue"},
+                        {name: "gold", color: "gold"},
+                        {name: "green", color: "green"},
+                        {name: "grey", color: "grey"},
+                        {name: "red", color: "red"},
+                        {name: "violet", color: "violet"},
+                        {name: "yellow", color: "yellow"},
+                    ],
+                        onChange: (value) => {
+                            let returnArray = lodash.cloneDeep(props.attributes.styles);
+                            console.log(value,returnArray)
+                            returnArray[feed]['color'] = value;
+                            props.setAttributes({ styles: returnArray});
+                        },
+                        value: props.attributes.styles[feed]['color'] || 'blue',
+                        disableCustomColors: true, 
+                    })
+                ),
+                el(PanelRow, {},
+                    el(TextControl,
+                        {
+                            label: 'Splitlines',
+                            onChange: (value) => {
+                                let returnArray = lodash.cloneDeep(props.attributes.styles);
+                                console.log(value,returnArray)
+                                returnArray[feed]['splitLines'] = value;
+                                props.setAttributes({ styles: returnArray});
+                            },
+                            value:props.attributes.styles[feed]['splitLines'] || '12',
+                        }
+                    )
+                )
+            
+            );
+
+
+            panels.push(ui);
+
+        }
+        return panels;
+    }
+
 })(
     window.wp.blocks,
     window.wp.element,
     window.wp.i18n,
-    window.wp.editor,
+    window.wp.blockEditor,
     window.wp.components,
     window.wp.compose,
 );
+
+
