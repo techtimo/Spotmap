@@ -66,6 +66,7 @@ class Spotmap_Database {
 					$rel_string = str_replace("-"," ",$rel_string);
 					$date = date_create("@".strtotime('-'.$rel_string));
 				}
+
 				if($date != null){
 					$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date,"Y-m-d H:i:s" ) . "' ";
 				}

@@ -25,23 +25,25 @@ class Spotmap_Public{
 			[
 				'wp-blocks',
 				'wp-element',
-				'wp-editor',
+				'wp-block-editor',
 				'wp-components',
 				'wp-compose',
 			]
 		);
-
+		
+		wp_localize_script('spotmap-block', 'spotmapjsobj', [
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'maps' => $this->get_maps(),
+			'url' =>  plugin_dir_url( __FILE__ ),
+			'feeds' => $this->db->get_all_feednames(),
+		]);
 
 		register_block_type( 'spotmap/spotmap', array(
 			'editor_script' => 'spotmap-block',
-			'render_callback' => [$this, 'show_spotmap'],
+			'render_callback' => [$this, 'show_spotmap_block'],
 		) );
 	}
 
-	// public function block_test($block_attributes, $content){
-	// 	error_log(print_r($block_attributes,true));
-	// 	return [$this, show_spotmap($block_attributes,$content = null)];
-	// }
 	public function enqueue_scripts(){
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
 		wp_localize_script('spotmap-handler', 'spotmapjsobj', [
@@ -49,7 +51,7 @@ class Spotmap_Public{
 			'maps' => $this->get_maps(),
 			'url' =>  plugin_dir_url( __FILE__ ),
 			'feeds' => $this->db->get_all_feednames(),
-		]);		
+		]);
 		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
@@ -149,8 +151,14 @@ class Spotmap_Public{
 
 	}
 
-
+	public function show_spotmap_block($options){
+		$options_json = wp_json_encode($options);
+		error_log("BLOCK init vals: ". $options_json);
+		return '<div id="'.$options['mapId'].'" class='. (!empty($a['align']) ? 'align'.$a['align'] : '' ). ' style="z-index: 0;"></div>
+	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options_json.');spotmap.initMap()})</script>';
+	}
 	public function show_spotmap($atts,$content = null){
+
 		error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
 		$a = array_merge(
@@ -284,7 +292,7 @@ class Spotmap_Public{
 		}
 
 		return '
-	<div id="'.$map_id.'" class=align'.$a['align'].' style="'.$css.'"></div>
+	<div id="'.$map_id.'" style="'.$css.'"></div>
 	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options.');spotmap.initMap()})</script>';
 	}
 

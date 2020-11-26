@@ -4,6 +4,9 @@
 
 class Spotmap {
     constructor (options) {
+        if(!options.maps || !options.feeds){
+            console.error("Missing important options!!");
+        }
         this.options = options;
         this.mapcenter = {};
         this.debug("Spotmap obj created.");
@@ -11,6 +14,7 @@ class Spotmap {
     }
 
     initMap(){
+        jQuery('#'+ this.options.mapId).height(this.options.height);
         var self = this;
         
         this.debug("Lodash version: " + lodash.VERSION);
