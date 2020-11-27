@@ -41,3 +41,10 @@ div.easy-button-container > button.easy-button-button.leaflet-bar-part {
     background-color: white;
     padding: 0px;
 }
+
+
+span.button-state.state-all.all-active > .dashicons {
+    position: absolute;
+    top: 4px;
+    left: 5px;
+}

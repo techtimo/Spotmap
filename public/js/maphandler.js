@@ -30,21 +30,21 @@ class Spotmap {
         }
         this.map = L.map(this.options.mapId, mapOptions);
         this.map.once('focus', function() { self.map.scrollWheelZoom.enable(); });
-
+        let zoomOptions = {duration: 2};
         let last = L.easyButton({
             states: [{
               stateName: 'all',
               icon: 'dashicons dashicons-admin-site-alt3',
               title: 'show all points',
               onClick: function(control) {
-                self.map.fitBounds(self.mapcenter.all);
+                self.map.flyToBounds(self.mapcenter.all,zoomOptions);
                 control.state('last');
               }
             }, {
               icon: 'dashicons dashicons-location',
               stateName: 'last',
               onClick: function(control) {
-                self.map.setView(self.mapcenter.last, 14);
+                self.map.flyTo(self.mapcenter.last, 14,zoomOptions);
                 if(self.mapcenter.gpx)
                     control.state('gpx');
                 else
@@ -55,7 +55,7 @@ class Spotmap {
               icon: 'dashicons dashicons-location-alt',
               stateName: 'gpx',
               onClick: function(control) {
-                self.map.fitBounds(self.mapcenter.gpx);
+                self.map.flyToBounds(self.mapcenter.gpx,zoomOptions);
                 control.state('all');
               },
               title: 'show gpx tracks'

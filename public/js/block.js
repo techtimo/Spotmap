@@ -15,7 +15,7 @@
         category: 'embed',
         edit: function (props) {
             // if edit was called first time
-            if (props.attributes.height == '-10'){
+            if (!props.attributes.height){
                 // set all default variables
                 let mapId = 'spotmap-container-' + Math.random()*10E17;
                 props.setAttributes({ mapId:  mapId});
@@ -24,7 +24,7 @@
                 props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'12'})) });
                 props.setAttributes({ autoReload: false });
                 props.setAttributes({ debug: false });
-                props.setAttributes({ height: 450 });
+                props.setAttributes({ height: '500' });
                 props.setAttributes({ dateRange: {to:'',from:'', }});
                 props.setAttributes({ mapcenter: 'all' });
                 return [el('div', {
@@ -109,7 +109,7 @@
             },
             height: {
                 type: 'string',
-                default: '-10',
+                // default: '-10',
             },
             debug: {
                 type: 'boolean',
