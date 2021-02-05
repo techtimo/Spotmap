@@ -100,6 +100,30 @@
       "layer": "GEOGRAPHICALGRIDSYSTEMS.MAPS"
     }
   },
+  "newzealand-topo50": {
+    "label": "NZ Topo 50",
+    "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50767/EPSG:3857/{z}/{x}/{y}.png",
+    "options": {
+      "LINZToken": "",
+      "subdomains":"abcd",
+      "format": "image/jpeg",
+      "transparent": "false",
+      "maxZoom": 16,
+      "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
+    }
+  },
+  "newzealand-topo250": {
+    "label": "NZ Topo 250",
+    "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50798/EPSG:3857/{z}/{x}/{y}.png",
+    "options": {
+      "LINZToken": "",
+      "subdomains":"abcd",
+      "format": "image/jpeg",
+      "transparent": "false",
+      "maxZoom": 16,
+      "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
+    }
+  },
   "stamen-watercolor": {
     "label": "Watercolor",
     "url": "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
