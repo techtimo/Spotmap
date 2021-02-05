@@ -30,11 +30,4 @@
   left:0!important;
   z-index:99999;
   }
-
-@media
-  (-webkit-min-device-pixel-ratio:2),
-  (min-resolution:192dpi) {
-    .leaflet-control-fullscreen a {
-      background-image:url(fullscreen@2x.png);
-    }
-  }
+  
