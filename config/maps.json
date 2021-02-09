@@ -92,7 +92,7 @@
     "label": "France IGN Topo",
     "url": "https://wxs.ign.fr/{geoportailToken}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
     "options": {
-      "geoportailToken": "choisirgeoportail",
+      "geoportailToken": "",
       "format": "image/jpeg",
       "transparent": "false",
       "maxZoom": 16,
