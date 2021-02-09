@@ -82,6 +82,20 @@ class Spotmap_Public{
 					}
 					unset($maps[$name]);
 				}
+				else if(isset($data['options']['LINZToken'])){
+					if(!empty($api_tokens['linz.govt.nz'])){
+						$data['options']['LINZToken'] = $api_tokens['linz.govt.nz'];
+						continue;
+					}
+					unset($maps[$name]);
+				}
+				else if(isset($data['options']['geoportailToken'])){
+					if(!empty($api_tokens['geoservices.ign.fr'])){
+						$data['options']['geoportailToken'] = $api_tokens['geoservices.ign.fr'];
+						continue;
+					}
+					unset($maps[$name]);
+				}
 			}
 			return ($maps);
 		}

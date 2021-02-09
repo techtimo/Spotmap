@@ -99,7 +99,7 @@ class Spotmap_Admin {
 			'',
 			'spotmap-thirdparties-group'
 		);
-		foreach (['mapbox','thunderforest','timezonedb','linz.govt.nz'] as $index) {
+		foreach (['mapbox','thunderforest','timezonedb','linz.govt.nz','geoservices.ign.fr'] as $index) {
 			$value = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
 			add_settings_field(
 				'spotmap_api_tokens['.$index.']',
