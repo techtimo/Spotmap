@@ -11,6 +11,7 @@ class Spotmap {
         this.mapcenter = {};
         this.debug("Spotmap obj created.");
         this.debug(this.options);
+        this.map = {};
     }
 
     initMap(){
@@ -30,18 +31,20 @@ class Spotmap {
         }
         this.map = L.map(this.options.mapId, mapOptions);
         this.map.once('focus', function() { self.map.scrollWheelZoom.enable(); });
+
+        // zoom to bounds btn 
         let zoomOptions = {duration: 2};
         let last = L.easyButton({
             states: [{
               stateName: 'all',
-              icon: 'dashicons dashicons-admin-site-alt3',
+              icon: '<span class="target">🌐</span>',
               title: 'show all points',
               onClick: function(control) {
                 self.map.flyToBounds(self.mapcenter.all,zoomOptions);
                 control.state('last');
               }
             }, {
-              icon: 'dashicons dashicons-location',
+              icon: '<span class="target">📍</span>',
               stateName: 'last',
               onClick: function(control) {
                 self.map.flyTo(self.mapcenter.last, 14,zoomOptions);
@@ -52,7 +55,7 @@ class Spotmap {
               },
               title: 'show last point'
             }, {
-              icon: 'dashicons dashicons-location-alt',
+              icon: '<span class="target">👣</span>',
               stateName: 'gpx',
               onClick: function(control) {
                 self.map.flyToBounds(self.mapcenter.gpx,zoomOptions);
@@ -61,8 +64,12 @@ class Spotmap {
               title: 'show gpx tracks'
             }]
           });
-
-        L.easyBar([last]).addTo(this.map);
+        //   the users position
+        let position = L.easyButton('<span class="target">🏡</span>',function(){
+            self.map.locate({setView: true, maxZoom: 16});
+        })
+        // add all btns to map
+        L.easyBar([last,position]).addTo(this.map);
 
         baseLayers[Object.keys(baseLayers)[0]].addTo(this.map);
         var Marker = L.Icon.extend({
@@ -215,6 +222,11 @@ class Spotmap {
             var gpxBounds;
             var gpxOverlays = {};
             if (self.options.gpx) {
+                // set the gpx overlays, so the gpx will be added first (= below the feeds)
+                let gpxnames = lodash.map(self.options.gpx, 'name');
+                lodash.forEach(gpxnames,function(name){
+                    gpxOverlays[name] = null;
+                });
                 // reversed so the first one is added last == on top of all others
                 for (var i=0; i < self.options.gpx.length; i++) {
                     let entry = self.options.gpx[i];
@@ -265,7 +277,7 @@ class Spotmap {
                 }
             }
             // reverse order in menu to have the first element added last but shown on the menu first again
-            lodash.forEachRight(gpxOverlays, function(value,key) { overlays[key] = value });
+            lodash.forEachRight(gpxOverlays, function(value,entryName) { overlays[entryName] = value });
             var displayOverlays = {};
             for (let key in overlays) {
                 displayOverlays[overlays[key].label] = overlays[key].group;
@@ -285,7 +297,7 @@ class Spotmap {
                 }
             }
             var group = new L.featureGroup(all);
-            let bounds = group.getBounds();
+            let bounds = group == undefined ? undefined : group.getBounds();
             self.mapcenter.all = bounds;
             
             
@@ -300,14 +312,18 @@ class Spotmap {
                 });
             }
             self.mapcenter.last = lastPoint;
-            if(self.options.mapcenter == 'gpx' && self.options.gpx.length == 0){
-                self.options.mapcenter = 'all';
+           // error key is only set on an empty response
+            if(!response.hasOwnProperty("error")){
+                if(self.options.mapcenter == 'gpx' && self.options.gpx.length == 0){
+                    self.options.mapcenter = 'all';
+                }
+                if (self.options.mapcenter == 'all') {
+                    self.map.fitBounds(bounds);
+                } else if (self.options.mapcenter == 'last') {
+                    self.map.setView([lastPoint[0], lastPoint[1]], 13);
+                }
             }
-            if (self.options.mapcenter == 'all') {
-                self.map.fitBounds(bounds);
-            } else if (self.options.mapcenter == 'last') {
-                self.map.setView([lastPoint[0], lastPoint[1]], 13);
-            }
+            
             for (let index in self.options.mapOverlays) {
                 let overlay = self.options.mapOverlays[index];
                 if(overlay == 'openseamap'){
@@ -403,7 +419,7 @@ class Spotmap {
                 }, 30000);
             }
         },{body: body, filter: this.options.filterPoints});
-    }
+    }world
 
     getOption(option, config) {
         if(!config){
@@ -444,6 +460,8 @@ class Spotmap {
             return 'gold';
         }
         if (option == 'splitLines' && config.feed) {
+            if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLinesEnabled && this.options.styles[config.feed].splitLinesEnabled === false)
+                return 'false';
             if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLines)
                 return this.options.styles[config.feed].splitLines;
             return 'false';
