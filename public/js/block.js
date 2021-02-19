@@ -2,21 +2,21 @@
 (function (blocks, element, i18n, blockEditor, components, compose) {
     var el = element.createElement;
     const { __ } = i18n;
-    const { InspectorControls } = blockEditor;
+    const { InspectorControls, MediaUpload } = blockEditor;
     const { FormTokenField } = components;
-    const { SelectControl, TextControl, TextareaControl, ToggleControl, ColorPalette, PanelBody, PanelRow, DateTimePicker , RadioGroup, UnitControl,  } = components;
+    const { SelectControl, TextControl, Button , ToggleControl, ColorPalette, PanelBody, PanelRow, DateTimePicker , RadioGroup, UnitControl,  } = components;
     
     blocks.registerBlockType('spotmap/spotmap', {
-        title: __('Spotmap'),
+        title: 'Spotmap',
         supports: {
             align: ['full','wide']
         },
         icon: 'location-alt',
         category: 'embed',
         edit: function (props) {
-            // if edit was called first time
+            // if block has just been created
             if (!props.attributes.height){
-                // set all default variables
+                // set all default props
                 let mapId = 'spotmap-container-' + Math.random()*10E17;
                 props.setAttributes({ mapId:  mapId});
                 props.setAttributes({ maps: ['opentopomap', 'openstreetmap',] });
@@ -27,6 +27,7 @@
                 props.setAttributes({ height: '500' });
                 props.setAttributes({ dateRange: {to:'',from:'', }});
                 props.setAttributes({ mapcenter: 'all' });
+                props.setAttributes({ gpx: [] });
                 return [el('div', {
                     id: mapId,
                     style: {
@@ -37,13 +38,14 @@
                 ),]
             }
             var spotmap = new Spotmap (props.attributes);
-            // jQuery("#spotmap-container").empty().removeClass();
+            // jQuery("#"+props.attributes.mapId).empty().removeClass();
             try {
                 setTimeout(function(){
                     spotmap.initMap();
                 },500);
-            } catch (e) {console.log(e) }
-            // console.log('test');
+            } catch (e) {
+                console.log(e) 
+            }
             return [el('div', {
                 id: props.attributes.mapId,
                 style: {
@@ -56,6 +58,7 @@
             el(InspectorControls, {},
                 generalSettings(props),
                 feedPanel(props),
+                gpxPanel(props),
                 el(PanelBody, { title: 'Experimental', initialOpen: false },
                     // /* Toggle Field TODO: use form toggle instead
                     el(PanelRow, {},
@@ -88,15 +91,12 @@
         attributes: {
             maps: {
                 type: 'array',
-                // default: ['opentopomap', 'openstreetmap',],
             },
             feeds: {
                 type: 'array',
-                // default: spotmapjsobj.feeds
             },
             styles: {
                 type: 'object',
-                // default: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'12'})),
             },
             dateRange: {
                 type: 'object',
@@ -109,7 +109,6 @@
             },
             height: {
                 type: 'string',
-                // default: '-10',
             },
             debug: {
                 type: 'boolean',
@@ -193,7 +192,9 @@
             { label: 'last year', value: 'last-1-year' },
             { label: 'a specific date', value: 'specific' },
         ];
+        // if option is set to sth else (aka custom date)
         if(!lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.from}) ){
+            options[lodash.last(options)] = { label: 'choose new date', value: 'specific' };
             options.push({ label: props.attributes.dateRange.from, value:  props.attributes.dateRange.from})
         } 
         let dateFrom = [
@@ -213,7 +214,7 @@
                 )
             ),];
         
-        if(props.attributes.dateRange.from === 'specific'){
+        if(props.attributes.dateRange.from === 'specific' || !lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.from})){
             dateFrom.push( 
                 el(DateTimePicker,
                 {
@@ -272,13 +273,13 @@
                 )
             )
         }
-        panels.push(el(PanelBody, { title: 'Point Filering', initialOpen: true },dateFrom,dateTo));
+        panels.push(el(PanelBody, { title: 'Point Filering', initialOpen: false },dateFrom,dateTo));
         return panels;
 
     }
 
     function feedPanel(props) {
-        let ui;
+        let panel;
         let panels = [];
         if( !props.attributes.feeds){
             return [];
@@ -287,57 +288,146 @@
         for (let i = 0; i < props.attributes.feeds.length; i++) {
             const feed = props.attributes.feeds[i];
             // console.log(feed);
-            
+            let options = [];
             if (!props.attributes.styles[feed]){
                 let returnArray = lodash.cloneDeep(props.attributes.styles);
                 returnArray[feed] = {color: 'blue', splitLines: 12};
                 props.setAttributes({ styles: returnArray});
             }
-            ui = el(PanelBody, { title: feed +' Feed', initialOpen: false }, 
-                el(PanelRow, {},
-                    el(ColorPalette , {
-                        label: "Colors",
-                        colors: [
-                        {name: "black", color: "black"},
-                        {name: "blue", color: "blue"},
-                        {name: "gold", color: "gold"},
-                        {name: "green", color: "green"},
-                        {name: "grey", color: "grey"},
-                        {name: "red", color: "red"},
-                        {name: "violet", color: "violet"},
-                        {name: "yellow", color: "yellow"},
-                    ],
+            options.push(el(PanelRow, {},
+                el(ColorPalette , {
+                    label: "Colors",
+                    colors: [
+                    {name: "black", color: "black"},
+                    {name: "blue", color: "blue"},
+                    {name: "gold", color: "gold"},
+                    {name: "green", color: "green"},
+                    {name: "grey", color: "grey"},
+                    {name: "red", color: "red"},
+                    {name: "violet", color: "violet"},
+                    {name: "yellow", color: "yellow"},
+                ],
+                    onChange: (value) => {
+                        let returnArray = lodash.cloneDeep(props.attributes.styles);
+                        console.log(value,returnArray)
+                        returnArray[feed]['color'] = value;
+                        props.setAttributes({ styles: returnArray});
+                    },
+                    value: props.attributes.styles[feed]['color'] || 'blue',
+                    disableCustomColors: true, 
+                })
+            ),
+
+            // /* Toggle Field TODO: use form toggle instead
+            el(PanelRow, {},
+                el(ToggleControl,
+                    {
+                        label: 'connect points wih line',
                         onChange: (value) => {
                             let returnArray = lodash.cloneDeep(props.attributes.styles);
                             console.log(value,returnArray)
-                            returnArray[feed]['color'] = value;
+                            returnArray[feed]['splitLinesEnabled'] = value;
+                            
+                            if(value && !returnArray[feed]['splitLines'] ){
+                                returnArray[feed]['splitLines'] = 12;
+                            }
                             props.setAttributes({ styles: returnArray});
                         },
-                        value: props.attributes.styles[feed]['color'] || 'blue',
-                        disableCustomColors: true, 
-                    })
-                ),
-                el(PanelRow, {},
-                    el(TextControl,
-                        {
-                            label: 'Splitlines',
-                            onChange: (value) => {
-                                let returnArray = lodash.cloneDeep(props.attributes.styles);
-                                console.log(value,returnArray)
-                                returnArray[feed]['splitLines'] = value;
-                                props.setAttributes({ styles: returnArray});
-                            },
-                            value:props.attributes.styles[feed]['splitLines'] || '12',
-                        }
-                    )
+                        checked: props.attributes.styles[feed]['splitLinesEnabled'],
+                    }
                 )
-            
-            );
+            ));
+
+            if(props.attributes.styles[feed]['splitLinesEnabled'] === true){
+                options.push(
+                    el(PanelRow, {},
+                        el(TextControl,
+                            {
+                                label: 'Splitlines',
+                                onChange: (value) => {
+                                    let returnArray = lodash.cloneDeep(props.attributes.styles);
+                                    console.log(value,returnArray)
+                                    returnArray[feed]['splitLines'] = value;
+                                    props.setAttributes({ styles: returnArray});
+                                },
+                                value:props.attributes.styles[feed]['splitLines'],
+                            }
+                        )
+                    ))
+            }
+            panel = el(PanelBody, { title: feed +' Feed', initialOpen: false }, options);
 
 
-            panels.push(ui);
+            panels.push(panel);
 
         }
+        return panels;
+    }
+    function gpxPanel(props) {
+        let panels = [];
+        if( !props.attributes.feeds){
+            return [];
+        }
+
+        // console.log(feed);
+        let options = [];
+
+        options.push(el(PanelRow, {},
+            el(ColorPalette , {
+                label: "Colors",
+                colors: [
+                {name: "black", color: "black"},
+                {name: "blue", color: "blue"},
+                {name: "gold", color: "gold"},
+                {name: "green", color: "green"},
+                {name: "grey", color: "grey"},
+                {name: "red", color: "red"},
+                {name: "violet", color: "violet"},
+                {name: "yellow", color: "yellow"},
+            ],
+                onChange: (value) => {
+                    let returnArray = lodash.cloneDeep(props.attributes.gpx);
+                    lodash.forEach(gpx,(track)=>{
+                        track.color = value;
+                        returnArray.push(track);
+                    })
+                    props.setAttributes({ gpx: returnArray});
+                },
+                value: 'blue',
+                disableCustomColors: true, 
+            })
+        ),
+
+        // /* Toggle Field TODO: use form toggle instead
+        el(PanelRow, {},
+            el(MediaUpload,{
+                allowedTypes: ['text/xml'],
+                multiple: true,
+                value: props.attributes.gpx.map(entry => entry.id),
+                title: "Choose gpx tracks (Hint: press ctrl to select multiple)",
+                onSelect: function (gpx){
+                    let returnArray = [];
+                    lodash.forEach(gpx,(track)=>{
+                        track = lodash.pick(track,['id','url','title']);
+                        track.name = track.title;
+                        returnArray.push(track);
+                    })
+                    props.setAttributes({ gpx: returnArray});
+                },
+                render:  function (callback){
+                    console.log({callback})
+                    return el(Button, 
+                        {className: "test",
+                        onClick: callback.open
+                    },"Open Media Library"
+                
+                    )}
+                })
+        ));
+
+
+        panels.push(el(PanelBody, { title: 'GPX', initialOpen: false }, options));
+
         return panels;
     }
 
