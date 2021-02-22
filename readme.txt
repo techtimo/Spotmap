@@ -5,7 +5,7 @@ Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeaco
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
-Tested up to: 5.5
+Tested up to: 5.6
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
 
@@ -14,6 +14,8 @@ See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX
 Spot does not offer a history of sent positions for more than 7 days. That's where Spotmap comes into the game:
 Your Wordpress Site will store all positions ever sent. It checks for new positions every 2.5 minutes.
 It supports different devices (They can even belong to different accounts).
+
+🆕 Support of Gutenberg block editor. Just type `/spotmap` and open the settings on the right.
 
 With a shortcode you can add an embedded map to your post or page. By default it will show all positions ever sent.
 If needed the map can show a subset of the data. i.e. the last weekend getaway.
@@ -137,17 +139,17 @@ If you found a bug, you can open an issue on the [GitHub Repo](https://github.co
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
-= 0.9.1 =
+= 0.10.1 =
+Full Gutenberg Block support
+added NZtopomap
+added France IGN Topo map token
 
+= 0.9.1 =
 Fix Gutenberg editor issue
 spotmessages supports auto update
 
 
 = 0.9 =
-
-If you upgrade to this version from a previous one please delete and reinstall the plugin.
-WARNING: all data will be lost. if you like to upgrade please post in the support forum.
-
 - new shortcode to show table of messages
 - add gpx overlays
 - new maps available (mapbox, thunderforest, swisstopo)
