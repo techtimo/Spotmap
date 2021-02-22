@@ -21,7 +21,7 @@
                 props.setAttributes({ mapId:  mapId});
                 props.setAttributes({ maps: ['opentopomap', 'openstreetmap',] });
                 props.setAttributes({ feeds: spotmapjsobj.feeds });
-                props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'12'})) });
+                props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'0'})) });
                 props.setAttributes({ autoReload: false });
                 props.setAttributes({ debug: false });
                 props.setAttributes({ height: '500' });
@@ -386,19 +386,19 @@
                 {name: "yellow", color: "yellow"},
             ],
                 onChange: (value) => {
-                    let returnArray = lodash.cloneDeep(props.attributes.gpx);
+                    let returnArray = [];
+                    let gpx = lodash.cloneDeep(props.attributes.gpx);
                     lodash.forEach(gpx,(track)=>{
                         track.color = value;
                         returnArray.push(track);
                     })
                     props.setAttributes({ gpx: returnArray});
                 },
-                value: 'blue',
+                value: props.attributes.gpx[0]?  props.attributes.gpx[0].color : 'gold',
                 disableCustomColors: true, 
             })
         ),
 
-        // /* Toggle Field TODO: use form toggle instead
         el(PanelRow, {},
             el(MediaUpload,{
                 allowedTypes: ['text/xml'],
@@ -409,13 +409,11 @@
                     let returnArray = [];
                     lodash.forEach(gpx,(track)=>{
                         track = lodash.pick(track,['id','url','title']);
-                        track.name = track.title;
                         returnArray.push(track);
                     })
                     props.setAttributes({ gpx: returnArray});
                 },
                 render:  function (callback){
-                    console.log({callback})
                     return el(Button, 
                         {className: "test",
                         onClick: callback.open

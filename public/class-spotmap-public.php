@@ -273,7 +273,7 @@ class Spotmap_Public{
 			foreach ($a['gpx-url'] as $key => $url) {
 				$name = $a['gpx-name'][$key];
 				$gpx[] = [
-					'name' => $name,
+					'title' => $name,
 					'url' => $url,
 					"color" => $a['gpx-color'][$key]
 				];

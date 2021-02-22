@@ -18,6 +18,21 @@ class Spotmap {
         jQuery('#'+ this.options.mapId).height(this.options.height);
         var self = this;
         
+        // https://github.com/Leaflet/Leaflet/issues/3962
+        var container = L.DomUtil.get(this.options.mapId);
+        if(container != null){
+            if(lodash.isEqual(this.options,this.oldOptions)){
+                console.log("SAME!!")
+            } else {
+                console.log("NOT SAME!!")
+                console.log(this.oldOptions)
+
+            }
+            container._leaflet_id = null;
+            jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
+            jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
+        }
+        this.oldOptions = this.options;
         this.debug("Lodash version: " + lodash.VERSION);
     
         // load maps
@@ -151,7 +166,9 @@ class Spotmap {
                         } else {
                             overlays[lastFeed] = {"group": L.layerGroup(group), "label":lastFeed};
                         }
-                        line = [];
+                        if(this.getOption('splitLines', { 'feed': entry.feed_name })){
+                            line = [];
+                        }
                         group = [];
                         feeds.push(entry.feed_name);
                     } 
@@ -161,12 +178,11 @@ class Spotmap {
                         // start the new line
                         line = [[entry.latitude, entry.longitude]];
                     }
-    
+                    
                     // a normal iteration adding stuff with default values
-                    else {
+                    else if (this.getOption('splitLines', { 'feed': entry.feed_name })) {
                         line.push([entry.latitude, entry.longitude]);
                     }
-    
                     let message = '';
                     let tinyTypes = this.getOption('tinyTypes',  { 'feed': entry.feed_name });
     
@@ -223,9 +239,9 @@ class Spotmap {
             var gpxOverlays = {};
             if (self.options.gpx) {
                 // set the gpx overlays, so the gpx will be added first (= below the feeds)
-                let gpxnames = lodash.map(self.options.gpx, 'name');
-                lodash.forEach(gpxnames,function(name){
-                    gpxOverlays[name] = null;
+                let gpxnames = lodash.map(self.options.gpx, 'title');
+                lodash.forEach(gpxnames,function(title){
+                    gpxOverlays[title] = null;
                 });
                 // reversed so the first one is added last == on top of all others
                 for (var i=0; i < self.options.gpx.length; i++) {
@@ -265,13 +281,13 @@ class Spotmap {
                             self.map.fitBounds(gpxBounds);
                         }
                     }).on('addline', function(e) {
-                        e.line.bindPopup(entry.name);
+                        e.line.bindPopup(entry.title);
                     });
                     let html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
-                    if (gpxOverlays[entry.name]) {
-                        gpxOverlays[entry.name].group.addLayer(track);
+                    if (gpxOverlays[entry.title]) {
+                        gpxOverlays[entry.title].group.addLayer(track);
                     } else {
-                        gpxOverlays[entry.name] = {group: L.layerGroup([track]), 'label': entry.name + html};
+                        gpxOverlays[entry.title] = {group: L.layerGroup([track]), 'label': entry.title + html};
                     }
     
                 }
@@ -461,10 +477,10 @@ class Spotmap {
         }
         if (option == 'splitLines' && config.feed) {
             if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLinesEnabled && this.options.styles[config.feed].splitLinesEnabled === false)
-                return 'false';
+                return false;
             if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLines)
                 return this.options.styles[config.feed].splitLines;
-            return 'false';
+            return false;
         }
         if (option == 'tinyTypes' && config.feed) {
             if (this.options.styles[config.feed] && this.options.styles[config.feed].tinyTypes)
