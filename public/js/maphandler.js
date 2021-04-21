@@ -18,20 +18,16 @@ class Spotmap {
         jQuery('#'+ this.options.mapId).height(this.options.height);
         var self = this;
         
-        // https://github.com/Leaflet/Leaflet/issues/3962
+        let oldOptions = jQuery('#'+ this.options.mapId).data('options');
+        jQuery('#'+ this.options.mapId).data('options',this.options);
         var container = L.DomUtil.get(this.options.mapId);
         if(container != null){
-            if(lodash.isEqual(this.options,this.oldOptions)){
-                console.log("SAME!!")
-            } else {
-                console.log("NOT SAME!!")
-                console.log(this.oldOptions)
-
+            if(!lodash.isEqual(this.options,oldOptions)){
+                // https://github.com/Leaflet/Leaflet/issues/3962
+                container._leaflet_id = null;
+                jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
+                jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
             }
-            container._leaflet_id = null;
-            jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
-            jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
-        }
         }
         this.debug("Lodash version: " + lodash.VERSION);
     
