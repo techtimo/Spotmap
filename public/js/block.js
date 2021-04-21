@@ -24,6 +24,7 @@
                 props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'0'})) });
                 props.setAttributes({ autoReload: false });
                 props.setAttributes({ debug: false });
+                props.setAttributes({ lastPoint: false });
                 props.setAttributes({ height: '500' });
                 props.setAttributes({ dateRange: {to:'',from:'', }});
                 props.setAttributes({ mapcenter: 'all' });
@@ -64,15 +65,15 @@
                     el(PanelRow, {},
                         el(ToggleControl,
                             {
-                                label: 'Debug',
+                                label: 'Show Last Point',
                                 onChange: (value) => {
-                                    props.setAttributes({ debug: value });
+                                    props.setAttributes({ lastPoint: value });
                                 },
-                                checked: props.attributes.debug,
+                                checked: props.attributes.lastPoint,
+                                help: "Show the latest point as a big marker.",
                             }
                         )
                     ),
-                    /* Toggle Field */
                     el(PanelRow, {},
                         el(ToggleControl,
                             {
@@ -81,7 +82,18 @@
                                     props.setAttributes({ 'autoReload': value });
                                 },
                                 checked: props.attributes["autoReload"],
-                                help: "If enabled this will create"
+                                help: "If enabled this will update the map without reloading the whole webpage. Not tested very much. Will have unexpected results with 'Last Point'"
+                            }
+                        )
+                    ),
+                    el(PanelRow, {},
+                        el(ToggleControl,
+                            {
+                                label: 'Debug',
+                                onChange: (value) => {
+                                    props.setAttributes({ debug: value });
+                                },
+                                checked: props.attributes.debug,
                             }
                         )
                     ),
@@ -372,19 +384,44 @@
         // console.log(feed);
         let options = [];
 
-        options.push(el(PanelRow, {},
+        options.push(
+            el(PanelRow, {},
+                el(MediaUpload,{
+                    allowedTypes: ['text/xml'],
+                    multiple: true,
+                    value: props.attributes.gpx.map(entry => entry.id),
+                    title: "Choose gpx tracks (Hint: press ctrl to select multiple)",
+                    onSelect: function (gpx){
+                        let returnArray = [];
+                        lodash.forEach(gpx,(track)=>{
+                            track = lodash.pick(track,['id','url','title']);
+                            returnArray.push(track);
+                        })
+                        props.setAttributes({ gpx: returnArray});
+                    },
+                    render:  function (callback){
+                        return el(Button, 
+                            {
+                                onClick: callback.open,
+                                isPrimary: true,
+                            },
+                            "Select from Media Library"
+                        )}
+                    })
+            ),
+            el(PanelRow, {},
+                el("em",{},"Select a color:"),
+            el(PanelRow, {},
             el(ColorPalette , {
                 label: "Colors",
                 colors: [
-                {name: "black", color: "black"},
-                {name: "blue", color: "blue"},
-                {name: "gold", color: "gold"},
-                {name: "green", color: "green"},
-                {name: "grey", color: "grey"},
-                {name: "red", color: "red"},
-                {name: "violet", color: "violet"},
-                {name: "yellow", color: "yellow"},
-            ],
+                    {name: "blue", color: "blue"},
+                    {name: "gold", color: "gold"},
+                    {name: "green", color: "green"},
+                    {name: "red", color: "red"},
+                    {name: "black", color: "black"},
+                    {name: "violet", color: "violet"},
+                ],
                 onChange: (value) => {
                     let returnArray = [];
                     let gpx = lodash.cloneDeep(props.attributes.gpx);
@@ -395,33 +432,11 @@
                     props.setAttributes({ gpx: returnArray});
                 },
                 value: props.attributes.gpx[0]?  props.attributes.gpx[0].color : 'gold',
-                disableCustomColors: true, 
+                disableCustomColors: false,
+                clearable: false,
             })
-        ),
-
-        el(PanelRow, {},
-            el(MediaUpload,{
-                allowedTypes: ['text/xml'],
-                multiple: true,
-                value: props.attributes.gpx.map(entry => entry.id),
-                title: "Choose gpx tracks (Hint: press ctrl to select multiple)",
-                onSelect: function (gpx){
-                    let returnArray = [];
-                    lodash.forEach(gpx,(track)=>{
-                        track = lodash.pick(track,['id','url','title']);
-                        returnArray.push(track);
-                    })
-                    props.setAttributes({ gpx: returnArray});
-                },
-                render:  function (callback){
-                    return el(Button, 
-                        {className: "test",
-                        onClick: callback.open
-                    },"Open Media Library"
-                
-                    )}
-                })
-        ));
+        ),  )    
+        );
 
 
         panels.push(el(PanelBody, { title: 'GPX', initialOpen: false }, options));

@@ -32,7 +32,7 @@ class Spotmap {
             jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
             jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
         }
-        this.oldOptions = this.options;
+        }
         this.debug("Lodash version: " + lodash.VERSION);
     
         // load maps
@@ -196,6 +196,16 @@ class Spotmap {
                         markerOptions = { icon: markers['red'] };
                     else if (entry.type == "HELP-CANCEL")
                         markerOptions = { icon: markers['green'] };
+                    // last iteration or feed changed?
+                    if(response.length == index + 1 || response[index+1].feed_name != entry.feed_name) {
+                        console.log("test")
+                        if(this.getOption('lastPoint') == true){
+                            markerOptions = { icon: markers[color] };
+                        } else if(this.getOption('lastPoint')){
+                            markerOptions = { icon: markers[this.getOption('lastPoint')] };
+
+                        }
+                    }
     
                     message += 'Time: ' + entry.time + '</br>Date: ' + entry.date + '</br>';
                     if(entry.local_timezone && !(entry.localdate == entry.date && entry.localtime == entry.time ))
@@ -475,6 +485,12 @@ class Spotmap {
                 return config.gpx.color;
             return 'gold';
         }
+        if (option == 'lastPoint') {
+            if (this.options.lastPoint)
+                return this.options.lastPoint;
+            return false;
+        }
+
         if (option == 'splitLines' && config.feed) {
             if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLinesEnabled && this.options.styles[config.feed].splitLinesEnabled === false)
                 return false;
