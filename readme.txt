@@ -5,15 +5,16 @@ Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeaco
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
-Tested up to: 5.6
+Tested up to: 5.7
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
 
 ## Description
 
-Spot does not offer a history of sent positions for more than 7 days. That's where Spotmap comes into the game:
+Spot does not offer the storage of pointsdfree of charge for long. That's where Spotmap comes into the game:
 Your Wordpress Site will store all positions ever sent. It checks for new positions every 2.5 minutes.
 It supports different devices (They can even belong to different accounts).
+It supports many more web
 
 🆕 Support of Gutenberg block editor. Just type `/spotmap` and open the settings on the right.
 
@@ -43,13 +44,20 @@ After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. 
 
 Now you can enter your XML Feed Id, a name for the feed and a password if you have one.  Press "Save". A few minutes later Wordpress will download the points that are present in the XML Feed.
 
-In the mean time we can create an empty map with the Shortcode: 
+In the mean time you can create an empty map with the Shortcode: 
 `[spotmap]`
+
+If you use the block editor Gutenberg, you can search for a block named 'Spotmap'.
 
 🎉 Congrats! You just created your first Spotmap. 🎉
 
+If you use the Block editor make sure to select the map and click on the settings icon in the top right corner, in order to see all settings related to the map.
+
+If you use the shortcode,check the Additional attributes section.
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
 ### Additional attributes
+
+If you add new maps, check the FAQ
 
 To fine tune the map, there are some attributes we can pass with the shortcode:
 
@@ -77,18 +85,20 @@ _Note:_ all the Default values of the attributes can be changed in the settings 
 
 - `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
 
-- `auto-reload=1` will auto update the map without the need to reload the page.
+- `auto-reload` will auto update the map without the need to reload the page. (This hasn't been tested much...)
+
+- `last-point` will show the last sent point as big marker, to be easily found.
 
 - `tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
 
-- `feeds` can be set, if multiple feeds get used. (See example below)
+- `feeds` can be set, if multiple feeds get used. (See example below, if you have only one spot this is not needed)
 
 #### GPX
 **The following attributes can be used to show GPX tracks:**
 
 - `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
 
-- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your blog like an image)
+- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your media library)
 
 - `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
 
@@ -104,7 +114,7 @@ This will show a map where we zoom into the last known position, and we only sho
 `[spotmap mapcenter=last feeds="My Spot" colors=red date-range-from="2020-05-01"]`
 
 
-We can also show multiple feeds in different colors on a same day:
+We can also show multiple feeds in different colors on a same day (from 0:00:00 to 23:59:59):
 
 `[spotmap mapcenter=last feeds="My first spot,My other Device" colors="gray,green" date="2020-06-01"]` 
 
@@ -112,7 +122,7 @@ We can also show multiple feeds in different colors on a same day:
 ## Frequently Asked Questions
 
 ### How do I get my Feed ID?
-You need to create an XML Feed in your spot account. ([See here](https://github.com/techtimo/spotmap/issues/4#issuecomment-638001718) for more details)
+You need to create an XML Feed in your spot account. ([See here](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) for more details)
 Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently. 
 Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
@@ -121,11 +131,13 @@ The plugin uses the following thrid party services:
 1.  From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) to get the points.
 2. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
 3. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
-4. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
+4. (optionally) [Land Information New Zealand (LINZ)](https://www.linz.govt.nz) To get the official Topo Maps of NZ create an account [here](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key). Paste the key in the settings page.
+5. (optionally) [Géoportail France](https://geoservices.ign.fr/documentation/diffusion/formulaire-de-commande-geoservices.html) To get the official Topo Maps of IGN France. Create an account [here](https://www.sphinxonline.com/surveyserver/s/etudesmk/Geoservices_2021/questionnaire.htm) (french only). Paste the key in the settings page.
+6. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
 
 
 ### Can I use/add other maps?
-Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles.
+Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles. See the question 'Which 3rd Party Services are getting used?' for details
 If you still search for another map search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
 If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
@@ -139,6 +151,12 @@ If you found a bug, you can open an issue on the [GitHub Repo](https://github.co
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
+
+= 0.10.2 =
+- tested Wordpress 5.7 
+- add last-point option to show the latest position as a big marker. (Requested by Elia)
+- fix reload issue of the map inside Gutenberg if no changes were made
+
 = 0.10.1 =
 Full Gutenberg Block support
 added NZtopomap
@@ -160,9 +178,6 @@ spotmessages supports auto update
 - added a Gutenberg Block (still experimental!)
 
 
-= 0.3 =
-- First working draft
-
 ## Upgrade Notice
  
 = 0.9 =
@@ -174,4 +189,3 @@ Adding a table to quickly see the last sent messages. ([spotmessages])
 
 = 0.7 =
 redoing the whole frontend part. Now it looks much better!
- 
