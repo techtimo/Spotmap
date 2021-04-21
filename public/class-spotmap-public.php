@@ -172,7 +172,9 @@ class Spotmap_Public{
 	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options_json.');spotmap.initMap()})</script>';
 	}
 	public function show_spotmap($atts,$content = null){
-
+		if(empty($atts)){
+			$atts = [];
+		}
 		error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
 		$a = array_merge(
@@ -185,6 +187,7 @@ class Spotmap_Public{
 				'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
 				'tiny-types' => !empty(get_option('spotmap_default_values')['tiny-types']) ?get_option('spotmap_default_values')['tiny-types'] : NULL,
 				'auto-reload' => FALSE,
+				'last-point' => FALSE,
 				'date-range-from' => NULL,
 				'date' => NULL,
 				'date-range-to' => NULL,
@@ -197,12 +200,24 @@ class Spotmap_Public{
 				'debug'=> FALSE,
 			], $atts ),
 			$atts);
-		// get the keys that don't require a value
-		if(array_key_exists('auto-reload',$atts)){
-			$a['auto-reload']=TRUE;
+		// get the keys that don't require a value and can only bet true or false
+		foreach (['auto-reload','debug',] as $value) {
+			if(in_array($value,$atts)){
+				error_log($value . 'exists');
+				if (array_key_exists($value,$atts) && !empty($atts[$value])){
+					// if a real value was provided in the shortcode
+					$a[$value] = $atts[$value];
+				} else {
+					$a[$value]=TRUE;
+				}
+			}
 		}
-		if(array_key_exists('debug',$atts)){
-			$a['debug']=TRUE;
+		// get the values that could be boolean or have another value
+		foreach (['last-point',] as $value) {
+			if(in_array($value,$atts)){
+				error_log($value . 'exists');
+				$a[$value]=TRUE;
+			}
 		}
 
 		
@@ -295,6 +310,7 @@ class Spotmap_Public{
 			'maps' => $a['maps'],
 			'mapOverlays' => $a['map-overlays'],
 			'autoReload' => $a['auto-reload'],
+			'lastPoint' => $a['last-point'],
 			'debug' => $a['debug'],
 			'mapId' => $map_id
 		]);
