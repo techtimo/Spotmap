@@ -87,7 +87,7 @@ _Note:_ all the Default values of the attributes can be changed in the settings 
 
 - `auto-reload` will auto update the map without the need to reload the page. (This hasn't been tested much...)
 
-- `last-point` will show the last sent point as big marker, to be easily found.
+- `last-point` will show the last sent point as big marker, to be easily found. Can also be used with a limited range of colors (yellow,red,green,black,gray,blue) like `last-point=red`
 
 - `tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
 
