@@ -14,6 +14,7 @@
         icon: 'location-alt',
         category: 'embed',
         edit: function (props) {
+            console.log(props.attributes.lastPoint)
             // if block has just been created
             if (!props.attributes.height){
                 // set all default props
@@ -25,6 +26,7 @@
                 props.setAttributes({ autoReload: false });
                 props.setAttributes({ debug: false });
                 props.setAttributes({ lastPoint: false });
+                props.setAttributes({ filterPoints: '10' });
                 props.setAttributes({ height: '500' });
                 props.setAttributes({ dateRange: {to:'',from:'', }});
                 props.setAttributes({ mapcenter: 'all' });
@@ -60,7 +62,7 @@
                 generalSettings(props),
                 feedPanel(props),
                 gpxPanel(props),
-                el(PanelBody, { title: 'Experimental', initialOpen: false },
+                el(PanelBody, { title: 'Experimental Settings', initialOpen: false },
                     // /* Toggle Field TODO: use form toggle instead
                     el(PanelRow, {},
                         el(ToggleControl,
@@ -73,6 +75,16 @@
                                 help: "Show the latest point as a big marker.",
                             }
                         )
+                    ),
+                    el(TextControl,
+                        {
+                            label: 'Hide nearby points',
+                            onChange: (value) => {
+                                props.setAttributes({ filterPoints: value });
+                            },
+                            value: props.attributes.filterPoints,
+                            help: "Try to reduce point cluster by only showing the latest point per type. Input a radius in meter."
+                        }
                     ),
                     el(PanelRow, {},
                         el(ToggleControl,
@@ -122,8 +134,14 @@
             height: {
                 type: 'string',
             },
+            filterPoints: {
+                type: 'string',
+            },
             debug: {
                 type: 'boolean',
+            },
+            lastPoint: {
+                type: 'string',
             },
             autoReload: {
                 type: 'boolean',
@@ -285,9 +303,8 @@
                 )
             )
         }
-        panels.push(el(PanelBody, { title: 'Point Filering', initialOpen: false },dateFrom,dateTo));
+        panels.push(el(PanelBody, { title: 'Time filter of points', initialOpen: false },dateFrom,dateTo));
         return panels;
-
     }
 
     function feedPanel(props) {
