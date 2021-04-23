@@ -1,6 +1,3 @@
-// TODO: further investigation
-// overides underscore.js needed for some gutenberg stuff
-// let _ = lodash
 
 class Spotmap {
     constructor (options) {
@@ -22,11 +19,16 @@ class Spotmap {
         jQuery('#'+ this.options.mapId).data('options',this.options);
         var container = L.DomUtil.get(this.options.mapId);
         if(container != null){
+            this.debug("Map is already defined")
             if(!lodash.isEqual(this.options,oldOptions)){
+                this.debug("Options were changed. Delete the map container...")
                 // https://github.com/Leaflet/Leaflet/issues/3962
                 container._leaflet_id = null;
                 jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
                 jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
+            } else {
+                this.debug("Options haven't been changed.")
+                return 0;
             }
         }
         this.debug("Lodash version: " + lodash.VERSION);
@@ -194,7 +196,6 @@ class Spotmap {
                         markerOptions = { icon: markers['green'] };
                     // last iteration or feed changed?
                     if(response.length == index + 1 || response[index+1].feed_name != entry.feed_name) {
-                        console.log("test")
                         if(this.getOption('lastPoint') == true){
                             markerOptions = { icon: markers[color] };
                         } else if(this.getOption('lastPoint')){
@@ -441,7 +442,7 @@ class Spotmap {
                 }, 30000);
             }
         },{body: body, filter: this.options.filterPoints});
-    }world
+    }
 
     getOption(option, config) {
         if(!config){
@@ -509,35 +510,32 @@ class Spotmap {
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response){
             // filter out close by points, never filter if group option is set
             if(options.filter && ! options.body.groupBy && !response.error){
-                let indexesToBeDeleted = [];
-                response = lodash.each(response, function (element, index){
-                    // if we spliced the array, loop to the end with undefinded elements
-                    if(!element)
+                response = lodash.eachRight(response, function (element, index){
+                    // if we spliced the array, or check the last element, do nothing
+                    if(!element || index == 0)
                         return
-                    // continue so we can check against another value
-                    if(index == 0)
-                        return;
-                    let lastPoint;
-                    for (let i = index; i <= response.length; i++) {
-                        if(!lodash.includes(indexesToBeDeleted, index)){
-                            lastPoint = [response[index-i].latitude,response[index-i].longitude];
-                            response[index-i].hiddenPoints = {count: i,radius: options.filter};
-                            break;
+                    let nextPoint;
+                    let indexesToBeDeleted = [];
+                    for (let i = index-1; i > 0; i--) {
+                        nextPoint = [response[i].latitude,response[i].longitude];
+                        let dif = L.latLng(element.latitude, element.longitude).distanceTo(nextPoint);
+                        if(dif <= options.filter && element.type == response[i].type){
+                            indexesToBeDeleted.push(i);
+                            continue;
                         }
+                        if (indexesToBeDeleted.length != 0){
+                            response[index].hiddenPoints = {count: indexesToBeDeleted.length,radius: options.filter};
+                        }
+                        break;
                     }
-                    let dif = L.latLng(element.latitude, element.longitude).distanceTo(lastPoint);
-                    // console.log(dif)
-                    if(dif < options.filter){
-                        // indexesToBeDeleted.push(index);
+                    lodash.each(indexesToBeDeleted,function(index){
                         response[index] = undefined;
-                    }
+                    });
                 });
-                // lodash.each(indexesToBeDeleted,function(element){
-                //     response[element] = undefined;
-                // });
+                // completely remove the entries from the response
                 response = response.filter(function( element ) {
                     return element !== undefined;
-                 });
+                });
                 
             }
             callback(response);

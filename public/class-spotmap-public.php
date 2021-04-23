@@ -36,6 +36,7 @@ class Spotmap_Public{
 			'maps' => $this->get_maps(),
 			'url' =>  plugin_dir_url( __FILE__ ),
 			'feeds' => $this->db->get_all_feednames(),
+			'defaultValues' => get_option('spotmap_default_values'),
 		]);
 
 		register_block_type( 'spotmap/spotmap', array(
@@ -108,7 +109,7 @@ class Spotmap_Public{
 		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
 	}
 	function show_point_overview($atts){
-		error_log("Shortcode init vals: ".wp_json_encode($atts));
+		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		$a = array_merge(
 			shortcode_atts([
 				'count'=> 10,
@@ -126,7 +127,7 @@ class Spotmap_Public{
 		if(array_key_exists('auto-reload',$atts)){
 			$a['auto-reload']=TRUE;
 		}
-		error_log("Shortcode after vals: ".wp_json_encode($a));
+		// error_log("Shortcode after vals: ".wp_json_encode($a));
 		foreach (['types','feeds'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
@@ -167,7 +168,7 @@ class Spotmap_Public{
 
 	public function show_spotmap_block($options){
 		$options_json = wp_json_encode($options);
-		error_log("BLOCK init vals: ". $options_json);
+		// error_log("BLOCK init vals: ". $options_json);
 		return '<div id="'.$options['mapId'].'" class='. (!empty($a['align']) ? 'align'.$a['align'] : '' ). ' style="z-index: 0;"></div>
 	<script type=text/javascript>var spotmap; jQuery(function(){spotmap = new Spotmap('.$options_json.');spotmap.initMap()})</script>';
 	}
@@ -175,7 +176,7 @@ class Spotmap_Public{
 		if(empty($atts)){
 			$atts = [];
 		}
-		error_log("Shortcode init vals: ".wp_json_encode($atts));
+		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
 		$a = array_merge(
 			shortcode_atts( [
@@ -200,10 +201,9 @@ class Spotmap_Public{
 				'debug'=> FALSE,
 			], $atts ),
 			$atts);
-		// get the keys that don't require a value and can only bet true or false
-		foreach (['auto-reload','debug',] as $value) {
+		// get the keys that don't require a value 
+		foreach (['auto-reload','debug','last-point',] as $value) {
 			if(in_array($value,$atts)){
-				error_log($value . 'exists');
 				if (array_key_exists($value,$atts) && !empty($atts[$value])){
 					// if a real value was provided in the shortcode
 					$a[$value] = $atts[$value];
@@ -212,14 +212,6 @@ class Spotmap_Public{
 				}
 			}
 		}
-		// get the values that could be boolean or have another value
-		foreach (['last-point',] as $value) {
-			if(in_array($value,$atts)){
-				error_log($value . 'exists');
-				$a[$value]=TRUE;
-			}
-		}
-
 		
 		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays','tiny-types'] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
@@ -232,7 +224,7 @@ class Spotmap_Public{
 				}
 			}
 		}
-		error_log(wp_json_encode($a));
+		// error_log(wp_json_encode($a));
 		foreach ($atts as $key => &$values) {
 			if(is_array($values)){
 				foreach($values as &$entry){
@@ -277,7 +269,6 @@ class Spotmap_Public{
 					$value = $a['gpx-color'][$i % $count_present_numbers];
 					$a['gpx-color'] = array_merge($a['gpx-color'],[$value]);
 				}
-				error_log(print_r($a['gpx-color'],true));
 			}
 			if(empty($a['gpx-name'])){
 				$a['gpx-name'][0] = "GPX";
