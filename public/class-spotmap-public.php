@@ -97,6 +97,13 @@ class Spotmap_Public{
 					}
 					unset($maps[$name]);
 				}
+				else if(isset($data['options']['osdatahubToken'])){
+					if(!empty($api_tokens['osdatahub.os.uk'])){
+						$data['options']['osdatahubToken'] = $api_tokens['osdatahub.os.uk'];
+						continue;
+					}
+					unset($maps[$name]);
+				}
 			}
 			return ($maps);
 		}
