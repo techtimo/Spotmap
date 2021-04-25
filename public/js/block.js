@@ -14,23 +14,24 @@
         icon: 'location-alt',
         category: 'embed',
         edit: function (props) {
-            console.log(props.attributes.lastPoint)
             // if block has just been created
             if (!props.attributes.height){
-                // set all default props
                 let mapId = 'spotmap-container-' + Math.random()*10E17;
-                props.setAttributes({ mapId:  mapId});
-                props.setAttributes({ maps: ['opentopomap', 'openstreetmap',] });
-                props.setAttributes({ feeds: spotmapjsobj.feeds });
-                props.setAttributes({ styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'0'})) });
-                props.setAttributes({ autoReload: false });
-                props.setAttributes({ debug: false });
-                props.setAttributes({ lastPoint: false });
-                props.setAttributes({ filterPoints: '10' });
-                props.setAttributes({ height: '500' });
-                props.setAttributes({ dateRange: {to:'',from:'', }});
-                props.setAttributes({ mapcenter: 'all' });
-                props.setAttributes({ gpx: [] });
+                let defaultProps = { 
+                    mapId:  mapId,
+                    maps: ['opentopomap', 'openstreetmap', ],
+                    feeds: spotmapjsobj.feeds,
+                    styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'0'})),
+                    autoReload: false,
+                    debug: false,
+                    lastPoint: false,
+                    filterPoints: '10',
+                    height: '500',
+                    dateRange: {to:'',from:'', },
+                    mapcenter: 'all',
+                    gpx: [],
+                };
+                props.setAttributes(defaultProps);
                 return [el('div', {
                     id: mapId,
                     style: {
@@ -41,7 +42,6 @@
                 ),]
             }
             var spotmap = new Spotmap (props.attributes);
-            // jQuery("#"+props.attributes.mapId).empty().removeClass();
             try {
                 setTimeout(function(){
                     spotmap.initMap();
