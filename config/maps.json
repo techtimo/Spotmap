@@ -141,6 +141,42 @@
       "attribution": "Tiles © Esri — National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC",
       "maxZoom": "12"
     }
+  },
+  "uk-os-outdoor": {
+    "label": "UK Outdoor",
+    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+    "options": {
+      "osdatahubToken": "",
+      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+      "maxZoom": "16",
+      "minZoom": "7",
+
+      "layer": "Outdoor_3857"
+    }
+  },
+  "uk-os-road": {
+    "label": "UK Road",
+    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+    "options": {
+      "osdatahubToken": "",
+      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+      "maxZoom": "16",
+      "minZoom": "7",
+
+      "layer": "Road_3857"
+    }
+  },
+  "uk-os-light": {
+    "label": "UK Light",
+    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+    "options": {
+      "osdatahubToken": "",
+      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+      "maxZoom": "16",
+      "minZoom": "7",
+
+      "layer": "Light_3857"
+    }
   }
 }
 
