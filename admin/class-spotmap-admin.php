@@ -26,49 +26,45 @@ class Spotmap_Admin {
 	public function register_settings(){
 
 		// FEED SECTION
-		foreach (get_option("spotmap_api_providers") as $key => $name) {
-			$ids = get_option("spotmap_".$key."_id");
-			$count = count($ids);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_name',['sanitize_callback'=>[$this, 'spotmap_validate_feed_name']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_id', ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$key.'_password');
+		foreach (get_option("spotmap_api_providers") as $provider => $name) {
+			$ids = get_option("spotmap_".$provider."_id");
+			
+			$count = empty($ids) ? 1 : count($ids);
+
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_name',['sanitize_callback'=>[$this, 'spotmap_validate_feed_name']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_id', ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_password');
 			if($count < 1){
 				continue;
 			}
 			add_settings_section(
-				$key.'-feeds',
+				$provider.'-feeds',
 				$name,
-				[$this,'settings_section_'.$key],
+				[$this,'settings_section_'.$provider],
 				'spotmap-feed-group'
 			);
 			for ($i=0; $i < $count; $i++) { 
-				
-				add_settings_field(
-					'spotmap_'.$key.'_name['.$i.']',
-					'Feed Name',
-					[$this, 'generate_text_field'],
-					'spotmap-feed-group',
-					'findmespot-feeds',
-					['spotmap_'.$key.'_name['.$i.']',
-					get_option('spotmap_'.$key.'_name')[$i]]
-				);
-				add_settings_field(
-					'spotmap_'.$key.'_id['.$i.']',
-					'Feed Id',
-					[$this, 'generate_text_field'],
-					'spotmap-feed-group',
-					'findmespot-feeds',
-					['spotmap_'.$key.'_id['.$i.']',get_option('spotmap_'.$key.'_id')[$i]]
-				);
-				add_settings_field(
-					'spotmap_'.$key.'_password['.$i.']',
-					'Feed password',
-					[$this, 'generate_password_field'],
-					'spotmap-feed-group',
-					'findmespot-feeds',
-					['spotmap_'.$key.'_password['.$i.']',get_option('spotmap_'.$key.'_password')[$i]]	
-				);
-				
+				$settings = [
+					'name' => ['label' => __('Feed Name'), 'function' => 'generate_text_field'], 
+					'id' => ['label' => __('Feed Id'), 'function' => 'generate_text_field'], 
+					'password' => ['label' => __('Feed password'), 'function' => 'generate_password_field'], 
+				];
+				foreach ($settings as $key => $value) {
+					$pre_populated_value = '';
+					$option = get_option('spotmap_'.$provider.'_' . $key . '');
+					if (!empty($option)){
+						$pre_populated_value =  get_option('spotmap_'.$provider.'_' . $key . '')[$i];
+					}
+					add_settings_field(
+						'spotmap_'.$provider.'_' . $key . '['.$i.']',
+						$value["label"],
+						[$this, $value["function"]],
+						'spotmap-feed-group',
+						'findmespot-feeds',
+						['spotmap_'.$provider.'_' . $key . '['.$i.']',
+						$pre_populated_value]
+					);
+				}
 			}
 		}
 
@@ -76,7 +72,7 @@ class Spotmap_Admin {
 		register_setting( 'spotmap-messages-group', 'spotmap_custom_messages');
 		add_settings_section(
 			'spotmap-messages',
-			'Set Custom messages',
+			__('Set Custom messages'),
 			[$this,'settings_section_messages'],
 			'spotmap-messages-group'
 		);
@@ -95,7 +91,7 @@ class Spotmap_Admin {
 		register_setting( 'spotmap-thirdparties-group', 'spotmap_api_tokens');
 		add_settings_section(
 			'spotmap-thirdparty',
-			'Thirdparty API Tokens',
+			__('Thirdparty API Tokens'),
 			'',
 			'spotmap-thirdparties-group'
 		);
@@ -111,10 +107,9 @@ class Spotmap_Admin {
 			);
 		}
 		// DEFAULT SECTION
-		// register_setting( 'spotmap-defaults-group', 'spotmap_mapbox_token');
 		add_settings_section(
 			'spotmap-defaults',
-			'Default Values',
+			__('Default Values'),
 			[$this,'settings_section_defaults'],
 			'spotmap-defaults-group'
 		);
@@ -162,12 +157,12 @@ class Spotmap_Admin {
 	}
 	
 	function settings_section_messages($args){
-		echo '<p id='.$args['id'].'>If you have sensitive Information in your predefined messages, you can overide those messages here.<br>
+		echo '<p id='.$args['id'].'>'.__("If you have sensitive Information in your predefined messages, you can overide those messages here.").'<br>
 		</p>';
 	}
 	
 	function settings_section_defaults($args){
-		echo '<p id='.$args['id'].'>Change the default values for shortcodes attributes.<br>Are you sure waht you are doing?<br>Changes made here could lead to malfunctions.
+		echo '<p id='.$args['id'].'>'.__("Change the default values for shortcodes attributes.")."<br>".__("Are you sure what you are doing?")."<br>".__("Changes made here could lead to malfunctions.").'
 		</p>';
 	}
 	
@@ -218,7 +213,7 @@ class Spotmap_Admin {
 		return $mime_types;
 	}
 	function settings_link( $links ) {
-		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">Settings</a>',];
+		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">'.__("Settings").'</a>',];
 		return array_merge( $mylinks,$links );
 	}
 
