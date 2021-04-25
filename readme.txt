@@ -134,17 +134,16 @@ The plugin uses the following thrid party services:
 4. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
 5. (optionally) [Land Information New Zealand (LINZ)](https://www.linz.govt.nz) To get the official Topo Maps of NZ create an account [here](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key). Paste the key in the settings page.
 6. (optionally) [Géoportail France](https://geoservices.ign.fr/documentation/diffusion/formulaire-de-commande-geoservices.html) To get the official Topo Maps of IGN France. Create an account [here](https://www.sphinxonline.com/surveyserver/s/etudesmk/Geoservices_2021/questionnaire.htm) (french only). Paste the key in the settings page.
-7. https://osdatahub.os.uk/plans. (optionally) [UK Ordnance Survey](https://osdatahub.os.uk) To get the official UK OS maps. Create a free plan [here](https://osdatahub.os.uk/plans). And follow this guide on how to [create a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
+7. (optionally) [UK Ordnance Survey](https://osdatahub.os.uk) To get the official UK OS maps. Create a free plan [here](https://osdatahub.os.uk/plans). And follow this guide on how to [create a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
 
 
 ### Can I use/add other maps?
 Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles. See the question 'Which 3rd Party Services are getting used?' for details
-If you still search for another map search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
+If you still search for another map: Start a search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
 If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
-### I have a question, an idea, ... 
-Head over to the wordpress.org [support forum](https://wordpress.org/support/plugin/spotmap/), and ask your question there. I am happy to assist you.
-If you found a bug, you can open an issue on the [GitHub Repo](https://github.com/techtimo/spotmap). (But you can also mentioned it in the forum 😉).
+### I have a question, an idea, found a bug... 
+Head over to the wordpress.org [support forum](https://wordpress.org/support/plugin/spotmap/), and ask your question there. I'm happy to assist you! 😊
 
 ## Screenshots
  

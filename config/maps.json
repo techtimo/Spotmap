@@ -150,7 +150,6 @@
       "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
       "maxZoom": "16",
       "minZoom": "7",
-
       "layer": "Outdoor_3857"
     }
   },
@@ -162,7 +161,6 @@
       "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
       "maxZoom": "16",
       "minZoom": "7",
-
       "layer": "Road_3857"
     }
   },
@@ -174,7 +172,6 @@
       "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
       "maxZoom": "16",
       "minZoom": "7",
-
       "layer": "Light_3857"
     }
   }

@@ -45,44 +45,7 @@ class Spotmap {
         this.map = L.map(this.options.mapId, mapOptions);
         this.map.once('focus', function() { self.map.scrollWheelZoom.enable(); });
 
-        // zoom to bounds btn 
-        let zoomOptions = {duration: 2};
-        let last = L.easyButton({
-            states: [{
-              stateName: 'all',
-              icon: '<span class="target">🌐</span>',
-              title: 'show all points',
-              onClick: function(control) {
-                self.map.flyToBounds(self.mapcenter.all,zoomOptions);
-                control.state('last');
-              }
-            }, {
-              icon: '<span class="target">📍</span>',
-              stateName: 'last',
-              onClick: function(control) {
-                self.map.flyTo(self.mapcenter.last, 14,zoomOptions);
-                if(self.mapcenter.gpx)
-                    control.state('gpx');
-                else
-                    control.state('all');
-              },
-              title: 'show last point'
-            }, {
-              icon: '<span class="target">👣</span>',
-              stateName: 'gpx',
-              onClick: function(control) {
-                self.map.flyToBounds(self.mapcenter.gpx,zoomOptions);
-                control.state('all');
-              },
-              title: 'show gpx tracks'
-            }]
-          });
-        //   the users position
-        let position = L.easyButton('<span class="target">🏡</span>',function(){
-            self.map.locate({setView: true, maxZoom: 16});
-        })
-        // add all btns to map
-        L.easyBar([last,position]).addTo(this.map);
+        this.addButtons();
 
         baseLayers[Object.keys(baseLayers)[0]].addTo(this.map);
         var Marker = L.Icon.extend({
@@ -182,7 +145,7 @@ class Spotmap {
                         line.push([entry.latitude, entry.longitude]);
                     }
                     let message = '';
-                    let tinyTypes = this.getOption('tinyTypes',  { 'feed': entry.feed_name });
+                    let tinyTypes = self.getOption('tinyTypes',  { 'feed': entry.feed_name });
     
                     var markerOptions = { icon: markers[color] };
                     if (tinyTypes.includes(entry.type)) {
@@ -368,28 +331,29 @@ class Spotmap {
                 L.control.layers(baseLayers, displayOverlays).addTo(self.map);
             }
             
-            // spotmap.on('baselayerchange', function(layer) {
-            //     let center = spotmap.getCenter();
-            //     let zoom = spotmap.getZoom();
-            //     console.log(spotmap.options.crs);
-    
-            //     if (layer.name.indexOf('swiss') > -1 && spotmap.options.crs.code == "EPSG:2056"){
-            //         spotmap.options.crs = L.CRS.EPSG2056;
-            //         spotmap.options.tms = true;
-            //     } 
-            //     else if (layer.name.indexOf('swiss') > -1 && spotmap.options.crs.code == "EPSG:3857"){
-            //         spotmap.options.crs = L.CRS.EPSG2056;
-            //         spotmap.options.tms = true;
-            //         zoom += 7;
-            //     } 
-            //     else if (layer.name.indexOf('swiss') == -1 && spotmap.options.crs.code == "EPSG:2056") {
-            //         spotmap.options.crs = L.CRS.EPSG3857; "EPSG:3857"
-            //         spotmap.options.tms = false;
-            //         zoom -=
-            //     }
-            //     spotmap.setView(center);
-            //     spotmap._resetView(center, zoom, true);
-            //  })
+            self.map.on('zoom', function(layer) {
+                console.log(self.map.getZoom());
+
+            });
+            self.map.on('baselayerchange', function(layer) {
+                // let bounds = self.map.getBounds();
+                let center = self.map.getCenter();
+                let zoom = self.map.getZoom();
+                console.log(self.map.getZoom());
+                
+                if (lodash.startsWith(layer.name, "swiss") && self.map.options.crs.code == "EPSG:3857"){
+                    self.changeCRS(L.CRS.EPSG2056)
+                    self.map.setZoom(zoom +7)
+                } 
+                else if (!lodash.startsWith(layer.name, "swiss") && self.map.options.crs.code == "EPSG:2056") {
+                    self.changeCRS(L.CRS.EPSG3857)
+                    self.map.setZoom(zoom -7)
+                }
+                // self.map.options.zoomSnap = 0;
+                self.map._resetView(center, zoom, true);
+                zoom = self.map.getZoom();
+                // self.map.options.zoomSnap = 1;
+             })
     
             if(self.options.autoReload == true){
                 var refresh = setInterval(function(){ 
@@ -452,10 +416,6 @@ class Spotmap {
             if (this.options.maps) {
                 var baseLayers = {};
                 
-                if (this.options.maps.includes('swisstopo')) {
-                    baseLayers['swissTopo'] = L.tileLayer.swiss();
-                    return baseLayers;
-                }
                 for (let mapName in this.options.maps) {
                     mapName = this.options.maps[mapName];
                     if (lodash.keys(spotmapjsobj.maps).includes(mapName)) {
@@ -465,6 +425,10 @@ class Spotmap {
                         } else {
                             baseLayers[map.label] = L.tileLayer(map.url, map.options);
                         }
+                    }
+                    if (this.options.maps.includes('swisstopo')) {
+                        baseLayers['swissTopo'] = L.tileLayer.swiss();
+                        L.Control.Layers.prototype._checkDisabledLayers = function(){};
                     }
                 }
                 return baseLayers;
@@ -541,6 +505,66 @@ class Spotmap {
             callback(response);
         });
     }
+    addButtons(){
+        // zoom to bounds btn 
+        var self = this;
+        let zoomOptions = {duration: 2};
+        let last = L.easyButton({
+            states: [{
+                stateName: 'all',
+                icon: '<span class="target">🌐</span>',
+                title: 'show all points',
+                onClick: function(control) {
+                self.map.flyToBounds(self.mapcenter.all,zoomOptions);
+                control.state('last');
+                }
+            }, {
+                icon: '<span class="target">📍</span>',
+                stateName: 'last',
+                onClick: function(control) {
+                self.map.flyTo(self.mapcenter.last, 14,zoomOptions);
+                if(self.mapcenter.gpx)
+                    control.state('gpx');
+                else
+                    control.state('all');
+                },
+                title: 'show last point'
+            }, {
+                icon: '<span class="target">👣</span>',
+                stateName: 'gpx',
+                onClick: function(control) {
+                self.map.flyToBounds(self.mapcenter.gpx,zoomOptions);
+                control.state('all');
+                },
+                title: 'show gpx tracks'
+            }]
+            });
+        //   the users position
+        let position = L.easyButton('<span class="target">🏡</span>',function(){
+            self.map.locate({setView: true, maxZoom: 16});
+        })
+        // add all btns to map
+        L.easyBar([last,position]).addTo(this.map);
+    }
+
+    getMaxBounds(crs) {
+        const { bounds } = crs.projection;
+        return new L.LatLngBounds(
+          crs.unproject(bounds.min),
+          crs.unproject(bounds.max),
+        );
+      }
+      
+    changeCRS(crs) {
+        const bounds = this.map.getBounds();
+        this.map.options.crs = crs;
+        // Ensure zoom is not affected by differing CRS scales
+        this.map.options.zoomSnap = 0;
+        this.map.fitBounds(bounds);
+        this.map.setMaxBounds(this.getMaxBounds(crs));
+        this.map.options.zoomSnap = 1;
+      }
+
     initTable(id){
         // define obj to post data
         var body = {
