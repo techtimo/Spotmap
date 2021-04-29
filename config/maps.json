@@ -1,179 +1,235 @@
 {
-  "mb-outdoors": {
-    "label": "Outdoors",
-    "url": "https://api.mapbox.com/styles/v1/mapbox/outdoors-v9/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
-    "options": {
-      "tileSize": 512,
-      "mapboxToken": "",
-      "maxZoom": 23,
-      "zoomOffset": -1,
-      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+  "baseLayers": {
+    "mb-outdoors": {
+      "label": "Outdoors",
+      "url": "https://api.mapbox.com/styles/v1/mapbox/outdoors-v9/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+      "options": {
+        "tileSize": 512,
+        "mapboxToken": "",
+        "maxZoom": 23,
+        "zoomOffset": -1,
+        "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "mb-satelite": {
+      "label": "Satelite",
+      "url": "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+      "options": {
+        "tileSize": 512,
+        "mapboxToken": "",
+        "maxZoom": 23,
+        "zoomOffset": -1,
+        "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "mb-streets": {
+      "label": "Streets",
+      "url": "https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
+      "options": {
+        "tileSize": 512,
+        "mapboxToken": "",
+        "maxZoom": 23,
+        "zoomOffset": -1,
+        "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "tf-landscape": {
+      "label": "Landscape",
+      "url": "https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+      "options": {
+        "maxZoom": 22,
+        "thunderforestToken": "",
+        "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "tf-transport": {
+      "label": "Transport",
+      "url": "https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+      "options": {
+        "maxZoom": 22,
+        "thunderforestToken": "",
+        "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "tf-atlas": {
+      "label": "Atlas",
+      "url": "https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+      "options": {
+        "maxZoom": 22,
+        "thunderforestToken": "",
+        "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "tf-outdoors": {
+      "label": "Outdoors",
+      "url": "https://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+      "options": {
+        "maxZoom": 22,
+        "thunderforestToken": "",
+        "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "tf-cycle": {
+      "label": "OpenCycleMap",
+      "url": "https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={thunderforestToken}",
+      "options": {
+        "maxZoom": 22,
+        "thunderforestToken": "",
+        "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
+      }
+    },
+    "openstreetmap": {
+      "label": "OpenStreetMap",
+      "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "options": {
+        "maxZoom": 19,
+        "attribution": "© <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
+      }
+    },
+    "opentopomap": {
+      "label": "OpenTopoMap",
+      "url": "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+      "options": {
+        "maxZoom": 17,
+        "attribution": "© <a href='http://opentopomap.org/'>OpenTopoMap</a> <a href='https://creativecommons.org/licenses/by-sa/3.0/'>(CC-BY-SA)</a> | © <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
+      }
+    },
+    "spain-ign-topo": {
+      "wms": "true",
+      "label": "Spain IGN Topo",
+      "url": "http://www.ign.es/wms-inspire/mapa-raster",
+      "options": {
+        "layers": "mtn_rasterizado",
+        "format": "image/jpeg",
+        "transparent": "false",
+        "maxZoom": 20,
+        "continuousWorld": "true",
+        "attribution": "© <a href='http://www.ign.es/ign/main/index.do' target='_blank'>Instituto Geográfico Nacional de España</a>"
+      }
+    },
+    "france-ign-topo": {
+      "label": "France IGN Topo",
+      "url": "https://wxs.ign.fr/{geoportailToken}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+      "options": {
+        "geoportailToken": "",
+        "format": "image/jpeg",
+        "transparent": "false",
+        "maxZoom": 16,
+        "attribution": "© <a target='_blank' href='https://www.geoportail.gouv.fr/'>Geoportail France</a>",
+        "layer": "GEOGRAPHICALGRIDSYSTEMS.MAPS"
+      }
+    },
+    "newzealand-topo50": {
+      "label": "NZ Topo 50",
+      "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50767/EPSG:3857/{z}/{x}/{y}.png",
+      "options": {
+        "LINZToken": "",
+        "subdomains": "abcd",
+        "format": "image/jpeg",
+        "transparent": "false",
+        "maxZoom": 16,
+        "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
+      }
+    },
+    "newzealand-topo250": {
+      "label": "NZ Topo 250",
+      "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50798/EPSG:3857/{z}/{x}/{y}.png",
+      "options": {
+        "LINZToken": "",
+        "subdomains": "abcd",
+        "format": "image/jpeg",
+        "transparent": "false",
+        "maxZoom": 16,
+        "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
+      }
+    },
+    "stamen-watercolor": {
+      "label": "Watercolor",
+      "url": "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
+      "options": {
+        "attribution": "Map tiles by <a href='http://stamen.com'>Stamen Design</a>, <a href='http://creativecommons.org/licenses/by/3.0'>CC BY 3.0</a> &mdash; Map data &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+        "subdomains": "abcd",
+        "minZoom": "1",
+        "maxZoom": "16"
+      }
+    },
+    "esri-natgeoworldmap": {
+      "label": "Nat Geo Map",
+      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
+      "options": {
+        "attribution": "Tiles © Esri — National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC",
+        "maxZoom": "12"
+      }
+    },
+    "uk-os-outdoor": {
+      "label": "UK Outdoor",
+      "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+      "options": {
+        "osdatahubToken": "",
+        "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+        "maxZoom": "16",
+        "minZoom": "7",
+        "layer": "Outdoor_3857"
+      }
+    },
+    "uk-os-road": {
+      "label": "UK Road",
+      "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+      "options": {
+        "osdatahubToken": "",
+        "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+        "maxZoom": "16",
+        "minZoom": "7",
+        "layer": "Road_3857"
+      }
+    },
+    "uk-os-light": {
+      "label": "UK Light",
+      "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
+      "options": {
+        "osdatahubToken": "",
+        "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
+        "maxZoom": "16",
+        "minZoom": "7",
+        "layer": "Light_3857"
+      }
+    },
+    "usgs-topo": {
+      "label": "USGS Topo",
+      "url": "https://basemap.nationalmap.gov/ArcGIS/rest/services/{layer}/MapServer/tile/{z}/{y}/{x}",
+      "options": {
+        "attribution": "<a href='https://www.usgs.gov/'>U.S. Geological Survey</a> | <a href='https://www.usgs.gov/laws/policies_notices.html'>Policies</a>",
+        "maxZoom": "18",
+        "layer": "USGSTopo"
+      }
+    },
+    "usgs-topo-sat": {
+      "label": "USGS Topo Satelite",
+      "url": "https://basemap.nationalmap.gov/ArcGIS/rest/services/{layer}/MapServer/tile/{z}/{y}/{x}",
+      "options": {
+        "attribution": "<a href='https://www.usgs.gov/'>U.S. Geological Survey</a> | <a href='https://www.usgs.gov/laws/policies_notices.html'>Policies</a>",
+        "maxZoom": "18",
+        "layer": "USGSImageryOnly"
+      }
+    },
+    "usgs-sat": {
+      "label": "USGS Satelite",
+      "url": "https://basemap.nationalmap.gov/ArcGIS/rest/services/{layer}/MapServer/tile/{z}/{y}/{x}",
+      "options": {
+        "attribution": "<a href='https://www.usgs.gov/'>U.S. Geological Survey</a> | <a href='https://www.usgs.gov/laws/policies_notices.html'>Policies</a>",
+        "maxZoom": "18",
+        "layer": "USGSImageryTopo"
+      }
     }
   },
-  "mb-satelite": {
-    "label": "Satelite",
-    "url": "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
-    "options": {
-      "tileSize": 512,
-      "mapboxToken": "",
-      "maxZoom": 23,
-      "zoomOffset": -1,
-      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-    }
-  },
-  "mb-streets": {
-    "label": "Streets",
-    "url": "https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token={mapboxToken}",
-    "options": {
-      "tileSize": 512,
-      "mapboxToken": "",
-      "maxZoom": 23,
-      "zoomOffset": -1,
-      "attribution": "© <a href='https://apps.mapbox.com/feedback/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-    }
-  },
-  "tf-landscape": {
-    "label": "Landscape",
-    "url": "https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey={thunderforestToken}",
-    "options": {
-      "maxZoom": 22,
-      "thunderforestToken": "",
-      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-    }
-  },
-  "tf-outdoors": {
-    "label": "Outdoors",
-    "url": "https://{s}.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey={thunderforestToken}",
-    "options": {
-      "maxZoom": 22,
-      "thunderforestToken": "",
-      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-    }
-  },
-  "tf-cycle": {
-    "label": "OpenCycleMap",
-    "url": "https://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey={thunderforestToken}",
-    "options": {
-      "maxZoom": 22,
-      "thunderforestToken": "",
-      "attribution": "© <a href='http://www.thunderforest.com/'>Thunderforest</a>, © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
-    }
-  },
-  "openstreetmap": {
-    "label": "OpenStreetMap",
-    "url": "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    "options": {
-      "maxZoom": 19,
-      "attribution": "© <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
-    }
-  },
-  "opentopomap": {
-    "label": "OpenTopoMap",
-    "url": "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
-    "options": {
-      "maxZoom": 17,
-      "attribution": "© <a href='http://opentopomap.org/'>OpenTopoMap</a> <a href='https://creativecommons.org/licenses/by-sa/3.0/'>(CC-BY-SA)</a> | © <a href='https://openstreetmap.org/copyright/'>OpenStreetMap</a>"
-    }
-  },
-  "spain-ign-topo": {
-    "wms": "true",
-    "label": "Spain IGN Topo",
-    "url": "http://www.ign.es/wms-inspire/mapa-raster",
-    "options": {
-      "layers": "mtn_rasterizado",
-      "format": "image/jpeg",
-      "transparent": "false",
-      "maxZoom": 20,
-      "continuousWorld" : "true",
-      "attribution": "© <a href='http://www.ign.es/ign/main/index.do' target='_blank'>Instituto Geográfico Nacional de España</a>"
-    }
-  },
-  "france-ign-topo": {
-    "label": "France IGN Topo",
-    "url": "https://wxs.ign.fr/{geoportailToken}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
-    "options": {
-      "geoportailToken": "",
-      "format": "image/jpeg",
-      "transparent": "false",
-      "maxZoom": 16,
-      "attribution": "© <a target='_blank' href='https://www.geoportail.gouv.fr/'>Geoportail France</a>",
-      "layer": "GEOGRAPHICALGRIDSYSTEMS.MAPS"
-    }
-  },
-  "newzealand-topo50": {
-    "label": "NZ Topo 50",
-    "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50767/EPSG:3857/{z}/{x}/{y}.png",
-    "options": {
-      "LINZToken": "",
-      "subdomains":"abcd",
-      "format": "image/jpeg",
-      "transparent": "false",
-      "maxZoom": 16,
-      "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
-    }
-  },
-  "newzealand-topo250": {
-    "label": "NZ Topo 250",
-    "url": "http://tiles-{s}.data-cdn.linz.govt.nz/services;key={LINZToken}/tiles/v4/layer=50798/EPSG:3857/{z}/{x}/{y}.png",
-    "options": {
-      "LINZToken": "",
-      "subdomains":"abcd",
-      "format": "image/jpeg",
-      "transparent": "false",
-      "maxZoom": 16,
-      "attribution": "<a href='http://data.linz.govt.nz'>Sourced from LINZ. CC BY 4.0</a>"
-    }
-  },
-  "stamen-watercolor": {
-    "label": "Watercolor",
-    "url": "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.jpg",
-    "options": {
-      "attribution": "Map tiles by <a href='http://stamen.com'>Stamen Design</a>, <a href='http://creativecommons.org/licenses/by/3.0'>CC BY 3.0</a> &mdash; Map data &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
-      "subdomains": "abcd",
-      "minZoom": "1",
-      "maxZoom": "16"
-    }
-  },
-  "esri-natgeoworldmap": {
-    "label": "Nat Geo Map",
-    "url": "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
-    "options": {
-      "attribution": "Tiles © Esri — National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC",
-      "maxZoom": "12"
-    }
-  },
-  "uk-os-outdoor": {
-    "label": "UK Outdoor",
-    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
-    "options": {
-      "osdatahubToken": "",
-      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
-      "maxZoom": "16",
-      "minZoom": "7",
-      "layer": "Outdoor_3857"
-    }
-  },
-  "uk-os-road": {
-    "label": "UK Road",
-    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
-    "options": {
-      "osdatahubToken": "",
-      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
-      "maxZoom": "16",
-      "minZoom": "7",
-      "layer": "Road_3857"
-    }
-  },
-  "uk-os-light": {
-    "label": "UK Light",
-    "url": "https://api.os.uk/maps/raster/v1/zxy/{layer}/{z}/{x}/{y}.png?key={osdatahubToken}",
-    "options": {
-      "osdatahubToken": "",
-      "attribution": "Map data & imagery © <a href='http://www.ordnancesurvey.co.uk/'>Ordnance Survey</a>",
-      "maxZoom": "16",
-      "minZoom": "7",
-      "layer": "Light_3857"
+  "overlays": {
+    "openseamap": {
+      "label": "OpenSeaMap",
+      "url": "http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+      "options": {
+        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenSeaMap</a> contributors",
+        "layer": "USGSImageryTopo"
+      }
     }
   }
 }
-
