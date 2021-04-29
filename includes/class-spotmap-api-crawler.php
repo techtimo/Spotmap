@@ -31,7 +31,7 @@ class Spotmap_Api_Crawler {
 			// error_log($feed_url);
 			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 			if(empty($jsonraw)){
-				error_log("Empty Response");
+				// error_log("Empty Response");
 				return false;
 			}
 	

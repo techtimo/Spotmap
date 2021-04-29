@@ -1,7 +1,6 @@
-
 class Spotmap {
-    constructor (options) {
-        if(!options.maps || !options.feeds){
+    constructor(options) {
+        if (!options.maps) {
             console.error("Missing important options!!");
         }
         this.options = options;
@@ -9,45 +8,48 @@ class Spotmap {
         this.debug("Spotmap obj created.");
         this.debug(this.options);
         this.map = {};
+        this.layerControl = L.control.layers({},{},{hideSingleBase: true});
+        this.layers = {
+            feeds: {},
+            gpx: {},
+        };
     }
 
-    initMap(){
-        jQuery('#'+ this.options.mapId).height(this.options.height);
+    doesFeedExists(feedName){
+        return this.layers.feeds.hasOwnProperty(feedName)
+    }
+    initMap() {
+        jQuery('#' + this.options.mapId).height(this.options.height);
         var self = this;
-        
-        let oldOptions = jQuery('#'+ this.options.mapId).data('options');
-        jQuery('#'+ this.options.mapId).data('options',this.options);
+
+        let oldOptions = jQuery('#' + this.options.mapId).data('options');
+        jQuery('#' + this.options.mapId).data('options', this.options);
         var container = L.DomUtil.get(this.options.mapId);
-        if(container != null){
-            this.debug("Map is already defined")
-            if(!lodash.isEqual(this.options,oldOptions)){
-                this.debug("Options were changed. Delete the map container...")
+        if (container != null) {
+            if (!lodash.isEqual(this.options, oldOptions)) {
                 // https://github.com/Leaflet/Leaflet/issues/3962
                 container._leaflet_id = null;
-                jQuery('#'+ this.options.mapId + " > .leaflet-control-container" ).empty();
-                jQuery('#'+ this.options.mapId + " > .leaflet-pane" ).empty();
+                jQuery('#' + this.options.mapId + " > .leaflet-control-container").empty();
+                jQuery('#' + this.options.mapId + " > .leaflet-pane").empty();
             } else {
-                this.debug("Options haven't been changed.")
                 return 0;
             }
         }
-        this.debug("Lodash version: " + lodash.VERSION);
-    
-        // load maps
-        var baseLayers = this.getOption('maps');
-        var mapOptions = { 
+
+        var mapOptions = {
             fullscreenControl: true,
             scrollWheelZoom: false,
+            attributionControl: false,
         };
-        if(Object.keys(baseLayers)[0].indexOf('swiss') > -1){
-            mapOptions.crs = L.CRS.EPSG2056;
-        }
         this.map = L.map(this.options.mapId, mapOptions);
-        this.map.once('focus', function() { self.map.scrollWheelZoom.enable(); });
+        L.control.scale().addTo(this.map);
+        // use no prefix in attribution
+        L.control.attribution({prefix: ''}).addTo(this.map);
+        // enable scrolling with mouse once the map was focused
+        this.map.once('focus', function () { self.map.scrollWheelZoom.enable(); });
 
+        self.getOption('maps');
         this.addButtons();
-
-        baseLayers[Object.keys(baseLayers)[0]].addTo(this.map);
         var Marker = L.Icon.extend({
             options: {
                 shadowUrl: spotmapjsobj.url + 'leaflet/images/marker-shadow.png',
@@ -66,17 +68,16 @@ class Spotmap {
         });
         // create markers
         var markers = { tiny: {} };
-        ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet', 'gray', 'black'].forEach(function(color) {
+        ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet', 'gray', 'black'].forEach(function (color) {
             markers[color] = new Marker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png' });
             markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
         });
-    
-    
-    
+
         // define obj to post data
         let body = {
             'action': 'get_positions',
             'select': "*",
+            'feeds': '',
             'date-range': this.options.dateRange,
             'date': this.options.date,
             'orderBy': 'feed_name, time',
@@ -85,137 +86,23 @@ class Spotmap {
         if (this.options.feeds) {
             body.feeds = this.options.feeds;
         }
+        self.layerControl.addTo(self.map);
         this.getPoints(function (response) {
-            
-            var overlays = {},
-                lastAdded = {'marker': {},'line':{}};
-            if (response.error || response == 0) {
-                self.debug("There was an error in the response");
-                self.debug(response);
-                self.map.setView([51.505, -0.09], 13);
-                response = response.error ? response : {};
-                response.title = response.title || "No data found!";
-                response.message = response.message || "";
-                if(!self.options.gpx){
-                    var popup = L.popup()
-                        .setLatLng([51.5, -0.09])
-                        .setContent("<b>" + response.title + "</b><br>" + response.message)
-                        .openOn(self.map);
-                    self.map.setView([51.505, -0.09], 13);
-                }
-            } else {
-    
-                var feeds = [response[0].feed_name],
-                    group = [],
-                    line = [];
-    
-    
-                // loop thru the data received from backend
-                response.forEach(function(entry, index) {
-                    let color = this.getOption('color', { 'feed': entry.feed_name });
-                    lastAdded.marker[entry.feed_name] = entry.unixtime;
-    
-                    // feed changed in loop
-                    if (feeds[feeds.length - 1] != entry.feed_name) {
-                        let lastFeed = feeds[feeds.length - 1];
-                        let color = this.getOption('color', { 'feed': lastFeed });
-                        lastAdded.line[lastFeed] = L.polyline(line, { color: color });
-                        group.push(lastAdded.line[lastFeed]);
-                        let html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
-                        if(this.options.feeds.length > 1){
-                            overlays[lastFeed] = {"group": L.layerGroup(group), "label":lastFeed + html};
-                        } else {
-                            overlays[lastFeed] = {"group": L.layerGroup(group), "label":lastFeed};
-                        }
-                        if(this.getOption('splitLines', { 'feed': entry.feed_name })){
-                            line = [];
-                        }
-                        group = [];
-                        feeds.push(entry.feed_name);
-                    } 
-                    // do we need to split the line?
-                    else if (this.getOption('splitLines', { 'feed': entry.feed_name }) && index > 0 && entry.unixtime - response[index - 1].unixtime >= this.options.styles[entry.feed_name].splitLines * 60 * 60) {
-                        group.push(L.polyline(line, { color: color }));
-                        // start the new line
-                        line = [[entry.latitude, entry.longitude]];
-                    }
-                    
-                    // a normal iteration adding stuff with default values
-                    else if (this.getOption('splitLines', { 'feed': entry.feed_name })) {
-                        line.push([entry.latitude, entry.longitude]);
-                    }
-                    let message = '';
-                    let tinyTypes = self.getOption('tinyTypes',  { 'feed': entry.feed_name });
-    
-                    var markerOptions = { icon: markers[color] };
-                    if (tinyTypes.includes(entry.type)) {
-                        markerOptions.icon = markers.tiny[color];
-                    } else {
-                        message += "<b>" + entry.type + "</b><br>";
-                    }
-                    if (entry.type == "HELP")
-                        markerOptions = { icon: markers['red'] };
-                    else if (entry.type == "HELP-CANCEL")
-                        markerOptions = { icon: markers['green'] };
-                    // last iteration or feed changed?
-                    if(response.length == index + 1 || response[index+1].feed_name != entry.feed_name) {
-                        if(this.getOption('lastPoint') == true){
-                            markerOptions = { icon: markers[color] };
-                        } else if(this.getOption('lastPoint')){
-                            markerOptions = { icon: markers[this.getOption('lastPoint')] };
-
-                        }
-                    }
-    
-                    message += 'Time: ' + entry.time + '</br>Date: ' + entry.date + '</br>';
-                    if(entry.local_timezone && !(entry.localdate == entry.date && entry.localtime == entry.time ))
-                        message += 'Local Time: ' + entry.localtime + '</br>Local Date: ' + entry.localdate + '</br>';
-                    if (entry.message)
-                        message += 'Message: ' + entry.message + '</br>';
-                    if (entry.altitude > 0)
-                        message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-                    if (entry.battery_status == 'LOW')
-                        message += 'Battery status is low!' + '</br>';
-                    if (entry.hiddenPoints)
-                        message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a radius of '+ entry.hiddenPoints.radius+' meters</br>';
-
-    
-                    var marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
-                    group.push(marker);
-                    jQuery("#spotmap_" + entry.id).click(function () {
-                        marker.togglePopup();
-                        self.map.panTo([entry.latitude, entry.longitude])
-                    });
-                    jQuery("#spotmap_" + entry.id).dblclick(function () {
-                        marker.togglePopup();
-                        self.map.setView([entry.latitude, entry.longitude], 14)
-                    });
-    
-    
-                    // for last iteration add the rest that is not caught with a feed change
-                    if (response.length == index + 1) {
-                        lastAdded.line[entry.feed_name] = L.polyline(line, { 'color': color });
-                        group.push(lastAdded.line[entry.feed_name]);
-                        let html = '';
-                        if (this.options.feeds.length > 1) {
-                            html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
-                            html += '<div class="leaflet-control-layers-separator"></div>'
-                        }
-                        overlays[feeds[feeds.length - 1]] = {"group": L.layerGroup(group), "label":feeds[feeds.length - 1] + html};
-                    }
+            // console.log(response);
+            // this is the case if explicitly no feeds were provided
+            if(!response.empty){
+                // loop thru the data received from server
+                response.forEach(function (entry, index) {
+                    this.addPoint(entry);
+                    this.addPointToLine(entry);
                 }, self);
+
             }
-            var gpxBounds;
-            var gpxOverlays = {};
             if (self.options.gpx) {
-                // set the gpx overlays, so the gpx will be added first (= below the feeds)
-                let gpxnames = lodash.map(self.options.gpx, 'title');
-                lodash.forEach(gpxnames,function(title){
-                    gpxOverlays[title] = null;
-                });
-                // reversed so the first one is added last == on top of all others
-                for (var i=0; i < self.options.gpx.length; i++) {
+
+                for (var i = 0; i < self.options.gpx.length; i++) {
                     let entry = self.options.gpx[i];
+                    let title = self.options.gpx[i].title;
                     let color = self.getOption('color', { gpx: entry });
                     let gpxOption = {
                         async: true,
@@ -226,212 +113,139 @@ class Spotmap {
                             wptIconsType: {
                                 '': markers[color],
                             },
-                            startIconUrl: '',
-                            endIconUrl: '',
+                            startIconUrl: '', endIconUrl: '',
                             shadowUrl: spotmapjsobj.url + 'leaflet-gpx/pin-shadow.png',
                         },
                         polyline_options: {
-                            'color': color
+                            'color': color,
                         }
                     }
-    
+
                     let track = new L.GPX(entry.url, gpxOption).on('loaded', function (e) {
-                        // e.target.getLayers()[0].bindPopup(entry.name);
-                        // console.log(e)
-                        let gpxBound = e.target.getBounds();
-                        let point = L.latLng(gpxBound._northEast.lat, gpxBound._northEast.lng);
-                        let point2 = L.latLng(gpxBound._southWest.lat, gpxBound._southWest.lng);
-                        if (!gpxBounds) {
-                            gpxBounds = L.latLngBounds([point, point2]);
-                        } else {
-                            gpxBounds.extend(L.latLngBounds([point, point2]))
+                        // if last track
+                        if (self.options.mapcenter == 'gpx' || response.empty) {
+                            self.setBounds('gpx');
                         }
-                        self.mapcenter.gpx = gpxBounds;
-                        if (self.options.mapcenter == 'gpx' || response.error) {
-                            self.map.fitBounds(gpxBounds);
-                        }
-                    }).on('addline', function(e) {
-                        e.line.bindPopup(entry.title);
+                    }).on('addline', function (e) {
+                        e.line.bindPopup(title);
                     });
-                    let html = ' <span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>';
-                    if (gpxOverlays[entry.title]) {
-                        gpxOverlays[entry.title].group.addLayer(track);
-                    } else {
-                        gpxOverlays[entry.title] = {group: L.layerGroup([track]), 'label': entry.title + html};
-                    }
-    
+                    let html = ' ' + self.getColorDot(color);
+                    self.layers.gpx[title] = {
+                        featureGroup: L.featureGroup([track])
+                    };
+                    self.layers.gpx[title].featureGroup.addTo(self.map)
+                    self.layerControl.addOverlay(self.layers.gpx[title].featureGroup,title + html);
+                    
                 }
             }
-            // reverse order in menu to have the first element added last but shown on the menu first again
-            lodash.forEachRight(gpxOverlays, function(value,entryName) { overlays[entryName] = value });
-            var displayOverlays = {};
-            for (let key in overlays) {
-                displayOverlays[overlays[key].label] = overlays[key].group;
-            }
-    
-            let all = [];
-            // loop thru feeds (not gpx) to get the bounds
-            for (let feed in displayOverlays) {
-                const element = displayOverlays[feed];
-                element.addTo(self.map);
-                if (displayOverlays.hasOwnProperty(feed)) {
-                    const layers = element.getLayers();
-                    layers.forEach(function(element) {
-                        if (!element._gpx)
-                            all.push(element);
-                    });
+            // add feeds to layercontrol
+            lodash.forEach(self.layers.feeds, function(value, key) {
+                self.layers.feeds[key].featureGroup.addTo(self.map);
+                
+                if (self.layers.feeds.length + self.options.gpx.length == 1){
+                    self.layerControl.addOverlay(self.layers.feeds[key].featureGroup,key);
                 }
-            }
-            var group = new L.featureGroup(all);
-            let bounds = group == undefined ? undefined : group.getBounds();
-            self.mapcenter.all = bounds;
-            
-            
-            var lastPoint;
-            var time = 0;
-            if (response.length > 0 && !response.error){
-                response.forEach(function(entry, index) {
-                    if (time < entry.unixtime) {
-                        time = entry.unixtime;
-                        lastPoint = [entry.latitude, entry.longitude];
-                    }
-                });
-            }
-            self.mapcenter.last = lastPoint;
-           // error key is only set on an empty response
-            if(!response.hasOwnProperty("error")){
-                if(self.options.mapcenter == 'gpx' && self.options.gpx.length == 0){
-                    self.options.mapcenter = 'all';
+                else {
+                    let color = self.getOption('color', { 'feed': key })
+                    let label = key + ' ' + self.getColorDot(color)
+                    // if last element
+                        // label += '<div class="leaflet-control-layers-separator"></div>'
+                    self.layerControl.addOverlay(self.layers.feeds[key].featureGroup, label)
                 }
-                if (self.options.mapcenter == 'all') {
-                    self.map.fitBounds(bounds);
-                } else if (self.options.mapcenter == 'last') {
-                    self.map.setView([lastPoint[0], lastPoint[1]], 13);
-                }
-            }
-            
-            for (let index in self.options.mapOverlays) {
-                let overlay = self.options.mapOverlays[index];
-                if(overlay == 'openseamap'){
-                    displayOverlays.OpenSeaMap = L.tileLayer('http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenSeaMap</a> contributors',
-                    });
-                }
-            }
-            
-            // hide map option, if only one
-            if(Object.keys(baseLayers).length == 1){
-                baseLayers = {};
-            }
-            if (Object.keys(displayOverlays).length == 1) {
-                displayOverlays[Object.keys(displayOverlays)[0]].addTo(self.map);
-                if(Object.keys(baseLayers).length > 1)
-                    L.control.layers(baseLayers).addTo(self.map);
-            } else {
-                L.control.layers(baseLayers, displayOverlays).addTo(self.map);
-            }
-            
-            self.map.on('zoom', function(layer) {
-                console.log(self.map.getZoom());
 
             });
-            self.map.on('baselayerchange', function(layer) {
-                // let bounds = self.map.getBounds();
-                let center = self.map.getCenter();
-                let zoom = self.map.getZoom();
-                console.log(self.map.getZoom());
-                
-                if (lodash.startsWith(layer.name, "swiss") && self.map.options.crs.code == "EPSG:3857"){
-                    self.changeCRS(L.CRS.EPSG2056)
-                    self.map.setZoom(zoom +7)
-                } 
-                else if (!lodash.startsWith(layer.name, "swiss") && self.map.options.crs.code == "EPSG:2056") {
-                    self.changeCRS(L.CRS.EPSG3857)
-                    self.map.setZoom(zoom -7)
-                }
-                // self.map.options.zoomSnap = 0;
-                self.map._resetView(center, zoom, true);
-                zoom = self.map.getZoom();
-                // self.map.options.zoomSnap = 1;
-             })
-    
-            if(self.options.autoReload == true){
-                var refresh = setInterval(function(){ 
+            self.setBounds('all');
+            // TODO merge displayOverlays
+            // displayOverlays merge 
+            // self.getOptions('overlays');
+            
+            // if (Object.keys(displayOverlays).length == 1) {
+            //     displayOverlays[Object.keys(displayOverlays)[0]].addTo(self.map);
+            //     if (Object.keys(baseLayers).length > 1)
+            //         L.control.layers(baseLayers,{},{hideSingleBase: true}).addTo(self.map);
+            // } else {
+                // L.control.layers(baseLayers, displayOverlays,{hideSingleBase: true}).addTo(self.map);
+            // }
+            // self.map.on('baselayerchange', self.onBaseLayerChange(event));
+            
+            if (self.options.autoReload == true && !response.empty) {
+                var refresh = setInterval(function () {
                     body.groupBy = 'feed_name';
                     body.orderBy = 'time DESC';
                     self.getPoints(function (response) {
-                        if(response.error){
+                        if (response.error) {
                             return;
                         }
-                        // debug("Checking for new points ...",self.options.debug);
-                        response.forEach(function(entry, index) {
-                            if(lastAdded.marker[entry.feed_name] < entry.unixtime){
-                                lastAdded.marker[entry.feed_name] = entry.unixtime;
-                                let color = self.getOption('color', { feed: entry.feed_name });
-                                lastAdded.line[entry.feed_name].addLatLng([entry.latitude, entry.longitude]);
-    
-                                let message = '';
-                                let tinyTypes = self.getOption('tinyTypes', { feed: entry.feed_name });
-                
-                                var markerOptions = { icon: markers[color] };
-                                if (tinyTypes.includes(entry.type)) {
-                                    markerOptions.icon = markers.tiny[color];
-                                } else {
-                                    message += "<b>" + entry.type + "</b><br>";
-                                }
-                                if (entry.type == "HELP")
-                                    markerOptions = { icon: markers['red'] };
-                                else if (entry.type == "HELP-CANCEL")
-                                    markerOptions = { icon: markers['green'] };
-                
-                                message += 'Date: ' + entry.date + '</br>Time: ' + entry.time + '</br>';
-                                if (entry.message)
-                                    message += 'Message: ' + entry.message + '</br>';
-                                if (entry.altitude > 0)
-                                    message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
-                                if (entry.battery_status == 'LOW')
-                                    message += 'Battery status is low!' + '</br>';
-                                if (entry.hiddenPoints)
-                                    message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a radius of '+ entry.hiddenPoints.radius+' meters</br>';
-    
-                                let marker = L.marker([entry.latitude, entry.longitude], markerOptions).bindPopup(message);
-                                overlays[entry.feed_name].group.addLayer(marker);
-                                if(this.options.mapcenter == 'last'){
+                        response.forEach(function (entry, index) {
+                            let feedName = entry.feed_name;
+                            let lastPoint = lodash.last(this.layers.feeds[feedName].points)
+                            if (lastPoint.unixtime < entry.unixtime) {
+                                self.debug("Found a new point for Feed: " + feedName);
+                                this.addPoint(entry);
+                                this.addPointToLine(entry);
+
+                                if (this.options.mapcenter == 'last') {
                                     self.map.setView([entry.latitude, entry.longitude], 14);
                                 }
                             }
                         });
-                        
-                    },{body: body, filter: self.options.filterPoints});
+
+                    }, { body: body, filter: self.options.filterPoints });
                 }, 30000);
             }
-        },{body: body, filter: this.options.filterPoints});
+        }, { body: body, filter: this.options.filterPoints });
     }
 
     getOption(option, config) {
-        if(!config){
+        if (!config) {
             config = {};
         }
         if (option == 'maps') {
             if (this.options.maps) {
-                var baseLayers = {};
-                
+                let firstmap = true;
                 for (let mapName in this.options.maps) {
                     mapName = this.options.maps[mapName];
+                    let layer;
                     if (lodash.keys(spotmapjsobj.maps).includes(mapName)) {
                         let map = spotmapjsobj.maps[mapName];
-                        if(map.wms){
-                            baseLayers[map.label] = L.tileLayer.wms(map.url, map.options);
+                        if (map.wms) {
+                            layer = L.tileLayer.wms(map.url, map.options);
                         } else {
-                            baseLayers[map.label] = L.tileLayer(map.url, map.options);
+                            layer = L.tileLayer(map.url, map.options);
                         }
+                        this.layerControl.addBaseLayer(layer, map.label);
                     }
                     if (this.options.maps.includes('swisstopo')) {
-                        baseLayers['swissTopo'] = L.tileLayer.swiss();
-                        L.Control.Layers.prototype._checkDisabledLayers = function(){};
+                        layer = L.tileLayer.swiss()
+                        this.layerControl.addBaseLayer(layer, 'swissTopo');
+                        L.Control.Layers.prototype._checkDisabledLayers = function () { };
+                    }
+                    if(firstmap && layer){
+                        firstmap = false;
+                        layer.addTo(this.map);
+                    }
+
+                }
+                if (lodash.startsWith(this.options.maps[0], "swiss") && self.map.options.crs.code == "EPSG:3857") {
+                    self.changeCRS(L.CRS.EPSG2056)
+                    self.map.setZoom(zoom + 7)
+                }
+            }
+            return;
+        }
+
+
+        if (option == 'overlays') {
+            if (this.options.overlays) {
+                let overlays = {};
+                for (let overlayName in this.options.overlays) {
+                    overlayName = this.options.overlays[overlayName];
+                    if (lodash.keys(spotmapjsobj.overlays).includes(overlayName)) {
+                        let overlay = spotmapjsobj.overlays[overlayName];
+                            overlays[overlay.label] = L.tileLayer(overlay.url, overlay.options);
                     }
                 }
-                return baseLayers;
+                return overlays;
             }
             console.error("No Map defined");
             return false;
@@ -451,6 +265,11 @@ class Spotmap {
                 return this.options.lastPoint;
             return false;
         }
+        if (option == 'feeds') {
+            if (this.options.feeds || this.options.feeds.length == 0)
+                return false;
+            return this.options.feeds;
+        }
 
         if (option == 'splitLines' && config.feed) {
             if (this.options.styles[config.feed] && this.options.styles[config.feed].splitLinesEnabled && this.options.styles[config.feed].splitLinesEnabled === false)
@@ -465,96 +284,148 @@ class Spotmap {
             return ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
         }
     }
-    debug(message){
-        if(this.options && this.options.debug)
+    debug(message) {
+        if (this.options && this.options.debug)
             console.log(message)
     }
 
-    getPoints(callback,options){
-        jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response){
-            // filter out close by points, never filter if group option is set
-            if(options.filter && ! options.body.groupBy && !response.error){
-                response = lodash.eachRight(response, function (element, index){
-                    // if we spliced the array, or check the last element, do nothing
-                    if(!element || index == 0)
-                        return
-                    let nextPoint;
-                    let indexesToBeDeleted = [];
-                    for (let i = index-1; i > 0; i--) {
-                        nextPoint = [response[i].latitude,response[i].longitude];
-                        let dif = L.latLng(element.latitude, element.longitude).distanceTo(nextPoint);
-                        if(dif <= options.filter && element.type == response[i].type){
-                            indexesToBeDeleted.push(i);
-                            continue;
-                        }
-                        if (indexesToBeDeleted.length != 0){
-                            response[index].hiddenPoints = {count: indexesToBeDeleted.length,radius: options.filter};
-                        }
-                        break;
-                    }
-                    lodash.each(indexesToBeDeleted,function(index){
-                        response[index] = undefined;
-                    });
-                });
-                // completely remove the entries from the response
-                response = response.filter(function( element ) {
-                    return element !== undefined;
-                });
-                
+    getPoints(callback, options) {
+        var self = this;
+        jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response) {
+            let feeds = true;
+            console.log(self.options.feeds);
+            if(self.options.feeds && self.options.feeds.length == 0){
+                feeds = false
             }
-            callback(response);
+            if(feeds && (response.error || response == 0)){
+                self.debug("There was an error in the response");
+                self.debug(response);
+                self.map.setView([51.505, -0.09], 13);
+                response = response.error ? response : {};
+                response.title = response.title || "No data found!";
+                response.message = response.message || "";
+                if (self.options.gpx.length == 0) {
+                    var popup = L.popup()
+                        .setLatLng([51.5, -0.09])
+                        .setContent("<b>" + response.title + "</b><br>" + response.message)
+                        .openOn(self.map);
+                    self.map.setView([51.505, -0.09], 13);
+                }
+            }
+            else if(feeds && options.filter && !response.error){
+                response = self.removeClosePoints(response, options.filter);
+                callback(response);
+            } else {
+                callback(response);
+            }
         });
     }
-    addButtons(){
+
+    removeClosePoints(points, radius){
+        points = lodash.eachRight(points, function (element, index) {
+            // if we spliced the array, or check the last element, do nothing
+            if (!element || index == 0)
+                return
+            let nextPoint,
+                indexesToBeDeleted = [];
+            for (let i = index - 1; i > 0; i--) {
+                nextPoint = [points[i].latitude, points[i].longitude];
+                let dif = L.latLng(element.latitude, element.longitude).distanceTo(nextPoint);
+                if (dif <= radius && element.type == points[i].type) {
+                    indexesToBeDeleted.push(i);
+                    continue;
+                }
+                if (indexesToBeDeleted.length != 0) {
+                    points[index].hiddenPoints = { count: indexesToBeDeleted.length, radius: radius };
+                }
+                break;
+            }
+            lodash.each(indexesToBeDeleted, function (index) {
+                points[index] = undefined;
+            });
+        });
+        // completely remove the entries from the points
+        points = points.filter(function (element) {
+            return element !== undefined;
+        });
+        return points;
+    }
+
+    addButtons() {
         // zoom to bounds btn 
         var self = this;
-        let zoomOptions = {duration: 2};
+        let zoomOptions = { duration: 2 };
         let last = L.easyButton({
             states: [{
                 stateName: 'all',
                 icon: '<span class="target">🌐</span>',
                 title: 'show all points',
-                onClick: function(control) {
-                self.map.flyToBounds(self.mapcenter.all,zoomOptions);
-                control.state('last');
+                onClick: function (control) {
+                    self.map.flyToBounds(self.mapcenter.all, zoomOptions);
+                    control.state('last');
                 }
             }, {
                 icon: '<span class="target">📍</span>',
                 stateName: 'last',
-                onClick: function(control) {
-                self.map.flyTo(self.mapcenter.last, 14,zoomOptions);
-                if(self.mapcenter.gpx)
-                    control.state('gpx');
-                else
-                    control.state('all');
+                onClick: function (control) {
+                    self.map.flyTo(self.mapcenter.last, 14, zoomOptions);
+                    if (self.mapcenter.gpx)
+                        control.state('gpx');
+                    else
+                        control.state('all');
                 },
                 title: 'show last point'
             }, {
                 icon: '<span class="target">👣</span>',
                 stateName: 'gpx',
-                onClick: function(control) {
-                self.map.flyToBounds(self.mapcenter.gpx,zoomOptions);
-                control.state('all');
+                onClick: function (control) {
+                    self.map.flyToBounds(self.mapcenter.gpx, zoomOptions);
+                    control.state('all');
                 },
                 title: 'show gpx tracks'
             }]
-            });
+        });
         //   the users position
-        let position = L.easyButton('<span class="target">🏡</span>',function(){
-            self.map.locate({setView: true, maxZoom: 16});
-        })
-        // add all btns to map
-        L.easyBar([last,position]).addTo(this.map);
-    }
+        let position = L.easyButton('<span class="target">🏡</span>', function () {
+            lodash.forEach(self.layers.feeds["thomas2"].markers, function(value) {
 
+                value.setLatLng([42,0]);
+            // self.map.locate({ setView: true, maxZoom: 16 });
+            });
+            // add all btns to map
+        });
+        L.easyBar([last, position]).addTo(this.map);
+    }
+    
+    onBaseLayerChange(layer) {
+        // let bounds = this.map.getBounds();
+        let center = this.map.getCenter();
+        let zoom = this.map.getZoom();
+        // console.log(this.map.getZoom());
+
+        if (lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:3857") {
+            this.changeCRS(L.CRS.EPSG2056)
+            this.map.setZoom(zoom + 7)
+        }
+        else if (!lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:2056") {
+            this.changeCRS(L.CRS.EPSG3857)
+            this.map.setZoom(zoom - 7)
+        }
+        // this.map.options.zoomSnap = 0;
+        this.map._resetView(center, zoom, true);
+        zoom = this.map.getZoom();
+        // this.map.options.zoomSnap = 1;
+    }
+    
+    // for swisstopo map with different crs. copied from here
+    // https://github.com/Leaflet/Leaflet/issues/2553#issuecomment-762271734 
     getMaxBounds(crs) {
         const { bounds } = crs.projection;
         return new L.LatLngBounds(
-          crs.unproject(bounds.min),
-          crs.unproject(bounds.max),
+            crs.unproject(bounds.min),
+            crs.unproject(bounds.max),
         );
-      }
-      
+    }
     changeCRS(crs) {
         const bounds = this.map.getBounds();
         this.map.options.crs = crs;
@@ -563,9 +434,9 @@ class Spotmap {
         this.map.fitBounds(bounds);
         this.map.setMaxBounds(this.getMaxBounds(crs));
         this.map.options.zoomSnap = 1;
-      }
+    }
 
-    initTable(id){
+    initTable(id) {
         // define obj to post data
         var body = {
             'action': 'get_positions',
@@ -583,74 +454,283 @@ class Spotmap {
         this.getPoints(function (response) {
             let headerElements = ["Type", "Message", "Time"];
             let hasLocaltime = false;
-            if (lodash.find(response, function(o) { return o.local_timezone; })){
+            if (lodash.find(response, function (o) { return o.local_timezone; })) {
                 headerElements.push("Local Time");
                 hasLocaltime = true;
             }
             var table = jQuery('#' + id);
             let row = '<tr>';
-            lodash.each(headerElements,function(element){
+            lodash.each(headerElements, function (element) {
                 row += '<th>' + element + '</th>'
             })
             row += '<tr>'
             table.append(jQuery(row));
-            if(response.error == true){
+            if (response.error == true) {
                 self.options.autoReload = false;
                 table.append(jQuery("<tr><td></td><td>No data found</td><td></td></tr>"))
                 return;
-            } else 
-                lodash.forEach(response,function(entry){
-                    if(!entry.local_timezone){
+            } else
+                lodash.forEach(response, function (entry) {
+                    if (!entry.local_timezone) {
                         entry.localdate = '';
                         entry.localtime = '';
                     }
-                    if(!entry.message)
+                    if (!entry.message)
                         entry.message = '';
-                    let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
+                    let row = "<tr class='spotmap " + entry.type + "'><td id='spotmap_" + entry.id + "'>" + entry.type + "</td><td>" + entry.message + "</td><td>" + entry.time + "<br>" + entry.date + "</td>";
                     if (hasLocaltime)
-                        row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
+                        row += "<td>" + entry.localtime + "<br>" + entry.localdate + "</td>";
                     row += "</tr>";
                     table.append(jQuery(row))
                 });
-            if(self.options.autoReload == true){
+            if (self.options.autoReload == true) {
                 var oldResponse = response;
-                var refresh = setInterval(function(){ 
+                var refresh = setInterval(function () {
                     self.getPoints(function (response) {
-                        if( lodash.head(oldResponse).unixtime < lodash.head(response).unixtime){
+                        if (lodash.head(oldResponse).unixtime < lodash.head(response).unixtime) {
                             var table = jQuery('#' + id);
                             table.empty();
                             let headerElements = ["Type", "Message", "Time"];
                             let hasLocaltime = false;
-                            if (lodash.find(response, function(o) { return o.local_timezone; })){
+                            if (lodash.find(response, function (o) { return o.local_timezone; })) {
                                 headerElements.push("Local Time");
                                 hasLocaltime = true;
                             }
                             let row = '<tr>';
-                            lodash.each(headerElements,function(element){
+                            lodash.each(headerElements, function (element) {
                                 row += '<th>' + element + '</th>'
                             })
                             row += '<tr>'
                             table.append(jQuery(row));
-                            lodash.forEach(response,function(entry){
-                                if(!entry.local_timezone){
+                            lodash.forEach(response, function (entry) {
+                                if (!entry.local_timezone) {
                                     entry.localdate = '';
                                     entry.localtime = '';
                                 }
-                                if(!entry.message)
+                                if (!entry.message)
                                     entry.message = '';
-                                let row = "<tr class='spotmap "+entry.type+"'><td id='spotmap_"+entry.id+"'>"+entry.type+"</td><td>"+entry.message+"</td><td>"+entry.time+"<br>"+entry.date+"</td>";
+                                let row = "<tr class='spotmap " + entry.type + "'><td id='spotmap_" + entry.id + "'>" + entry.type + "</td><td>" + entry.message + "</td><td>" + entry.time + "<br>" + entry.date + "</td>";
                                 if (hasLocaltime)
-                                    row += "<td>"+entry.localtime+"<br>"+entry.localdate+"</td>";
+                                    row += "<td>" + entry.localtime + "<br>" + entry.localdate + "</td>";
                                 row += "</tr>";
                                 table.append(jQuery(row));
                             });
                         } else {
                             self.debug('same response!');
                         }
-                        
-                    },{body: body, filter: self.options.filterPoints}); 
+
+                    }, { body: body, filter: self.options.filterPoints });
                 }, 10000);
             }
-        },{body: body, filter: this.options.filterPoints});
+        }, { body: body, filter: this.options.filterPoints });
+    }
+
+    getColorDot(color){
+        return '<span class="dot" style="position: relative;height: 10px;width: 10px;background-color: ' + color + ';border-radius: 50%;display: inline-block;"></span>'
+    }
+    getPopupText(entry){
+        let message = "<b>" + entry.type + "</b><br>";
+        message += 'Time: ' + entry.time + '</br>Date: ' + entry.date + '</br>';
+        if (entry.local_timezone && !(entry.localdate == entry.date && entry.localtime == entry.time))
+            message += 'Local Time: ' + entry.localtime + '</br>Local Date: ' + entry.localdate + '</br>';
+        if (entry.message)
+            message += 'Message: ' + entry.message + '</br>';
+        if (entry.altitude >= 0)
+            message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
+        if (entry.battery_status == 'LOW')
+            message += 'Battery status is low!' + '</br>';
+        if (entry.hiddenPoints)
+            message += 'There are ' + entry.hiddenPoints.count + ' hidden Points within a radius of ' + entry.hiddenPoints.radius + ' meters</br>';
+        return message;
+    }
+    setNewFeedLayer(feedName){
+        if(this.doesFeedExists(feedName)){
+            return false;
+        }
+        this.layers.feeds[feedName] = {
+            lines: [this.addNewLine(feedName)],
+            markers: [],
+            points: [],
+            featureGroup: L.featureGroup(),
+        };
+        this.layers.feeds[feedName].featureGroup.addLayer(this.layers.feeds[feedName].lines[0]);
+        return true;
+    }
+
+    addPoint(point){
+        let feedName = point.feed_name;
+        let coordinates = [point.latitude, point.longitude];
+        if(!this.doesFeedExists(feedName)){
+            this.setNewFeedLayer(feedName);
+        }
+        
+        // let tinyTypes = self.getOption('tinyTypes', { 'feed': feedName });
+        // this.getOption('lastPoint')
+        
+        let markerOptions= this.getMarkerOptions(point)
+        let message = this.getPopupText(point);
+        let marker = L.marker(coordinates , markerOptions).bindPopup(message);
+        
+        this.layers.feeds[feedName].points.push(point);
+        this.layers.feeds[feedName].markers.push(marker);
+        this.layers.feeds[feedName].featureGroup.addLayer(marker)
+        jQuery("#spotmap_" + point.id).click(function () {
+            marker.togglePopup();
+            self.map.panTo(coordinates)
+        });
+        jQuery("#spotmap_" + point.id).dblclick(function () {
+            marker.togglePopup();
+            self.map.setView(coordinates, 14)
+        });
+    }
+    
+    getMarkerOptions(point){
+        let zIndexOffset = 0;
+        if(!lodash.includes(['UNLIMITED-TRACK', 'EXTREME-TRACK', 'TRACK'], point.type)){
+            zIndexOffset += 1000;
+        } else if(!lodash.includes(['CUSTOM', 'OK'], point.type)){
+            zIndexOffset -= 2000;
+        } else if(!lodash.includes(['HELP', 'HELP-CANCEL',], point.type)){
+            zIndexOffset -= 3000;
+        }
+        
+        let markerOptions = {
+            icon: this.getMarkerIcon(point),
+            zIndexOffset: zIndexOffset,
+        };
+
+        return markerOptions;
+    }
+    getMarkerIcon(point){
+        let color = this.getOption('color', { 'feed': point.feed_name });
+        let tinyIcon = {
+            iconShape: 'doughnut',
+            iconAnchor: [4,4],
+            iconSize: [8,8],
+            borderWidth: 4,
+            borderColor: color,
+        }
+        if(lodash.includes(['UNLIMITED-TRACK', 'EXTREME-TRACK', 'TRACK'], point.type)){
+            return L.BeautifyIcon.icon(tinyIcon);
+        }
+        let iconOptions = {
+            // https://fontawesome.com/icons?d=gallery&p=2&m=free
+            icon: 'circle',
+            // backgroundColor: color,
+            textColor: color,
+            // marker, circle-dot, rectangle, rectangle-dot, doughnut
+            // iconShape: 'marker',
+            borderColor: color,
+        };
+        if(point.type == 'STOP'){
+            iconOptions.icon = 'stop-circle';
+        }
+        if(point.type == 'NEWMOVEMENT'){
+            iconOptions.icon = 'play-circle';
+        }
+        if(point.type == 'STATUS'){
+            iconOptions.icon = 'check-circle';
+        }
+        if(point.type == 'HELP'){
+            iconOptions.icon = 'life-ring';
+            iconOptions.iconShape = 'marker';
+            // iconOptions.spin = true;
+        }
+        if(point.type == 'CUSTOM'){
+            iconOptions.icon = 'comment-dots';
+            iconOptions.iconShape = 'marker';
+        }
+        if(point.type == 'OK'){
+            iconOptions.icon = 'thumbs-up';
+            iconOptions.iconShape = 'marker';
+        }
+        // iconOptions.textColor = color;
+        // iconOptions.borderColor = color;
+        return L.BeautifyIcon.icon(iconOptions)
+    }
+    addPointToLine(point){
+        let feedName = point.feed_name;
+        let coordinates = [point.latitude, point.longitude];
+        let splitLines = this.getOption('splitLines', { 'feed': feedName });
+        if(!splitLines){
+            return false;
+        }
+        let numberOfPointsAddedToMap = this.layers.feeds[feedName].points.length;
+        let lastPoint;
+        if(numberOfPointsAddedToMap == 2){
+            //  TODO
+            lastPoint = this.layers.feeds[feedName].points[ numberOfPointsAddedToMap - 1 ];
+            // compare with given point if it's the same exit
+        }
+        if(numberOfPointsAddedToMap >= 2){
+            lastPoint = this.layers.feeds[feedName].points[ numberOfPointsAddedToMap - 2 ];
+        }
+        let length = this.layers.feeds[feedName].lines.length;
+        if(lastPoint && point.unixtime - lastPoint.unixtime >= splitLines * 60 * 60){
+            // start new line and add to map
+            let line = this.addNewLine(feedName);
+            line.addLatLng(coordinates);
+            this.layers.feeds[feedName].lines.push(line)
+            this.layers.feeds[feedName].featureGroup.addLayer(line);
+        } else {
+            this.layers.feeds[feedName].lines[length-1].addLatLng(coordinates);
+        }
+        
+        return true;
+    }
+
+    addNewLine(feedName){
+        let color = this.getOption('color', { 'feed': feedName });
+        let line = L.polyline([],{ color: color });
+        
+        line.setText('  \u25BA  ', {
+            repeat: true,
+            offset: 2, 
+            attributes: {
+                'fill': 'black',
+                'font-size': 7
+            }
+        });
+        return line;
+        this.layers.feeds[feedName].lines.push(line);
+    }
+    setBounds(option){
+        this.map.fitBounds(this.getBounds(option));
+    }
+    getBounds(option){        
+        let bounds = L.latLngBounds();
+        if(option == "last"){
+            // get the last elemt per feed compare time and create bounds from latest point??
+            let unixtime = 0;   
+            lodash.forEach(self.layers.feeds, function(value, key) {
+                let layerBounds = self.layers.feeds[key].featureGroup.getBounds();
+                feedBounds.extend(layerBounds);
+            });
+            
+        }
+        let feedBounds = L.latLngBounds();
+        var self = this;
+        lodash.forEach(self.layers.feeds, function(value, key) {
+            let layerBounds = self.layers.feeds[key].featureGroup.getBounds();
+            feedBounds.extend(layerBounds);
+        });
+        if(option == "feeds"){
+            return feedBounds;
+        }
+        let gpxBounds = L.latLngBounds();
+        lodash.forEach(self.layers.gpx, function(value, key) {
+            let layerBounds = self.layers.gpx[key].featureGroup.getBounds();
+            gpxBounds.extend(layerBounds);
+            
+        });
+        if(option == "gpx"){
+            return gpxBounds;
+        }
+        if(option == "all"){
+            bounds.extend(gpxBounds);
+            bounds.extend(feedBounds);
+            return bounds;
+        }
+        
     }
 }

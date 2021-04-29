@@ -4,30 +4,30 @@
     const { __ } = i18n;
     const { InspectorControls, MediaUpload } = blockEditor;
     const { FormTokenField } = components;
-    const { SelectControl, TextControl, Button , ToggleControl, ColorPalette, PanelBody, PanelRow, DateTimePicker , RadioGroup, UnitControl,  } = components;
-    
+    const { SelectControl, TextControl, Button, ToggleControl, ColorPalette, PanelBody, PanelRow, DateTimePicker, RadioGroup, UnitControl, } = components;
+
     blocks.registerBlockType('spotmap/spotmap', {
         title: 'Spotmap',
         supports: {
-            align: ['full','wide']
+            align: ['full', 'wide']
         },
         icon: 'location-alt',
         category: 'embed',
         edit: function (props) {
             // if block has just been created
-            if (!props.attributes.height){
-                let mapId = 'spotmap-container-' + Math.random()*10E17;
-                let defaultProps = { 
-                    mapId:  mapId,
-                    maps: ['opentopomap', 'openstreetmap', ],
+            if (!props.attributes.height) {
+                let mapId = 'spotmap-container-' + Math.random() * 10E17;
+                let defaultProps = {
+                    mapId: mapId,
+                    maps: ['opentopomap', 'openstreetmap',],
                     feeds: spotmapjsobj.feeds,
-                    styles: lodash.zipObject(spotmapjsobj.feeds,lodash.fill(new Array(spotmapjsobj.feeds.length),{color:'blue',splitLines:'0'})),
+                    styles: lodash.zipObject(spotmapjsobj.feeds, lodash.fill(new Array(spotmapjsobj.feeds.length), { color: 'blue', splitLines: '0' })),
                     autoReload: false,
                     debug: false,
                     lastPoint: false,
                     filterPoints: '10',
                     height: '500',
-                    dateRange: {to:'',from:'', },
+                    dateRange: { to: '', from: '', },
                     mapcenter: 'all',
                     gpx: [],
                 };
@@ -41,13 +41,13 @@
                 }, ''
                 ),]
             }
-            var spotmap = new Spotmap (props.attributes);
+            var spotmap = new Spotmap(props.attributes);
             try {
-                setTimeout(function(){
+                setTimeout(function () {
                     spotmap.initMap();
-                },500);
+                }, 500);
             } catch (e) {
-                console.log(e) 
+                console.log(e)
             }
             return [el('div', {
                 id: props.attributes.mapId,
@@ -153,7 +153,7 @@
         keywords: ['findmespot', 'spot', 'gps', 'spotmap', 'gpx', __('map')],
     });
 
-    function generalSettings(props){
+    function generalSettings(props) {
         let panels = [];
         let general = el(PanelBody, { title: __('General Settings'), initialOpen: false },
             el(PanelRow, {},
@@ -178,7 +178,7 @@
                     help: "test"
                 })
             ),
-            
+
             /* Text Field */
             el(PanelRow, {},
                 el(SelectControl,
@@ -223,10 +223,10 @@
             { label: 'a specific date', value: 'specific' },
         ];
         // if option is set to sth else (aka custom date)
-        if(!lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.from}) ){
+        if (!lodash.findKey(options, function (o) { return o.value === props.attributes.dateRange.from })) {
             options[lodash.last(options)] = { label: 'choose new date', value: 'specific' };
-            options.push({ label: props.attributes.dateRange.from, value:  props.attributes.dateRange.from})
-        } 
+            options.push({ label: props.attributes.dateRange.from, value: props.attributes.dateRange.from })
+        }
         let dateFrom = [
             el(PanelRow, {},
                 el(SelectControl,
@@ -235,7 +235,7 @@
                         onChange: (value) => {
                             let returnArray = lodash.cloneDeep(props.attributes.dateRange);
                             returnArray.from = value;
-                            props.setAttributes({ dateRange: returnArray});
+                            props.setAttributes({ dateRange: returnArray });
                         },
                         value: props.attributes.dateRange.from,
                         options: options,
@@ -243,19 +243,19 @@
                     }
                 )
             ),];
-        
-        if(props.attributes.dateRange.from === 'specific' || !lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.from})){
-            dateFrom.push( 
+
+        if (props.attributes.dateRange.from === 'specific' || !lodash.findKey(options, function (o) { return o.value === props.attributes.dateRange.from })) {
+            dateFrom.push(
                 el(DateTimePicker,
-                {
-                    onChange: (currentDate) => {
-                        console.log(currentDate);
-                        let returnArray = lodash.cloneDeep(props.attributes.dateRange);
-                        returnArray.from = currentDate;
-                        props.setAttributes({ dateRange: returnArray});
-                    },
-                    currentDate: new Date(),
-                }
+                    {
+                        onChange: (currentDate) => {
+                            console.log(currentDate);
+                            let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                            returnArray.from = currentDate;
+                            props.setAttributes({ dateRange: returnArray });
+                        },
+                        currentDate: new Date(),
+                    }
                 )
             )
         }
@@ -268,9 +268,9 @@
             { label: 'last day', value: 'last-1-day' },
             { label: 'a specific date', value: 'specific' },
         ];
-        if(!lodash.findKey(options, function(o) { return o.value === props.attributes.dateRange.to}) ){
-            options.push({ label: props.attributes.dateRange.to, value:  props.attributes.dateRange.to})
-        } 
+        if (!lodash.findKey(options, function (o) { return o.value === props.attributes.dateRange.to })) {
+            options.push({ label: props.attributes.dateRange.to, value: props.attributes.dateRange.to })
+        }
         let dateTo = [
             el(PanelRow, {},
                 el(SelectControl,
@@ -279,7 +279,7 @@
                         onChange: (value) => {
                             let returnArray = lodash.cloneDeep(props.attributes.dateRange);
                             returnArray.to = value;
-                            props.setAttributes({ dateRange: returnArray});
+                            props.setAttributes({ dateRange: returnArray });
                         },
                         value: props.attributes.dateRange.to,
                         options: options,
@@ -287,30 +287,30 @@
                     }
                 )
             ),];
-        
-        if(props.attributes.dateRange.to === 'specific'){
-            dateTo.push( 
+
+        if (props.attributes.dateRange.to === 'specific') {
+            dateTo.push(
                 el(DateTimePicker,
-                {
-                    onChange: (currentDate) => {
-                        console.log(currentDate);
-                        let returnArray = lodash.cloneDeep(props.attributes.dateRange);
-                        returnArray.to = currentDate;
-                        props.setAttributes({ dateRange: returnArray});
-                    },
-                    currentDate: new Date(),
-                }
+                    {
+                        onChange: (currentDate) => {
+                            console.log(currentDate);
+                            let returnArray = lodash.cloneDeep(props.attributes.dateRange);
+                            returnArray.to = currentDate;
+                            props.setAttributes({ dateRange: returnArray });
+                        },
+                        currentDate: new Date(),
+                    }
                 )
             )
         }
-        panels.push(el(PanelBody, { title: 'Time filter of points', initialOpen: false },dateFrom,dateTo));
+        panels.push(el(PanelBody, { title: 'Time filter of points', initialOpen: false }, dateFrom, dateTo));
         return panels;
     }
 
     function feedPanel(props) {
         let panel;
         let panels = [];
-        if( !props.attributes.feeds){
+        if (!props.attributes.feeds) {
             return [];
         }
         // console.log(props)
@@ -318,56 +318,56 @@
             const feed = props.attributes.feeds[i];
             // console.log(feed);
             let options = [];
-            if (!props.attributes.styles[feed]){
+            if (!props.attributes.styles[feed]) {
                 let returnArray = lodash.cloneDeep(props.attributes.styles);
-                returnArray[feed] = {color: 'blue', splitLines: 12};
-                props.setAttributes({ styles: returnArray});
+                returnArray[feed] = { color: 'blue', splitLines: 12 };
+                props.setAttributes({ styles: returnArray });
             }
             options.push(el(PanelRow, {},
-                el(ColorPalette , {
+                el(ColorPalette, {
                     label: "Colors",
                     colors: [
-                    {name: "black", color: "black"},
-                    {name: "blue", color: "blue"},
-                    {name: "gold", color: "gold"},
-                    {name: "green", color: "green"},
-                    {name: "grey", color: "grey"},
-                    {name: "red", color: "red"},
-                    {name: "violet", color: "violet"},
-                    {name: "yellow", color: "yellow"},
-                ],
+                        { name: "black", color: "black" },
+                        { name: "blue", color: "blue" },
+                        { name: "gold", color: "gold" },
+                        { name: "green", color: "green" },
+                        { name: "grey", color: "grey" },
+                        { name: "red", color: "red" },
+                        { name: "violet", color: "violet" },
+                        { name: "yellow", color: "yellow" },
+                    ],
                     onChange: (value) => {
                         let returnArray = lodash.cloneDeep(props.attributes.styles);
-                        console.log(value,returnArray)
+                        console.log(value, returnArray)
                         returnArray[feed]['color'] = value;
-                        props.setAttributes({ styles: returnArray});
+                        props.setAttributes({ styles: returnArray });
                     },
                     value: props.attributes.styles[feed]['color'] || 'blue',
-                    disableCustomColors: true, 
+                    disableCustomColors: true,
                 })
             ),
 
-            // /* Toggle Field TODO: use form toggle instead
-            el(PanelRow, {},
-                el(ToggleControl,
-                    {
-                        label: 'connect points wih line',
-                        onChange: (value) => {
-                            let returnArray = lodash.cloneDeep(props.attributes.styles);
-                            console.log(value,returnArray)
-                            returnArray[feed]['splitLinesEnabled'] = value;
-                            
-                            if(value && !returnArray[feed]['splitLines'] ){
-                                returnArray[feed]['splitLines'] = 12;
-                            }
-                            props.setAttributes({ styles: returnArray});
-                        },
-                        checked: props.attributes.styles[feed]['splitLinesEnabled'],
-                    }
-                )
-            ));
+                // /* Toggle Field TODO: use form toggle instead
+                el(PanelRow, {},
+                    el(ToggleControl,
+                        {
+                            label: 'connect points wih line',
+                            onChange: (value) => {
+                                let returnArray = lodash.cloneDeep(props.attributes.styles);
+                                console.log(value, returnArray)
+                                returnArray[feed]['splitLinesEnabled'] = value;
 
-            if(props.attributes.styles[feed]['splitLinesEnabled'] === true){
+                                if (value && !returnArray[feed]['splitLines']) {
+                                    returnArray[feed]['splitLines'] = 12;
+                                }
+                                props.setAttributes({ styles: returnArray });
+                            },
+                            checked: props.attributes.styles[feed]['splitLinesEnabled'],
+                        }
+                    )
+                ));
+
+            if (props.attributes.styles[feed]['splitLinesEnabled'] === true) {
                 options.push(
                     el(PanelRow, {},
                         el(TextControl,
@@ -375,16 +375,16 @@
                                 label: 'Splitlines',
                                 onChange: (value) => {
                                     let returnArray = lodash.cloneDeep(props.attributes.styles);
-                                    console.log(value,returnArray)
+                                    console.log(value, returnArray)
                                     returnArray[feed]['splitLines'] = value;
-                                    props.setAttributes({ styles: returnArray});
+                                    props.setAttributes({ styles: returnArray });
                                 },
-                                value:props.attributes.styles[feed]['splitLines'],
+                                value: props.attributes.styles[feed]['splitLines'],
                             }
                         )
                     ))
             }
-            panel = el(PanelBody, { title: feed +' Feed', initialOpen: false }, options);
+            panel = el(PanelBody, { title: feed + ' Feed', initialOpen: false }, options);
 
 
             panels.push(panel);
@@ -394,7 +394,7 @@
     }
     function gpxPanel(props) {
         let panels = [];
-        if( !props.attributes.feeds){
+        if (!props.attributes.feeds) {
             return [];
         }
 
@@ -403,56 +403,57 @@
 
         options.push(
             el(PanelRow, {},
-                el(MediaUpload,{
+                el(MediaUpload, {
                     allowedTypes: ['text/xml'],
                     multiple: true,
                     value: props.attributes.gpx.map(entry => entry.id),
                     title: "Choose gpx tracks (Hint: press ctrl to select multiple)",
-                    onSelect: function (gpx){
+                    onSelect: function (gpx) {
                         let returnArray = [];
-                        lodash.forEach(gpx,(track)=>{
-                            track = lodash.pick(track,['id','url','title']);
+                        lodash.forEach(gpx, (track) => {
+                            track = lodash.pick(track, ['id', 'url', 'title']);
                             returnArray.push(track);
                         })
-                        props.setAttributes({ gpx: returnArray});
+                        props.setAttributes({ gpx: returnArray });
                     },
-                    render:  function (callback){
-                        return el(Button, 
+                    render: function (callback) {
+                        return el(Button,
                             {
                                 onClick: callback.open,
                                 isPrimary: true,
                             },
                             "Select from Media Library"
-                        )}
-                    })
+                        )
+                    }
+                })
             ),
             el(PanelRow, {},
-                el("em",{},"Select a color:"),
-            el(PanelRow, {},
-            el(ColorPalette , {
-                label: "Colors",
-                colors: [
-                    {name: "blue", color: "blue"},
-                    {name: "gold", color: "gold"},
-                    {name: "green", color: "green"},
-                    {name: "red", color: "red"},
-                    {name: "black", color: "black"},
-                    {name: "violet", color: "violet"},
-                ],
-                onChange: (value) => {
-                    let returnArray = [];
-                    let gpx = lodash.cloneDeep(props.attributes.gpx);
-                    lodash.forEach(gpx,(track)=>{
-                        track.color = value;
-                        returnArray.push(track);
+                el("em", {}, "Select a color:"),
+                el(PanelRow, {},
+                    el(ColorPalette, {
+                        label: "Colors",
+                        colors: [
+                            { name: "blue", color: "blue" },
+                            { name: "gold", color: "gold" },
+                            { name: "green", color: "green" },
+                            { name: "red", color: "red" },
+                            { name: "black", color: "black" },
+                            { name: "violet", color: "violet" },
+                        ],
+                        onChange: (value) => {
+                            let returnArray = [];
+                            let gpx = lodash.cloneDeep(props.attributes.gpx);
+                            lodash.forEach(gpx, (track) => {
+                                track.color = value;
+                                returnArray.push(track);
+                            })
+                            props.setAttributes({ gpx: returnArray });
+                        },
+                        value: props.attributes.gpx[0] ? props.attributes.gpx[0].color : 'gold',
+                        disableCustomColors: false,
+                        clearable: false,
                     })
-                    props.setAttributes({ gpx: returnArray});
-                },
-                value: props.attributes.gpx[0]?  props.attributes.gpx[0].color : 'gold',
-                disableCustomColors: false,
-                clearable: false,
-            })
-        ),  )    
+                ))
         );
 
 

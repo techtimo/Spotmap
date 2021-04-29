@@ -151,6 +151,10 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
+= 0.10.3 =
+- added UK  Ordnance Survey
+- added US Geological Survey maps
+- possability to hide nearby points of the same type
 
 = 0.10.2 =
 - tested Wordpress 5.7 
@@ -165,7 +169,6 @@ added France IGN Topo map token
 = 0.9.1 =
 Fix Gutenberg editor issue
 spotmessages supports auto update
-
 
 = 0.9 =
 - new shortcode to show table of messages
@@ -187,5 +190,3 @@ If you have data in the db you don't want to loose, please create a post in the 
 Adding Gpx support to show a planned route. Adding different maps.
 Adding a table to quickly see the last sent messages. ([spotmessages])
 
-= 0.7 =
-redoing the whole frontend part. Now it looks much better!

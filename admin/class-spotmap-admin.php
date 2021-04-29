@@ -197,7 +197,7 @@ class Spotmap_Admin {
 			$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
 			//if feed is empty bail out here
 			if (empty($json) || isset($json['response']['errors']) && $json['response']['errors']['error']['code'] === "E-0160"){
-				error_log('stay with old value');
+				// error_log('stay with old value');
 				add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id: "'.$feed_id.'" is not valid.', 'error' );
 			}
 		}
@@ -212,8 +212,11 @@ class Spotmap_Admin {
 		$mime_types['gpx'] = 'text/xml'; 
 		return $mime_types;
 	}
-	function settings_link( $links ) {
-		$mylinks = ['<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">'.__("Settings").'</a>',];
+	function add_link_plugin_overview( $links ) {
+		$mylinks = [
+			'<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">'.__("Settings").'</a>',
+			'<a href="https://wordpress.org/support/plugin/spotmap/">'.__("Get Support").'</a>',
+		];
 		return array_merge( $mylinks,$links );
 	}
 
@@ -222,7 +225,7 @@ class Spotmap_Admin {
 	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
 	 */
 	function get_feed_data(){
-		error_log("Checking for new feed data ...");
+		// error_log("Checking for new feed data ...");
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
 		foreach (get_option("spotmap_api_providers") as $key => $name) {
 			$ids = get_option("spotmap_".$key."_id");
@@ -257,7 +260,7 @@ class Spotmap_Admin {
 	function get_local_timezone(){
 		global $wpdb;
 		$row = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE local_timezone IS NULL ORDER BY time DESC LIMIT 1;");
-		error_log('get tz data');
+		// error_log('get tz data');
 
 		if(empty($row)){
 			return;
@@ -281,5 +284,42 @@ class Spotmap_Admin {
 			[$response['zoneName'],$row->id] ) 
 		);
 		wp_schedule_single_event( time()+2, 'spotmap_get_timezone_hook' );
+	}
+	function get_maps_config_content($section){
+		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
+		if(file_exists($maps_file)){
+			return json_decode(file_get_contents($maps_file),true)[$section];
+		}
+		return;
+	}
+
+	public function get_overlays(){
+		return $this->get_maps_config_content("overlays");
+	}
+
+	public function get_maps(){
+		$maps = $this->get_maps_config_content("baseLayers");
+
+		// remove maps which need an API key
+		$api_names = [
+			["option" => 'mapbox', "token"=>"mapboxToken"],
+			["option" => 'thunderforest', "token"=>"thunderforestToken"],
+			["option" => 'linz.govt.nz', "token"=>"LINZToken"],
+			["option" => 'geoservices.ign.fr', "token"=>"geoportailToken"],
+			["option" => 'osdatahub.os.uk', "token"=>"osdatahubToken"],
+		];
+		$api_tokens = get_option('spotmap_api_tokens');
+		foreach ($maps as $name => &$data) {
+			foreach ($api_names as $i => $options) {
+				if(isset($data['options'][$options['token']])){
+					if(!empty($api_tokens[$options['option']])){
+						$data['options'][$options['token']] = $api_tokens[$options['option']];
+					} else {
+						unset($maps[$name]);
+					}
+				}
+			}
+		}
+		return $maps;
 	}
 }

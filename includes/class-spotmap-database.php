@@ -87,7 +87,7 @@ class Spotmap_Database {
 			$where.= " and id in (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY ".$group_by." )";
 		}
 		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
-		error_log("Query: " .$query);
+		// error_log("Query: " .$query);
 		$points = $wpdb->get_results($query);
 		foreach ($points as &$point){
 			$point->unixtime = $point->time;

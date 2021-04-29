@@ -6,6 +6,7 @@ class Spotmap_Public{
 	function __construct() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
 		$this->db = new Spotmap_Database();
+		$this->admin = new Spotmap_Admin();
     }
 
 	public function enqueue_styles() {
@@ -13,32 +14,17 @@ class Spotmap_Public{
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
         wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
 		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
-		wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
+		// wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
+		wp_enqueue_style( 'font-awesome', plugin_dir_url( __FILE__ ) . 'css/font-awesome-5.15-all.min.css');
+		// wp_enqueue_style( 'font-awesome', 'https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css');
+		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
     }
 
 	public function enqueue_block_editor_assets(){
 		$this->enqueue_scripts();
 		$this->enqueue_styles();
-		wp_enqueue_script(
-			'spotmap-block',
-			plugins_url('js/block.js', __FILE__),
-			[
-				'wp-blocks',
-				'wp-element',
-				'wp-block-editor',
-				'wp-components',
-				'wp-compose',
-			]
-		);
-		
-		wp_localize_script('spotmap-block', 'spotmapjsobj', [
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'maps' => $this->get_maps(),
-			'url' =>  plugin_dir_url( __FILE__ ),
-			'feeds' => $this->db->get_all_feednames(),
-			'defaultValues' => get_option('spotmap_default_values'),
-		]);
-
+		wp_enqueue_script( 'spotmap-block', plugins_url('js/block.js', __FILE__),['wp-blocks','wp-element','wp-block-editor','wp-components','wp-compose',]);
+		$this->localize_js_script('spotmap-block');
 		register_block_type( 'spotmap/spotmap', array(
 			'editor_script' => 'spotmap-block',
 			'render_callback' => [$this, 'show_spotmap_block'],
@@ -47,66 +33,27 @@ class Spotmap_Public{
 
 	public function enqueue_scripts(){
         wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
-		wp_localize_script('spotmap-handler', 'spotmapjsobj', [
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'maps' => $this->get_maps(),
-			'url' =>  plugin_dir_url( __FILE__ ),
-			'feeds' => $this->db->get_all_feednames(),
-		]);
+		$this->localize_js_script('spotmap-handler');
 		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
         wp_enqueue_script('leaflet-easybutton',plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js');
-        wp_enqueue_script('leaflet-swisstopo',  'https://unpkg.com/leaflet-tilelayer-swiss@2.2.1/dist/Leaflet.TileLayer.Swiss.umd.js');
+        wp_enqueue_script('leaflet-swisstopo', 'https://unpkg.com/leaflet-tilelayer-swiss@2.2.1/dist/Leaflet.TileLayer.Swiss.umd.js');
+        wp_enqueue_script('leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js');
+        wp_enqueue_script('leaflet-text-path', 'https://makinacorpus.github.io/Leaflet.TextPath/leaflet.textpath.js');
 
 	}
-// TODO: move to admin class
-	public function get_maps(){
-		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
-		if(file_exists($maps_file)){
-			$maps = json_decode(file_get_contents($maps_file),true);
-			// error_log(print_r($maps,true));
-			$api_tokens = get_option('spotmap_api_tokens');
-			foreach ($maps as $name => &$data) {
-				// error_log(print_r($data['options']['mapboxToken'],true));
-				if(isset($data['options']['mapboxToken'])){
-					if(!empty($api_tokens['mapbox'])){
-						$data['options']['mapboxToken'] = $api_tokens['mapbox'];
-						continue;
-					}
-					unset($maps[$name]);
-				}
-				else if(isset($data['options']['thunderforestToken'])){
-					if(!empty($api_tokens['thunderforest'])){
-						$data['options']['thunderforestToken'] = $api_tokens['thunderforest'];
-						continue;
-					}
-					unset($maps[$name]);
-				}
-				else if(isset($data['options']['LINZToken'])){
-					if(!empty($api_tokens['linz.govt.nz'])){
-						$data['options']['LINZToken'] = $api_tokens['linz.govt.nz'];
-						continue;
-					}
-					unset($maps[$name]);
-				}
-				else if(isset($data['options']['geoportailToken'])){
-					if(!empty($api_tokens['geoservices.ign.fr'])){
-						$data['options']['geoportailToken'] = $api_tokens['geoservices.ign.fr'];
-						continue;
-					}
-					unset($maps[$name]);
-				}
-				else if(isset($data['options']['osdatahubToken'])){
-					if(!empty($api_tokens['osdatahub.os.uk'])){
-						$data['options']['osdatahubToken'] = $api_tokens['osdatahub.os.uk'];
-						continue;
-					}
-					unset($maps[$name]);
-				}
-			}
-			return ($maps);
-		}
+
+	function localize_js_script($script_slug){
+		wp_localize_script($script_slug, 'spotmapjsobj', [
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'maps' => $this->admin->get_maps(),
+			'overlays' => $this->admin->get_overlays(),
+			'url' =>  plugin_dir_url( __FILE__ ),
+			'feeds' => $this->db->get_all_feednames(),
+			'defaultValues' => get_option('spotmap_default_values'),
+
+		]);
 	}
 
 	public function register_shortcodes(){
@@ -208,6 +155,9 @@ class Spotmap_Public{
 				'debug'=> FALSE,
 			], $atts ),
 			$atts);
+		if (array_key_exists('feeds',$atts)){
+			$a['feeds'] = $atts['feeds'];
+		}
 		// get the keys that don't require a value 
 		foreach (['auto-reload','debug','last-point',] as $value) {
 			if(in_array($value,$atts)){
@@ -327,12 +277,16 @@ class Spotmap_Public{
 
 	public function get_positions(){
 		// error_log(print_r($_POST,true));
-		$points = $this->db->get_points($_POST);
-		// error_log(print_r($points,true));
-		if(empty($points)){
-			$points = ['error'=> true,'title'=>'No points to show (yet)','message'=> ""];
+		if(empty($_POST['feeds'])){
+			wp_send_json(['error'=> false,'empty'=>true,'title'=>'No feeds defined','message'=> ""]);
+		} else {
+			$points = $this->db->get_points($_POST);
+			if(empty($points)){
+				$points = ['error'=> true,'empty'=>true,'title'=>'No points to show (yet)','message'=> ""];
+			}
+			error_log(wp_send_json($points));
+			wp_send_json($points);
 		}
-		wp_send_json($points);
 	}
 
 }
