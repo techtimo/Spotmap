@@ -10,8 +10,10 @@ class Spotmap_Admin {
 	}
 	
 	public function enqueue_scripts(){
+		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-5.15-all.min.css');
 		wp_enqueue_script('spotmap-settings', plugins_url('js/settings.js', __FILE__), ['jquery'], false, true);
 	}
+
 	public function add_cron_schedule($schedules){
 		$schedules['twohalf_min'] = array(
 			'interval' => 150,
@@ -31,8 +33,8 @@ class Spotmap_Admin {
 			
 			$count = empty($ids) ? 1 : count($ids);
 
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_name',['sanitize_callback'=>[$this, 'spotmap_validate_feed_name']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_id', ['sanitize_callback'=>[$this, 'spotmap_validate_feed_id']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_name',['sanitize_callback'=>[$this, 'validate_feed_name']]);
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_id', ['sanitize_callback'=>[$this, 'validate_feed_id']]);
 			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_password');
 			if($count < 1){
 				continue;
@@ -45,9 +47,9 @@ class Spotmap_Admin {
 			);
 			for ($i=0; $i < $count; $i++) { 
 				$settings = [
-					'name' => ['label' => __('Feed Name'), 'function' => 'generate_text_field'], 
-					'id' => ['label' => __('Feed Id'), 'function' => 'generate_text_field'], 
-					'password' => ['label' => __('Feed password'), 'function' => 'generate_password_field'], 
+					'name' => ['label' => __('Feed Name'), 'type' => 'text'], 
+					'id' => ['label' => __('Feed Id'), 'type' => 'text'], 
+					'password' => ['label' => __('Feed password'), 'type' => 'password', "description" => "Leave this empty if the feed is public"], 
 				];
 				foreach ($settings as $key => $value) {
 					$pre_populated_value = '';
@@ -58,52 +60,241 @@ class Spotmap_Admin {
 					add_settings_field(
 						'spotmap_'.$provider.'_' . $key . '['.$i.']',
 						$value["label"],
-						[$this, $value["function"]],
+						[$this, 'show_setting'],
 						'spotmap-feed-group',
 						'findmespot-feeds',
-						['spotmap_'.$provider.'_' . $key . '['.$i.']',
-						$pre_populated_value]
+						['id' => 'spotmap_'.$provider.'_' . $key . '['.$i.']',
+						'value' => $pre_populated_value,
+						'description' => isset($value["description"]) ? $value["description"] : '',
+						'type' => isset($value["type"]) ? $value["type"] : '',]
 					);
 				}
 			}
 		}
+		// MARKER SECTION
+		register_setting( 'spotmap-marker-group', 'spotmap_marker');
 
-		// GENERAL SECTION
-		register_setting( 'spotmap-messages-group', 'spotmap_custom_messages');
 		add_settings_section(
-			'spotmap-messages',
+			'spotmap-marker-section',
+			__('Marker display options'),
+			[$this,'settings_section_marker'],
+			'spotmap-marker-group'
+		);
+		$options = [
+			[
+				"label" => __("Tiny dot"),
+				"value" => "circle-dot"
+			],[
+				"label" => __("Medium marker"),
+				"value" => "circle"
+			],[
+				"label" => __("Big marker"),
+				"value" => "marker"
+			],
+		];
+		$settings = [
+			'HELP' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'HELP-CANCEL' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'CUSTOM' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'OK' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'STATUS' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'UNLIMITED-TRACK' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'NEWMOVEMENT' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+			'STOP' => [
+				"type" => "dropdown",
+				"options" => $options,
+			],
+		];
+		foreach ($settings as $index => $value) {
+			$pre_populated_value = isset( get_option('spotmap_marker')[$index]['iconShape'] ) ? get_option('spotmap_marker')[$index]['iconShape'] : '';
+			$description = isset( $value["description"] ) ? $value["description"] : NULL;
+			add_settings_field(
+				'spotmap_marker['.$index.'][iconShape]',
+				$index,
+				[$this, 'show_setting'],
+				'spotmap-marker-group',
+				'spotmap-marker-section',
+				[
+					'id' => 'spotmap_marker['.$index.'][iconShape]',
+					'type' => 'dropdown',
+					'value' => $pre_populated_value,
+					'description' => $description,
+					'options' => $options,
+				]
+			);
+		}
+
+		// ICONS
+		add_settings_section(
+			'spotmap-marker-icon-section',
+			__('Marker icon options'),
+			[$this,'settings_section_icons'],
+			'spotmap-marker-group'
+		);
+		$settings = [
+			'HELP' => [
+				"type" => "text",
+			],
+			'HELP-CANCEL' => [
+				"type" => "text",
+			],
+			'CUSTOM' => [
+				"type" => "text",
+			],
+			'OK' => [
+				"type" => "text",
+			],
+			'STATUS' => [
+				"type" => "text",
+			],
+			'UNLIMITED-TRACK' => [
+				"type" => "text",
+			],
+			'NEWMOVEMENT' => [
+				"type" => "text",
+			],
+			'STOP' => [
+				"type" => "text",
+			],
+		];
+		foreach ($settings as $index => $value) {
+			$pre_populated_value = isset( get_option('spotmap_marker')[$index]['icon'] ) ? get_option('spotmap_marker')[$index]['icon'] : '';
+			$description = isset( $value["description"] ) ? $value["description"] : NULL;
+			add_settings_field(
+				'spotmap_marker['.$index.'][icon]',
+				$index,
+				[$this, 'generate_icon_field'],
+				'spotmap-marker-group',
+				'spotmap-marker-icon-section',
+				[
+					'id' => 'spotmap_marker['.$index.'][icon]',
+					'type' => 'text',
+					'value' => $pre_populated_value,
+					'description' => $description,
+				]
+			);
+		}
+
+		// CUSTOM MESSAGES 
+		
+		add_settings_section(
+			'spotmap-messages-section',
 			__('Set Custom messages'),
 			[$this,'settings_section_messages'],
-			'spotmap-messages-group'
+			'spotmap-marker-group'
 		);
-		foreach (['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEWMOVEMENT','STOP'] as $index) {
-			$value = isset( get_option('spotmap_custom_messages')[$index] ) ? get_option('spotmap_custom_messages')[$index] : '';
+		$settings = [
+			'HELP' => [
+				"type" => "textarea",
+			],
+			'HELP-CANCEL' => [
+				"type" => "textarea",
+			],
+			'CUSTOM' => [
+				"type" => "textarea",
+			],
+			'OK' => [
+				"type" => "textarea",
+			],
+			'STATUS' => [
+				"type" => "text",
+			],
+			'UNLIMITED-TRACK' => [
+				"type" => "text",
+			],
+			'NEWMOVEMENT' => [
+				"type" => "text",
+			],
+			'STOP' => [
+				"type" => "text",
+			],
+		];
+		foreach ($settings as $index => $value) {
+			// error_log(print_r(get_option('spotmap_custom_messages')[$index]['customMessage'],TRUE));
+			$pre_populated_value = isset(  get_option('spotmap_marker')[$index]['customMessage'] ) ?  get_option('spotmap_marker')[$index]['customMessage'] : '';
 			add_settings_field(
-				'spotmap_custom_messages['.$index.']',
-				$index,
-				[$this, 'generate_text_area'],
-				'spotmap-messages-group',
-				'spotmap-messages',
-				['spotmap_custom_messages['.$index.']', $value
-				]
+				'spotmap_marker['.$index.'][customMessage]',
+				isset($value["label"]) ? $value["label"] : $index,
+				[$this, 'show_setting'],
+				'spotmap-marker-group',
+				'spotmap-messages-section',
+				[
+					'id' => 'spotmap_marker['.$index.'][customMessage]', 
+					'type' => $value["type"],
+					'value' => $pre_populated_value,
+					'description' => isset($value["description"]) ? $value["description"] : '',
+				],
 			);
 		}
 		register_setting( 'spotmap-thirdparties-group', 'spotmap_api_tokens');
 		add_settings_section(
-			'spotmap-thirdparty',
+			'spotmap-thirdparty-section',
 			__('Thirdparty API Tokens'),
-			'',
-			'spotmap-thirdparties-group'
+			[$this, 'settings_section_thirdparty'],
+			'spotmap-thirdparties-group',
 		);
-		foreach (['mapbox','thunderforest','timezonedb','linz.govt.nz','geoservices.ign.fr','osdatahub.os.uk'] as $index) {
-			$value = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
+		$settings = [
+			'timezonedb'=> [
+				"type" => 'text',
+				"description" => __("Store and show the local time of a position. <a href=\"https://timezonedb.com/register\">Register for free</a>"),
+			],
+			'mapbox'=> [
+				"type" => 'text',
+				"description" => __("Get Satelite  images and nice looking maps. The maps cover the whole world. Sign up for a free <a href=\"https://account.mapbox.com/access-tokens/\">Mapbox API Token</a>. Remember to restrict the token usage to your domain only."),
+			],
+			'thunderforest'=> [
+				"type" => 'text',
+				"description" => __("Get another set of maps with Thunderforest. Create a free account <a href=\"https://manage.thunderforest.com/users/sign_up?plan_id=5\">here</a>."),
+			],
+			'linz.govt.nz'=> [
+				"type" => 'text',
+				"description" => __("Kia Ora! Are you planning to have an adventure in New Zealand? Register a free account at <a href=\"https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key\">Land Information New Zealand</a> to get the official NZ Topo Map."), 
+			],
+			'geoservices.ign.fr'=> [
+				"type" => 'text',
+				"description" => __("For adventures in France answer <a href=\"https://www.sphinxonline.com/surveyserver/s/etudesmk/Geoservices_2021/questionnaire.htm\">this survey</a>. (Answer the following: création de clé gratuites -> pour un site Web -> Referer (enter your wordpress url) -> enter personal data -> done) The register process can take several days. You will receive the API key via mail."),
+			],
+			'osdatahub.os.uk'=> [
+				"type" => 'text',
+				"description" => "For adventures in the UK, you can create a free plan at the <a href=\"https://osdatahub.os.uk/plans\">UK Ordnance Survey</a>. Afterwards follow the guide on <a href=\"https://osdatahub.os.uk/docs/wmts/gettingStarted\">how to create a project</a>.",
+			],
+		];
+		foreach ($settings as $index => $value) {
+			$pre_populated_value = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
+			$description = isset( $value["type"] ) ? $value["type"] : NULL;
 			add_settings_field(
 				'spotmap_api_tokens['.$index.']',
 				$index,
-				[$this, 'generate_text_field'],
+				[$this, 'show_setting'],
 				'spotmap-thirdparties-group',
-				'spotmap-thirdparty',
-				['spotmap_api_tokens['.$index.']', $value]
+				'spotmap-thirdparty-section',
+				[
+					'id' => 'spotmap_api_tokens['.$index.']', 
+					'type' => $value["type"],
+					'value' => $pre_populated_value,
+					'description' => $value["description"],
+				]
 			);
 		}
 		// DEFAULT SECTION
@@ -115,49 +306,98 @@ class Spotmap_Admin {
 		);
 		register_setting( 'spotmap-defaults-group', 'spotmap_default_values');
 		foreach (get_option('spotmap_default_values') as $index => $value) {
-			// echo '                                      '.$value;
 			add_settings_field(
 				'spotmap_default_values['.$index.']',
 				$index,
-				[$this, 'generate_text_field'],
+				[$this, 'show_setting'],
 				'spotmap-defaults-group',
 				'spotmap-defaults',
-				['spotmap_default_values['.$index.']', $value]
+				[
+					'id' => 'spotmap_default_values['.$index.']', 
+					'type' => 'text',
+					'value' => $value,
+				]
 			);
 		}
 	}
-	
-	function generate_text_field($args){
-		// get the value of the setting we've registered with register_setting()
-		$setting = $args[1];
+	function show_setting($args){
+		// error_log(print_r($args,TRUE));
+		foreach (['text', 'password',] as $type) {
+			if ($args['type'] == $type) { 
+				$this::generate_text_field($args);
+			}
+		}
+		if('textarea' == $args['type']) {
+			$this::generate_text_area($args);
+		}
+		if('dropdown' == $args['type']) {
+			$this::generate_dropdown_field($args);
+		}
+	}
+	function generate_text_area($args){
+		$maxlength = isset( $args['maxlength'] ) ? $args['maxlength'] : '500'; 
+		$cols = isset( $args['cols'] ) ? $args['cols'] : '50'; 
+		$rows = isset( $args['rows'] ) ? $args['rows'] : '2'; 
+		
 		?>
-		<input type="text" name="<?php echo $args[0]?>" value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
+		<textarea type="text" maxlength="<?php echo $maxlength?>" cols="<?php echo $cols?>" rows="<?php echo $rows?>" name="<?php echo $args['id']?>"><?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?></textarea>
 		<?php
 	}
 	
-	function generate_text_area($args){
+	function generate_text_field($args){
+		$size = isset( $args['size'] ) ? ' size="'.$args['size'].'"' : ' size="50"'; 
 		// get the value of the setting we've registered with register_setting()
-		$setting = $args[1];
 		?>
-		<textarea type="text" maxlength="500" cols="50" rows=3 name="<?php echo $args[0]?>"><?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?></textarea>
+		<input type="<?php echo $args['type']?>" <?php echo $size?> name="<?php echo $args['id']?>" value="<?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?>">
+		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
+		
+		<?php
+	}
+	function generate_icon_field($args){
+		$size = isset( $args['size'] ) ? ' size="'.$args['size'].'"' : ' size="50"'; 
+		// get the value of the setting we've registered with register_setting()
+		?>
+		<input type="<?php echo $args['type']?>" <?php echo $size?> name="<?php echo $args['id']?>" value="<?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?>">
+		<?php echo isset( $args['value'] ) ? ' <i style="font-size: 24px;" class="fas fa-'.$args['value'].'"></i>' : ''; ?>
+		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
+		
 		<?php
 	}
 
-	function generate_password_field($args){
-		// get the value of the setting we've registered with register_setting()
-		$setting = $args[1];
+	function generate_dropdown_field($args){
 		?>
-		<input type="password" name="<?php echo $args[0]?>"value="<?php echo isset( $setting ) ? esc_attr( $setting ) : ''; ?>">
-		<p class="description">Leave this empty if the feed is public</p>
+		<select name="<?php echo $args['id']?>">
+		<?php foreach ($args['options'] as $key ) 
+		{
+			$selected = $args['value'] == $key['value'] ? 'selected="selected"': '';
+			echo '<option '.$selected.' name="spotmap_options" value="'.$key['value'].'">'.$key['label'].'</option>';
+		
+		} 
+		?></select>
+
+		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
+		
 		<?php
 	}
 
 	function settings_section_findmespot($args){
-		echo '<p id='.$args['id'].'>Enter your Feed details here</p>';
+		echo '<p id='.$args['id'].'>'.__('Enter your SPOT XML Feed details here. If you are not sure what you should enter here, head over to the <a href="https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support">API support page from SPOT</a> to get more information').'.</p>';
 	}
 	
 	function settings_section_messages($args){
 		echo '<p id='.$args['id'].'>'.__("If you have sensitive Information in your predefined messages, you can overide those messages here.").'<br>
+		</p>';
+	}
+	function settings_section_icons($args){
+		echo '<p id='.$args['id'].'>'.__("In this section you can modify the icons that are displayed on the map. (If you have chosen a medium or big marker)").'.<br>' . 
+		__("Search under the following link for other icons that suits your needs") . ': <a href="https://fontawesome.com/icons?d=gallery&p=2&q=search&m=free">fontawesome.com</a>.</br></p>';
+	}	
+	function settings_section_marker($args){
+		echo '<p id='.$args['id'].'>'.__("Change the marker size for each message type.").'<br>
+		</p>';
+	}
+	function settings_section_thirdparty($args){
+		echo '<p id='.$args['id'].'>'.__("Here you have links to a veriaty of different services. Each one of them is free to for personal use. Follow the stated link, create an account and copy the API Key in the corresponding field.").'<br>
 		</p>';
 	}
 	
@@ -166,7 +406,7 @@ class Spotmap_Admin {
 		</p>';
 	}
 	
-	function spotmap_validate_feed_name($new_feed_name){
+	function validate_feed_name($new_feed_name){
 		foreach ($new_feed_name as $index => &$feed_name) {
 			$feed_name = sanitize_text_field($feed_name);
 			$old_feed_name = get_option("spotmap_findmespot_name")[$index];
@@ -181,7 +421,7 @@ class Spotmap_Admin {
 		return $new_feed_name;
 	}
 	
-	function spotmap_validate_feed_id($new_feed_id){
+	function validate_feed_id($new_feed_id){
 		foreach ($new_feed_id as $index => &$feed_id) {
 			$feed_id = sanitize_text_field($feed_id);
 			// error_log($feed_id);

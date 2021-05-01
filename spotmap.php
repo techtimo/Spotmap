@@ -3,7 +3,7 @@
  * Plugin Name:       Spotmap
  * Plugin URI:        https://github.com/techtimo/spotmap
  * Description:       See Spot GPS tracker positions inside your blog. Show GPX track(s) to let viewers know where you intend to go.
- * Version:           0.10.3
+ * Version:           0.11.0
  * Author:            Timo Giese
  * Author URI:        https://github.com/techtimo
  * License:           GPL2

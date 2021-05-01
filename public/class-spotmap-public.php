@@ -15,8 +15,7 @@ class Spotmap_Public{
         wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
 		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
 		// wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
-		wp_enqueue_style( 'font-awesome', plugin_dir_url( __FILE__ ) . 'css/font-awesome-5.15-all.min.css');
-		// wp_enqueue_style( 'font-awesome', 'https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css');
+		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-5.15-all.min.css');
 		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
     }
 
@@ -52,6 +51,7 @@ class Spotmap_Public{
 			'url' =>  plugin_dir_url( __FILE__ ),
 			'feeds' => $this->db->get_all_feednames(),
 			'defaultValues' => get_option('spotmap_default_values'),
+			'marker' => get_option('spotmap_marker'),
 
 		]);
 	}
@@ -140,7 +140,6 @@ class Spotmap_Public{
 				'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
 				'colors' => !empty(get_option('spotmap_default_values')['color']) ?get_option('spotmap_default_values')['color'] : 'blue,red',
 				'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
-				'tiny-types' => !empty(get_option('spotmap_default_values')['tiny-types']) ?get_option('spotmap_default_values')['tiny-types'] : NULL,
 				'auto-reload' => FALSE,
 				'last-point' => FALSE,
 				'date-range-from' => NULL,
@@ -170,7 +169,7 @@ class Spotmap_Public{
 			}
 		}
 		
-		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays','tiny-types'] as $value) {
+		foreach (['feeds','splitlines','colors','gpx-name','gpx-url','gpx-color','maps','map-overlays',] as $value) {
 			if(!empty($a[$value]) && !is_array($a[$value])){
 				// error_log($a[$value]);
 				$a[$value] = explode(',',$a[$value]);
@@ -210,7 +209,6 @@ class Spotmap_Public{
 				$styles[$value] = [
 					'color'=>$a['colors'][$key],
 					'splitLines' => $a['splitlines'][$key],
-					'tinyTypes' => $a['tiny-types']
 					];
 			}
 		}

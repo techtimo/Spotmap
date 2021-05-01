@@ -1,12 +1,11 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Work
- * Date: 6/19/2019
- * Time: 11:34 PM
- */
 	$active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'feed';
-	$tabs = [ 'feed' => 'Feed', 'messages' => 'Messages', 'defaults' => 'Defaults' ,'thirdparties' => "Third party"];
+	$tabs = [ 
+		'feed' => 'Feed',
+		'marker'=> __("Marker"),
+		'thirdparties' => __("Additional Services"),
+		'defaults' => __('Defaults'),
+	];
 ?>
 
 <div class="wrap">
@@ -32,16 +31,21 @@
 					echo '<option name="spotmap_options" value="'.$key.'">'.$name.'</option>';
 				} ?>			 </select><div class="button button-secondary" id="spotmap-add-feed-button">Add Feed</div>
 			</td></tr></tbody></table>
-		<?php } else if ($active_tab == 'messages'){ ?>
-			<?php settings_fields( 'spotmap-messages-group' );
-			do_settings_sections( 'spotmap-messages-group' ); ?>
-		<?php } else if ($active_tab == 'thirdparties'){ ?>
-			<?php settings_fields( 'spotmap-thirdparties-group' );
-			do_settings_sections( 'spotmap-thirdparties-group' ); ?>
-		<?php } else if ($active_tab == 'defaults'){ ?>
-			<?php settings_fields( 'spotmap-defaults-group' );
-			do_settings_sections( 'spotmap-defaults-group' ); ?>
-		<?php } ?>
-		<?php submit_button(); ?>
+		<?php 
+		} else if ($active_tab == 'messages'){
+			settings_fields( 'spotmap-messages-group' );
+			do_settings_sections( 'spotmap-messages-group' ); 
+		} else if ($active_tab == 'thirdparties'){
+			settings_fields( 'spotmap-thirdparties-group' );
+			do_settings_sections( 'spotmap-thirdparties-group' );
+		} else if ($active_tab == 'defaults'){ 
+			settings_fields( 'spotmap-defaults-group' );
+			do_settings_sections( 'spotmap-defaults-group' );
+		} else if ($active_tab == 'marker'){ 
+			settings_fields( 'spotmap-marker-group' );
+			do_settings_sections( 'spotmap-marker-group' );
+		} 
+			
+		submit_button(); ?>
 	</form>
 </div>

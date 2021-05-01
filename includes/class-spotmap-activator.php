@@ -50,7 +50,6 @@ class Spotmap_Activator {
 			'width' => 'normal',
 			'color' => 'blue,red',
 			'splitlines' => '12',
-			'tiny-types' => 'UNLIMITED-TRACK,STOP,EXTREME-TRACK,TRACK'
 		];
 		if(!get_option('spotmap_default_values')){
 			add_option('spotmap_default_values', $defaults);

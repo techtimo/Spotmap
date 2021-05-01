@@ -89,8 +89,6 @@ _Note:_ all the Default values of the attributes can be changed in the settings 
 
 - `last-point` will show the last sent point as big marker, to be easily found. Can also be used with a limited range of colors (yellow,red,green,black,gray,blue) like `last-point=red`
 
-- `tiny-types=UNLIMITED-TRACK,STOP` can be used to configure if a point is shown with a big marker on the map or not
-
 - `feeds` can be set, if multiple feeds get used. (See example below, if you have only one spot this is not needed)
 
 #### GPX
