@@ -50,29 +50,7 @@ class Spotmap {
 
         self.getOption('maps');
         this.addButtons();
-        var Marker = L.Icon.extend({
-            options: {
-                shadowUrl: spotmapjsobj.url + 'leaflet/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            }
-        });
-        var TinyMarker = L.Icon.extend({
-            options: {
-                iconSize: [10, 10],
-                iconAnchor: [5, 5],
-                popupAnchor: [0, 0]
-            }
-        });
-        // create markers
-        var markers = { tiny: {} };
-        ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet', 'gray', 'black'].forEach(function (color) {
-            markers[color] = new Marker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-icon-' + color + '.png' });
-            markers.tiny[color] = new TinyMarker({ iconUrl: spotmapjsobj.url + 'leaflet/images/marker-tiny-icon-' + color + '.png' });
-        });
-
+        
         // define obj to post data
         let body = {
             'action': 'get_positions',
@@ -108,10 +86,10 @@ class Spotmap {
                         async: true,
                         marker_options: {
                             wptIcons: {
-                                '': markers[color],
+                                '': self.getMarkerIcon({color: color}),
                             },
                             wptIconsType: {
-                                '': markers[color],
+                                '': self.getMarkerIcon({color: color}),
                             },
                             startIconUrl: '', endIconUrl: '',
                             shadowUrl: spotmapjsobj.url + 'leaflet-gpx/pin-shadow.png',
@@ -154,7 +132,7 @@ class Spotmap {
                 }
 
             });
-            self.setBounds('all');
+            self.setBounds(self.options.mapcenter);
             // TODO merge displayOverlays
             // displayOverlays merge 
             // self.getOptions('overlays');
@@ -178,13 +156,13 @@ class Spotmap {
                         }
                         response.forEach(function (entry, index) {
                             let feedName = entry.feed_name;
-                            let lastPoint = lodash.last(this.layers.feeds[feedName].points)
+                            let lastPoint = lodash.last(self.layers.feeds[feedName].points)
                             if (lastPoint.unixtime < entry.unixtime) {
                                 self.debug("Found a new point for Feed: " + feedName);
-                                this.addPoint(entry);
-                                this.addPointToLine(entry);
+                                self.addPoint(entry);
+                                self.addPointToLine(entry);
 
-                                if (this.options.mapcenter == 'last') {
+                                if (self.options.mapcenter == 'last') {
                                     self.map.setView([entry.latitude, entry.longitude], 14);
                                 }
                             }
@@ -278,11 +256,6 @@ class Spotmap {
                 return this.options.styles[config.feed].splitLines;
             return false;
         }
-        if (option == 'tinyTypes' && config.feed) {
-            if (this.options.styles[config.feed] && this.options.styles[config.feed].tinyTypes)
-                return this.options.styles[config.feed].tinyTypes;
-            return ['UNLIMITED-TRACK', 'STOP', 'EXTREME-TRACK', 'TRACK'];
-        }
     }
     debug(message) {
         if (this.options && this.options.debug)
@@ -312,7 +285,7 @@ class Spotmap {
                     self.map.setView([51.505, -0.09], 13);
                 }
             }
-            else if(feeds && options.filter && !response.error){
+            else if(feeds && options.filter && !response.empty){
                 response = self.removeClosePoints(response, options.filter);
                 callback(response);
             } else {
@@ -361,14 +334,14 @@ class Spotmap {
                 icon: '<span class="target">🌐</span>',
                 title: 'show all points',
                 onClick: function (control) {
-                    self.map.flyToBounds(self.mapcenter.all, zoomOptions);
+                    self.setBounds('all');
                     control.state('last');
                 }
             }, {
                 icon: '<span class="target">📍</span>',
-                stateName: 'last',
+                stateName: 'last-trip',
                 onClick: function (control) {
-                    self.map.flyTo(self.mapcenter.last, 14, zoomOptions);
+                    self.setBounds('last');
                     if (self.mapcenter.gpx)
                         control.state('gpx');
                     else
@@ -379,7 +352,7 @@ class Spotmap {
                 icon: '<span class="target">👣</span>',
                 stateName: 'gpx',
                 onClick: function (control) {
-                    self.map.flyToBounds(self.mapcenter.gpx, zoomOptions);
+                    self.setBounds('all');
                     control.state('all');
                 },
                 title: 'show gpx tracks'
@@ -392,8 +365,8 @@ class Spotmap {
                 value.setLatLng([42,0]);
             // self.map.locate({ setView: true, maxZoom: 16 });
             });
-            // add all btns to map
         });
+        // add all btns to map
         L.easyBar([last, position]).addTo(this.map);
     }
     
@@ -564,7 +537,6 @@ class Spotmap {
             this.setNewFeedLayer(feedName);
         }
         
-        // let tinyTypes = self.getOption('tinyTypes', { 'feed': feedName });
         // this.getOption('lastPoint')
         
         let markerOptions= this.getMarkerOptions(point)
@@ -602,50 +574,24 @@ class Spotmap {
         return markerOptions;
     }
     getMarkerIcon(point){
-        let color = this.getOption('color', { 'feed': point.feed_name });
-        let tinyIcon = {
-            iconShape: 'doughnut',
-            iconAnchor: [4,4],
-            iconSize: [8,8],
-            borderWidth: 4,
+        let color = point.color ? point.color : this.getOption('color', { 'feed': point.feed_name });
+        let iconOptions = {
+            iconShape: spotmapjsobj.marker[point.type].iconShape,
+            icon: spotmapjsobj.marker[point.type].icon,
+            textColor: color,
             borderColor: color,
         }
         if(lodash.includes(['UNLIMITED-TRACK', 'EXTREME-TRACK', 'TRACK'], point.type)){
-            return L.BeautifyIcon.icon(tinyIcon);
+            iconOptions.iconShape = spotmapjsobj.marker["UNLIMITED-TRACK"].iconShape;
+            iconOptions.icon = spotmapjsobj.marker["UNLIMITED-TRACK"].icon;
+            iconOptions.iconAnchor= [4,4];
+            iconOptions.iconSize= [8,8];
+            iconOptions.borderWith = 8;
         }
-        let iconOptions = {
-            // https://fontawesome.com/icons?d=gallery&p=2&m=free
-            icon: 'circle',
-            // backgroundColor: color,
-            textColor: color,
-            // marker, circle-dot, rectangle, rectangle-dot, doughnut
-            // iconShape: 'marker',
-            borderColor: color,
-        };
-        if(point.type == 'STOP'){
-            iconOptions.icon = 'stop-circle';
+        if(!iconOptions.icon){
+            iconOptions.iconShape = "marker";
+            iconOptions.icon = "circle";
         }
-        if(point.type == 'NEWMOVEMENT'){
-            iconOptions.icon = 'play-circle';
-        }
-        if(point.type == 'STATUS'){
-            iconOptions.icon = 'check-circle';
-        }
-        if(point.type == 'HELP'){
-            iconOptions.icon = 'life-ring';
-            iconOptions.iconShape = 'marker';
-            // iconOptions.spin = true;
-        }
-        if(point.type == 'CUSTOM'){
-            iconOptions.icon = 'comment-dots';
-            iconOptions.iconShape = 'marker';
-        }
-        if(point.type == 'OK'){
-            iconOptions.icon = 'thumbs-up';
-            iconOptions.iconShape = 'marker';
-        }
-        // iconOptions.textColor = color;
-        // iconOptions.borderColor = color;
         return L.BeautifyIcon.icon(iconOptions)
     }
     addPointToLine(point){
@@ -699,19 +645,31 @@ class Spotmap {
     }
     getBounds(option){        
         let bounds = L.latLngBounds();
-        if(option == "last"){
-            // get the last elemt per feed compare time and create bounds from latest point??
-            let unixtime = 0;   
-            lodash.forEach(self.layers.feeds, function(value, key) {
-                let layerBounds = self.layers.feeds[key].featureGroup.getBounds();
-                feedBounds.extend(layerBounds);
+        let coordinates =[];
+        var self = this;
+        let latestPoint;
+        if(option == "last" || option == "last-trip"){
+            let unixtime = 0;
+            lodash.forEach(self.layers.feeds, function(value, feedName) {
+                let point = lodash.last(self.layers.feeds[feedName].points);
+                
+                if( point.unixtime > unixtime){
+                    latestPoint = lodash.last(self.layers.feeds[feedName].points);
+                }
             });
-            
+            bounds.extend( [latestPoint.latitude, latestPoint.longitude]);
+            if(option == "last"){
+                return bounds;
+            }
+            // get bounds for last-trip 
+            let line = lodash.last(self.layers.feeds[latestPoint.feed_name].lines);
+            return line.getBounds();
         }
+
         let feedBounds = L.latLngBounds();
         var self = this;
-        lodash.forEach(self.layers.feeds, function(value, key) {
-            let layerBounds = self.layers.feeds[key].featureGroup.getBounds();
+        lodash.forEach(self.layers.feeds, function(value, feedName) {
+            let layerBounds = self.layers.feeds[feedName].featureGroup.getBounds();
             feedBounds.extend(layerBounds);
         });
         if(option == "feeds"){
