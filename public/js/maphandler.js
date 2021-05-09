@@ -193,21 +193,21 @@ class Spotmap {
                         }
                         this.layerControl.addBaseLayer(layer, map.label);
                     }
-                    if (this.options.maps.includes('swisstopo')) {
-                        layer = L.tileLayer.swiss()
-                        this.layerControl.addBaseLayer(layer, 'swissTopo');
-                        L.Control.Layers.prototype._checkDisabledLayers = function () { };
-                    }
+                    // if (this.options.maps.includes('swisstopo')) {
+                    //     layer = L.tileLayer.swiss()
+                    //     this.layerControl.addBaseLayer(layer, 'swissTopo');
+                    //     L.Control.Layers.prototype._checkDisabledLayers = function () { };
+                    // }
                     if(firstmap && layer){
                         firstmap = false;
                         layer.addTo(this.map);
                     }
 
                 }
-                if (lodash.startsWith(this.options.maps[0], "swiss") && self.map.options.crs.code == "EPSG:3857") {
-                    self.changeCRS(L.CRS.EPSG2056)
-                    self.map.setZoom(zoom + 7)
-                }
+                // if (lodash.startsWith(this.options.maps[0], "swiss") && self.map.options.crs.code == "EPSG:3857") {
+                //     self.changeCRS(L.CRS.EPSG2056)
+                //     self.map.setZoom(zoom + 7)
+                // }
             }
             return;
         }
@@ -331,84 +331,65 @@ class Spotmap {
         let last = L.easyButton({
             states: [{
                 stateName: 'all',
-                icon: '<span class="target">🌐</span>',
-                title: 'show all points',
+                icon: 'fa-globe',
+                title: 'Show all points',
                 onClick: function (control) {
                     self.setBounds('all');
                     control.state('last');
-                }
+                },
             }, {
-                icon: '<span class="target">📍</span>',
-                stateName: 'last-trip',
+                stateName: 'last',
+                icon: 'fa-map-pin',
+                title: 'Jump to last known location',
                 onClick: function (control) {
                     self.setBounds('last');
-                    if (self.mapcenter.gpx)
+                    if (!lodash.isEmpty(self.options.gpx))
                         control.state('gpx');
                     else
                         control.state('all');
                 },
-                title: 'show last point'
             }, {
-                icon: '<span class="target">👣</span>',
                 stateName: 'gpx',
+                icon: '<span class="target">Tr.</span>',
+                title: 'Show GPX track(s)',
                 onClick: function (control) {
-                    self.setBounds('all');
+                    self.setBounds('gpx');
                     control.state('all');
                 },
-                title: 'show gpx tracks'
             }]
         });
         //   the users position
-        let position = L.easyButton('<span class="target">🏡</span>', function () {
-            lodash.forEach(self.layers.feeds["thomas2"].markers, function(value) {
-
-                value.setLatLng([42,0]);
-            // self.map.locate({ setView: true, maxZoom: 16 });
-            });
-        });
+        let position = L.easyButton({states: [{
+            icon: 'fa-location-arrow',
+            title: 'Jump to your location',
+            onClick: function () {
+                self.map.locate({ setView: true, maxZoom: 15 });
+            },
+        }]});
         // add all btns to map
         L.easyBar([last, position]).addTo(this.map);
     }
     
-    onBaseLayerChange(layer) {
-        // let bounds = this.map.getBounds();
-        let center = this.map.getCenter();
-        let zoom = this.map.getZoom();
-        // console.log(this.map.getZoom());
+    // onBaseLayerChange(layer) {
+    //     // let bounds = this.map.getBounds();
+    //     let center = this.map.getCenter();
+    //     let zoom = this.map.getZoom();
+    //     // console.log(this.map.getZoom());
 
-        if (lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:3857") {
-            this.changeCRS(L.CRS.EPSG2056)
-            this.map.setZoom(zoom + 7)
-        }
-        else if (!lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:2056") {
-            this.changeCRS(L.CRS.EPSG3857)
-            this.map.setZoom(zoom - 7)
-        }
-        // this.map.options.zoomSnap = 0;
-        this.map._resetView(center, zoom, true);
-        zoom = this.map.getZoom();
-        // this.map.options.zoomSnap = 1;
-    }
+    //     if (lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:3857") {
+    //         this.changeCRS(L.CRS.EPSG2056)
+    //         this.map.setZoom(zoom + 7)
+    //     }
+    //     else if (!lodash.startsWith(layer.name, "swiss") && this.map.options.crs.code == "EPSG:2056") {
+    //         this.changeCRS(L.CRS.EPSG3857)
+    //         this.map.setZoom(zoom - 7)
+    //     }
+    //     // this.map.options.zoomSnap = 0;
+    //     this.map._resetView(center, zoom, true);
+    //     zoom = this.map.getZoom();
+    //     // this.map.options.zoomSnap = 1;
+    // }
     
-    // for swisstopo map with different crs. copied from here
-    // https://github.com/Leaflet/Leaflet/issues/2553#issuecomment-762271734 
-    getMaxBounds(crs) {
-        const { bounds } = crs.projection;
-        return new L.LatLngBounds(
-            crs.unproject(bounds.min),
-            crs.unproject(bounds.max),
-        );
-    }
-    changeCRS(crs) {
-        const bounds = this.map.getBounds();
-        this.map.options.crs = crs;
-        // Ensure zoom is not affected by differing CRS scales
-        this.map.options.zoomSnap = 0;
-        this.map.fitBounds(bounds);
-        this.map.setMaxBounds(this.getMaxBounds(crs));
-        this.map.options.zoomSnap = 1;
-    }
-
     initTable(id) {
         // define obj to post data
         var body = {
@@ -576,11 +557,10 @@ class Spotmap {
     getMarkerIcon(point){
         let color = point.color ? point.color : this.getOption('color', { 'feed': point.feed_name });
         let iconOptions = {
-            iconShape: spotmapjsobj.marker[point.type].iconShape,
-            icon: spotmapjsobj.marker[point.type].icon,
             textColor: color,
             borderColor: color,
         }
+        
         if(lodash.includes(['UNLIMITED-TRACK', 'EXTREME-TRACK', 'TRACK'], point.type)){
             iconOptions.iconShape = spotmapjsobj.marker["UNLIMITED-TRACK"].iconShape;
             iconOptions.icon = spotmapjsobj.marker["UNLIMITED-TRACK"].icon;
@@ -588,7 +568,15 @@ class Spotmap {
             iconOptions.iconSize= [8,8];
             iconOptions.borderWith = 8;
         }
-        if(!iconOptions.icon){
+        if(point.type){
+            iconOptions.iconShape = spotmapjsobj.marker[point.type].iconShape;
+            iconOptions.icon = spotmapjsobj.marker[point.type].icon;
+            if(iconOptions.iconShape == 'circle-dot'){
+                iconOptions.iconAnchor= [4,4];
+                iconOptions.iconSize= [8,8];
+                iconOptions.borderWith = 8;
+            }
+        } else {
             iconOptions.iconShape = "marker";
             iconOptions.icon = "circle";
         }
@@ -624,7 +612,11 @@ class Spotmap {
         
         return true;
     }
-
+    /**
+     * Creates an empty polyline according to the settings gathered from the feedname
+     * @param {string} feedName 
+     * @returns {L.polyline} line 
+     */
     addNewLine(feedName){
         let color = this.getOption('color', { 'feed': feedName });
         let line = L.polyline([],{ color: color });
@@ -638,11 +630,20 @@ class Spotmap {
             }
         });
         return line;
-        this.layers.feeds[feedName].lines.push(line);
+        // this.layers.feeds[feedName].lines.push(line);
     }
+    /**
+     * 
+     * @param {string} option
+     */
     setBounds(option){
         this.map.fitBounds(this.getBounds(option));
     }
+    /**
+     * Calculates the bounds to the given option
+     * @param {string} option - all,last,last-trip,gpx
+     * @returns {L.latLngBounds}
+     */
     getBounds(option){        
         let bounds = L.latLngBounds();
         let coordinates =[];

@@ -152,6 +152,7 @@ class Spotmap_Admin {
 			[$this,'settings_section_icons'],
 			'spotmap-marker-group'
 		);
+		// error_log(print_r(get_option('spotmap_marker'),TRUE));
 		$settings = [
 			'HELP' => [
 				"type" => "text",
@@ -385,8 +386,7 @@ class Spotmap_Admin {
 	}
 	
 	function settings_section_messages($args){
-		echo '<p id='.$args['id'].'>'.__("If you have sensitive Information in your predefined messages, you can overide those messages here.").'<br>
-		</p>';
+		echo '<p id='.$args['id'].'>'.__("Do the messages that are sent from your spot contain some phone numbers or similar you would like to hide to the public?").'<br>' . __("Override the displayed message for each type here:").'</p>';
 	}
 	function settings_section_icons($args){
 		echo '<p id='.$args['id'].'>'.__("In this section you can modify the icons that are displayed on the map. (If you have chosen a medium or big marker)").'.<br>' . 
