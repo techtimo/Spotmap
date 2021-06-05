@@ -30,4 +30,12 @@ $(document).ready(function () {
 
         }
     });
+    // to update the font awesome preview in the dashboard Marker section
+    $(".spotmap-icon-input").change(function(){
+        let value = $(this).val()
+        let icon = $(this).next();
+        icon.removeClass().addClass("fas").addClass("fa-"+value);
+        // $("#" + name).attr("class", "fa fa-"+);
+    });
+
 });

@@ -37,17 +37,17 @@ Note: `devices` must always match your feed name.
 
 This will show a bigger map and the points are all in yellow:
 ```
-[spotmap height=600 width=full devices=spot colors=yellow]
+[spotmap height=600 width=full feeds=spot colors=yellow]
 ```
 
 This will show a map where we zoom into the last known position, and we only show data from the the first of May:
 ```
-[spotmap mapcenter=last devices=spot colors=red date-range-from="2020-05-01"]
+[spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]
 ```
 
 We can also show multiple tracks in different colors on a same day:
 ```
-[spotmap mapcenter=last devices=spot,spot2 colors=gray,green date="2020-06-01"]
+[spotmap mapcenter=last feeds=spot,spot2 colors=gray,green date="2020-06-01"]
 ```
 
  
