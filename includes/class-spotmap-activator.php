@@ -60,6 +60,57 @@ class Spotmap_Activator {
 				}
 			}
 		}
+		$defaults = [
+			'HELP' => [
+					'iconShape' => "marker",
+					'icon' => "life-ring",
+					'customMessage' => "",
+			],
+			'HELP-CANCEL' => [
+					'iconShape' => "marker",
+					'icon' => "check-double",
+					'customMessage' => "",
+			],
+			'CUSTOM' => [
+					'iconShape' => "marker",
+					'icon' => "comment-dots",
+					'customMessage' => "",
+			],
+			'OK' => [
+					'iconShape' => "marker",
+					'icon' => "thumbs-up",
+					'customMessage' => "",
+			],
+			'STATUS' => [
+					'iconShape' => "circle",
+					'icon' => "check-circle",
+					'customMessage' => "",
+			],
+			'UNLIMITED-TRACK' => [
+					'iconShape' => "circle-dot",
+					'icon' => "user",
+					'customMessage' => "",
+			],
+			'NEWMOVEMENT' => [
+					'iconShape' => "circle",
+					'icon' => "play-circle",
+					'customMessage' => "",
+			],
+			'STOP' => [
+					'iconShape' => "circle",
+					'icon' => "stop-circle",
+					'customMessage' => "",
+			],
+		];
+		if(!get_option('spotmap_marker')){
+			add_option('spotmap_marker', $defaults);
+		} else {
+			foreach (get_option('spotmap_marker') as $index => &$value) {
+				if(empty($value)){
+					$value = $defaults[$index];
+				}
+			}
+		}
 
 	}
 }

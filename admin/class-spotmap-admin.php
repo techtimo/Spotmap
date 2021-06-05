@@ -26,7 +26,9 @@ class Spotmap_Admin {
 	}
 
 	public function register_settings(){
-
+		// error_log(print_r(get_option('spotmap_marker'),TRUE));
+		
+		// TODO create a render setting method that takes an array for each section as input
 		// FEED SECTION
 		foreach (get_option("spotmap_api_providers") as $provider => $name) {
 			$ids = get_option("spotmap_".$provider."_id");
@@ -49,7 +51,7 @@ class Spotmap_Admin {
 				$settings = [
 					'name' => ['label' => __('Feed Name'), 'type' => 'text'], 
 					'id' => ['label' => __('Feed Id'), 'type' => 'text'], 
-					'password' => ['label' => __('Feed password'), 'type' => 'password', "description" => "Leave this empty if the feed is public"], 
+					'password' => ['label' => __('Feed password'), 'type' => 'password', "description" => __("Leave this empty if the feed is public")], 
 				];
 				foreach ($settings as $key => $value) {
 					$pre_populated_value = '';
@@ -253,7 +255,7 @@ class Spotmap_Admin {
 			'spotmap-thirdparty-section',
 			__('Thirdparty API Tokens'),
 			[$this, 'settings_section_thirdparty'],
-			'spotmap-thirdparties-group',
+			'spotmap-thirdparties-group'
 		);
 		$settings = [
 			'timezonedb'=> [
