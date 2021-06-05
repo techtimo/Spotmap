@@ -43,74 +43,72 @@ class Spotmap_Activator {
 		if(!get_option('spotmap_custom_messages')){
 			add_option('spotmap_custom_messages', []);
 		}
-		$defaults = [
-			'maps' => "openstreetmap,opentopomap",
-			'height' => 500,
-			'mapcenter' => 'all',
-			'width' => 'normal',
-			'color' => 'blue,red',
-			'splitlines' => '12',
+
+		$defaults =[
+			"spotmap_marker" => [
+				'HELP' => [
+						'iconShape' => "marker",
+						'icon' => "life-ring",
+						'customMessage' => "",
+				],
+				'HELP-CANCEL' => [
+						'iconShape' => "marker",
+						'icon' => "check-double",
+						'customMessage' => "",
+				],
+				'CUSTOM' => [
+						'iconShape' => "marker",
+						'icon' => "comment-dots",
+						'customMessage' => "",
+				],
+				'OK' => [
+						'iconShape' => "marker",
+						'icon' => "thumbs-up",
+						'customMessage' => "",
+				],
+				'STATUS' => [
+						'iconShape' => "circle",
+						'icon' => "check-circle",
+						'customMessage' => "",
+				],
+				'UNLIMITED-TRACK' => [
+						'iconShape' => "circle-dot",
+						'icon' => "user",
+						'customMessage' => "",
+				],
+				'NEWMOVEMENT' => [
+						'iconShape' => "circle",
+						'icon' => "play-circle",
+						'customMessage' => "",
+				],
+				'STOP' => [
+						'iconShape' => "circle",
+						'icon' => "stop-circle",
+						'customMessage' => "",
+				],
+			],
+			"spotmap_default_values" => [
+				'maps' => "openstreetmap,opentopomap",
+				'height' => 500,
+				'mapcenter' => 'all',
+				'width' => 'normal',
+				'color' => 'blue,red',
+				'splitlines' => '12',
+			]
 		];
-		if(!get_option('spotmap_default_values')){
-			add_option('spotmap_default_values', $defaults);
-		} else {
-			foreach (get_option('spotmap_default_values') as $index => &$value) {
-				if(empty($value)){
-					$value = $defaults[$index];
+		
+		foreach ($defaults as $option_name => $value) {
+			if(!get_option($option_name)){
+				add_option($option_name, $defaults[$option_name]);
+			} else {
+				foreach (get_option($option_name) as $index => &$value) {
+					if(empty($value)){
+						$value = $defaults[$option_name][$index];
+					}
 				}
 			}
 		}
-		$defaults = [
-			'HELP' => [
-					'iconShape' => "marker",
-					'icon' => "life-ring",
-					'customMessage' => "",
-			],
-			'HELP-CANCEL' => [
-					'iconShape' => "marker",
-					'icon' => "check-double",
-					'customMessage' => "",
-			],
-			'CUSTOM' => [
-					'iconShape' => "marker",
-					'icon' => "comment-dots",
-					'customMessage' => "",
-			],
-			'OK' => [
-					'iconShape' => "marker",
-					'icon' => "thumbs-up",
-					'customMessage' => "",
-			],
-			'STATUS' => [
-					'iconShape' => "circle",
-					'icon' => "check-circle",
-					'customMessage' => "",
-			],
-			'UNLIMITED-TRACK' => [
-					'iconShape' => "circle-dot",
-					'icon' => "user",
-					'customMessage' => "",
-			],
-			'NEWMOVEMENT' => [
-					'iconShape' => "circle",
-					'icon' => "play-circle",
-					'customMessage' => "",
-			],
-			'STOP' => [
-					'iconShape' => "circle",
-					'icon' => "stop-circle",
-					'customMessage' => "",
-			],
-		];
-		if(!get_option('spotmap_marker')){
-			add_option('spotmap_marker', $defaults);
-		} else {
-			foreach (get_option('spotmap_marker') as $index => &$value) {
-				if(empty($value)){
-					$value = $defaults[$index];
-				}
-			}
-		}
+		
 
 	}
 }
