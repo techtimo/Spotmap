@@ -2,9 +2,11 @@
 [![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)
 
 Spotmap is a Wordpress plugin that can show an embedded map  with all the recent positions of a Spot beacon 
-([findmespot.com](http://findmespot.com)).
+([findmespot.com](http://findmespot.com)). In addition it can display GPX tracks to show where you intend to go.
 
-Currently the Plugin will show all positions since configuring the plugin. The following screenshot was taken after using the plugin for 3 months:
+
+
+The following screenshot was taken after using the plugin for 3 months:
 
 ![screen1](https://user-images.githubusercontent.com/22075114/83943321-64eb6600-a7fb-11ea-94a6-a8a0a5823407.png)
 
@@ -27,13 +29,15 @@ After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. 
 
 Now you can enter your XML Feed Id here and give it a nice name. Soon Wordpress will download the points that are present in the XML Feed.
 
-In the mean time we can create an empty map with the Shortcode: `[Spotmap]`
+If you use Gutenberg type /spotmap to create a new Spotmap block.
+
+If you prefer shortcodes tpye `[Spotmap]`
 
 Congrats 🎉 You just created your own Spotmap. 
 
 There are some attributes we can parse with the Shortcode:
 
-Note: `devices` must always match your feed name.
+Note: `feeds` must always match your configured feed name.
 
 This will show a bigger map and the points are all in yellow:
 ```

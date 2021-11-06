@@ -190,6 +190,7 @@
                         value: props.attributes.mapcenter,
                         options: [
                             { label: 'all points', value: 'all' },
+                            { label: 'last trip', value: 'last-trip' },
                             { label: 'latest point', value: 'last' },
                             { label: 'GPX tracks', value: 'gpx' }
                         ],

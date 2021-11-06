@@ -37,9 +37,10 @@ class Spotmap_Public{
         wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
         wp_enqueue_script('leaflet-easybutton',plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js');
-        wp_enqueue_script('leaflet-swisstopo', 'https://unpkg.com/leaflet-tilelayer-swiss@2.2.1/dist/Leaflet.TileLayer.Swiss.umd.js');
+        wp_enqueue_script('leaflet-swisstopo',plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js');
         wp_enqueue_script('leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js');
-        wp_enqueue_script('leaflet-text-path', 'https://makinacorpus.github.io/Leaflet.TextPath/leaflet.textpath.js');
+        // wp_enqueue_script('leaflet-text-path', 'https://makinacorpus.github.io/Leaflet.TextPath/leaflet.textpath.js');
+		wp_enqueue_script('leaflet-text-path',plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js');
 
 	}
 

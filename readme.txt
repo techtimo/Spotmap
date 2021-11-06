@@ -5,25 +5,30 @@ Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeaco
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
-Tested up to: 5.7
+Tested up to: 5.8
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
 
 ## Description
 
-Spot does not offer the storage of pointsdfree of charge for long. That's where Spotmap comes into the game:
+Spot does not offer the storage of points free of charge for long term. That's where Spotmap comes into the game:
 Your Wordpress Site will store all positions ever sent. It checks for new positions every 2.5 minutes.
 It supports different devices (They can even belong to different accounts).
-It supports many more web
+
+The map can fetch new points autmatically without relaoding the entire Post.
+
+
 
 🆕 Support of Gutenberg block editor. Just type `/spotmap` and open the settings on the right.
+
+Currently only the GPX colors cannot be cahnged individually inside the block settings.
 
 With a shortcode you can add an embedded map to your post or page. By default it will show all positions ever sent.
 If needed the map can show a subset of the data. i.e. the last weekend getaway.
 
 Next planned features (Not necessarily in right order): 
 
-- grouping of points
+- grouping of points (partially implemented)
 
 - support of other tracking devices (Garmin InReach, ...)
 
@@ -149,6 +154,13 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
+= 0.11.2 =
+- new marker styles and options how to configure them. Changeable icons
+- maps with many points will load faster
+- tested with WP 5.8
+- Thirdparty API options page includes many comments to better understand what each service is for.
+- new initial map state added: 'last-trip'. Zooms to the last line on the map (In the feed settings splitlines must be activated to work)
+
 = 0.10.3 =
 - added UK  Ordnance Survey
 - added US Geological Survey maps
@@ -163,10 +175,6 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 Full Gutenberg Block support
 added NZtopomap
 added France IGN Topo map token
-
-= 0.9.1 =
-Fix Gutenberg editor issue
-spotmessages supports auto update
 
 = 0.9 =
 - new shortcode to show table of messages
