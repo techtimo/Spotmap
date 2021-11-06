@@ -20,7 +20,7 @@ class Spotmap_Api_Crawler {
 	}
 
 	private function get_data_findmespot ($feed_name, $id, $pwd){
-		// error_log($feed_name. $id.$pwd);
+		// error_log($feed_name. $id . $pwd);
 		$i = 0;
 		while (true) {
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;

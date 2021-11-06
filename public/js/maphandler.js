@@ -266,7 +266,6 @@ class Spotmap {
         var self = this;
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response) {
             let feeds = true;
-            console.log(self.options.feeds);
             if(self.options.feeds && self.options.feeds.length == 0){
                 feeds = false
             }
@@ -279,10 +278,10 @@ class Spotmap {
                 response.message = response.message || "";
                 if (self.options.gpx.length == 0) {
                     var popup = L.popup()
-                        .setLatLng([51.5, -0.09])
+                        .setLatLng([51.5, 0])
                         .setContent("<b>" + response.title + "</b><br>" + response.message)
                         .openOn(self.map);
-                    self.map.setView([51.505, -0.09], 13);
+                    self.map.setView([51.5, 0], 13);
                 }
             }
             else if(feeds && options.filter && !response.empty){
@@ -568,7 +567,8 @@ class Spotmap {
             iconOptions.iconSize= [8,8];
             iconOptions.borderWith = 8;
         }
-        if(point.type){
+        // Is the point.type configured?
+        if(spotmapjsobj.marker[point.type]){
             iconOptions.iconShape = spotmapjsobj.marker[point.type].iconShape;
             iconOptions.icon = spotmapjsobj.marker[point.type].icon;
             if(iconOptions.iconShape == 'circle-dot'){

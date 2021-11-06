@@ -151,7 +151,7 @@ class Spotmap_Admin {
 			'timezonedb'=> [
 				"label" => "timezonedb.com",
 				"type" => 'text',
-				"description" => __("Store and show the local time of a position. <a href=\"https://timezonedb.com/register\">Register for free</a>"),
+				"description" => __("Do you travel to other timezones? Store and show the local time of a position with a timezonedb API token. <a href=\"https://timezonedb.com/register\">Register for free</a>"),
 			],
 			'mapbox'=> [
 				"label" => "mapbox.com",
@@ -330,7 +330,7 @@ class Spotmap_Admin {
 		</p>';
 	}
 	function settings_section_thirdparty($args){
-		echo '<p id='.$args['id'].'>'.__("Here you have links to a veriaty of different services. Each one of them is free for personal use. Follow the stated link, create an account and copy the API Key in the corresponding field.").'<br>
+		echo '<p id='.$args['id'].'>'.__("Here you have links to a variety of different services. Each one of them is free for personal use. Follow the stated link, create an account and copy the API Key in the corresponding field.").'<br>
 		</p>';
 	}
 	
