@@ -223,12 +223,33 @@
     }
   },
   "overlays": {
-    "openseamap": {
-      "label": "OpenSeaMap",
-      "url": "http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+    
+    "marine-traffic": {
+      "label": "Marine Traffic",
+      "url": "https://tiles.marinetraffic.com/ais_helpers/shiptilesingle.aspx?output=png&sat=1&grouping=shiptype&tile_size=256&legends=1&zoom={z}&X={x}&Y={y}",
       "options": {
-        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenSeaMap</a> contributors",
+        "attribution": "© <a href=\"https://www.marinetraffic.com\">MarineTraffic</a>",
         "layer": "USGSImageryTopo"
+      }
+    },
+    "openseamap-seamarks": {
+      "label": "OpenSeaMap Seamarks",
+      "url": "https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
+      "options": {
+        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenSeaMap</a> contributors"
+      }
+    },
+    "openseamap-depth": {
+      "wms": "true",
+      "label": "Sea Depth",
+      "url": "https://depth.openseamap.org/geoserver/gwc/service/wms",
+      "options": {
+        "layers": "gebco2021:gebco_2021",
+        "format": "image/png",
+        "transparent": "true",
+        "maxZoom": 20,
+        "continuousWorld": "true",
+        "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenSeaMap</a> contributors"
       }
     }
   }
