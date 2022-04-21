@@ -126,23 +126,33 @@ class Spotmap {
                 else {
                     let color = self.getOption('color', { 'feed': key })
                     let label = key + ' ' + self.getColorDot(color)
-                    // if last element
+                    // if last element and overlays exists
                         // label += '<div class="leaflet-control-layers-separator"></div>'
                     self.layerControl.addOverlay(self.layers.feeds[key].featureGroup, label)
                 }
 
             });
-            self.setBounds(self.options.mapcenter);
+            if(response.empty && self.options.gpx.length == 0){
+                self.map.setView([51.505, -0.09], 13)
+                var popup = L.popup()
+                    .setLatLng([51.513, -0.09])
+                    .setContent("There is nothing to show here yet.")
+                    .openOn(self.map);
+            }
+            else {
+                self.setBounds(self.options.mapcenter);
+            }
+            
             // TODO merge displayOverlays
-            // displayOverlays merge 
-            // self.getOptions('overlays');
+            self.getOption('mapOverlays');
             
             // if (Object.keys(displayOverlays).length == 1) {
-            //     displayOverlays[Object.keys(displayOverlays)[0]].addTo(self.map);
-            //     if (Object.keys(baseLayers).length > 1)
-            //         L.control.layers(baseLayers,{},{hideSingleBase: true}).addTo(self.map);
+                // displayOverlays[Object.keys(displayOverlays)[0]].addTo(self.map);
+                // if (Object.keys(baseLayers).length > 1)
+                    // L.control.layers(baseLayers,{},{hideSingleBase: true}).addTo(self.map);
             // } else {
                 // L.control.layers(baseLayers, displayOverlays,{hideSingleBase: true}).addTo(self.map);
+                // self.layerControl.addOverlay(self.layers.feeds[key].featureGroup, label)
             // }
             // self.map.on('baselayerchange', self.onBaseLayerChange(event));
             
@@ -213,21 +223,25 @@ class Spotmap {
         }
 
 
-        if (option == 'overlays') {
-            if (this.options.overlays) {
-                let overlays = {};
-                for (let overlayName in this.options.overlays) {
-                    overlayName = this.options.overlays[overlayName];
+        if (option == 'mapOverlays') {
+            
+            if (this.options.mapOverlays) {
+                for (let overlayName in this.options.mapOverlays) {
+                    overlayName = this.options.mapOverlays[overlayName];
+                    let layer;
                     if (lodash.keys(spotmapjsobj.overlays).includes(overlayName)) {
                         let overlay = spotmapjsobj.overlays[overlayName];
-                            overlays[overlay.label] = L.tileLayer(overlay.url, overlay.options);
+                        if (overlay.wms) {
+                            layer = L.tileLayer.wms(overlay.url, overlay.options);
+                        } else {
+                            layer = L.tileLayer(overlay.url, overlay.options);
+                        }
+                        layer.addTo(this.map);
+                        this.layerControl.addOverlay(layer, overlay.label);
                     }
+
                 }
-                return overlays;
-            }
-            console.error("No Map defined");
-            return false;
-        }
+        }}
         if (option == 'color' && config.feed) {
             if (this.options.styles[config.feed] && this.options.styles[config.feed].color)
                 return this.options.styles[config.feed].color;
