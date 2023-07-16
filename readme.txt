@@ -101,7 +101,7 @@ _Note:_ all the Default values of the attributes can be changed in the settings 
 
 - `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
 
-- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your media library)
+- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your media library. Make sure to not use 'http://'!)
 
 - `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
 
@@ -136,7 +136,7 @@ The plugin uses the following thrid party services:
 3. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
 4. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
 5. (optionally) [Land Information New Zealand (LINZ)](https://www.linz.govt.nz) To get the official Topo Maps of NZ create an account [here](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key). Paste the key in the settings page.
-6. (optionally) [Géoportail France](https://geoservices.ign.fr/documentation/diffusion/formulaire-de-commande-geoservices.html) To get the official Topo Maps of IGN France. Create an account [here](https://www.sphinxonline.com/surveyserver/s/etudesmk/Geoservices_2021/questionnaire.htm) (french only). Paste the key in the settings page.
+6. (optionally) [Géoportail France](https://geoservices.ign.fr/) To get the official Topo Maps of IGN France. Create an account [here](https://geoservices.ign.fr/user/register) (french only). Paste the key in the settings page.
 7. (optionally) [UK Ordnance Survey](https://osdatahub.os.uk) To get the official UK OS maps. Create a free plan [here](https://osdatahub.os.uk/plans). And follow this guide on how to [create a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
 
 
@@ -154,6 +154,12 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
+= 0.12.0 =
+- support for media uploads shown in the map
+- images you upload to wordpress will be added to the wordpress spotmap table using the feed 'media' if GPS location are part of the EXIF data.
+- with date-range filter described above you can show only images taken in a specific range.
+- If you upgrade from a previous version you have to mnaully run this command if you like to use the media feature: "ALTER TABLE `wordpress_local`.`wp_spotmap_points` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT ;"
+
 = 0.11.2 =
 - new marker styles and options how to configure them. Changeable icons
 - maps with many points will load faster

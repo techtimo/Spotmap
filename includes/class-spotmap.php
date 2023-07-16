@@ -49,6 +49,8 @@ class Spotmap{
 		$this->loader->add_action( 'spotmap_api_crawler_hook', $spotmap_admin, 'get_feed_data');
 		$this->loader->add_action( 'spotmap_get_timezone_hook', $spotmap_admin, 'get_local_timezone');
 		$this->loader->add_action( 'upload_mimes', $spotmap_admin, 'allow_gpx_upload');
+		$this->loader->add_action( 'add_attachment', $spotmap_admin, 'add_images_to_map');
+		$this->loader->add_action( 'delete_attachment', $spotmap_admin, 'delete_images_from_map');
 	}
 
 	/**

@@ -500,9 +500,11 @@ class Spotmap {
         message += 'Time: ' + entry.time + '</br>Date: ' + entry.date + '</br>';
         if (entry.local_timezone && !(entry.localdate == entry.date && entry.localtime == entry.time))
             message += 'Local Time: ' + entry.localtime + '</br>Local Date: ' + entry.localdate + '</br>';
-        if (entry.message)
-            message += 'Message: ' + entry.message + '</br>';
-        if (entry.altitude >= 0)
+        if (entry.message && entry.type == 'MEDIA')
+            message += '<img width="180"  src="' + entry.message + '" class="attachment-thumbnail size-thumbnail" alt="" decoding="async" loading="lazy" /></br>';
+        else
+            message += entry.message + '</br>';
+        if (entry.altitude > 0)
             message += 'Altitude: ' + Number(entry.altitude) + 'm</br>';
         if (entry.battery_status == 'LOW')
             message += 'Battery status is low!' + '</br>';
@@ -598,6 +600,8 @@ class Spotmap {
     }
     addPointToLine(point){
         let feedName = point.feed_name;
+        if (feedName == 'media')
+            return
         let coordinates = [point.latitude, point.longitude];
         let splitLines = this.getOption('splitLines', { 'feed': feedName });
         if(!splitLines){

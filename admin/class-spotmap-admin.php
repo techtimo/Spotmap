@@ -74,7 +74,7 @@ class Spotmap_Admin {
 		}
 		// MARKER SHAPE SECTION
 		register_setting( 'spotmap-marker-group', 'spotmap_marker');
-		$point_types = ['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEWMOVEMENT','STOP',];
+		$point_types = ['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEWMOVEMENT','STOP','MEDIA'];
 		add_settings_section(
 			'spotmap-marker-shape-section',
 			__('Marker display options'),
@@ -104,7 +104,7 @@ class Spotmap_Admin {
 			[$this,'settings_section_icons'],
 			'spotmap-marker-group',
 		);
-		error_log(print_r(get_option('spotmap_marker'),TRUE));
+		// error_log(print_r(get_option('spotmap_marker'),TRUE));
 
 		$settings = [];
 		foreach ($point_types as $point_type) {
@@ -166,12 +166,12 @@ class Spotmap_Admin {
 			'linz.govt.nz'=> [
 				"label" => "Land Information New Zealand",
 				"type" => 'text',
-				"description" => __("Kia Ora! Are you planning to have an adventure in New Zealand? Register a free account at <a href=\"https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key\">Land Information New Zealand</a> to get the official NZ Topo Map."), 
+				"description" => "Kia Ora! " . __("Are you planning to have an adventure in New Zealand? Register a free account at <a href=\"https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key\">Land Information New Zealand</a> to get the official NZ Topo Map."), 
 			],
 			'geoservices.ign.fr'=> [
 				"label" => "Géoportail France",
 				"type" => 'text',
-				"description" => __("For adventures in France answer <a href=\"https://www.sphinxonline.com/surveyserver/s/etudesmk/Geoservices_2021/questionnaire.htm\">this survey</a>. (Answer the following: création de clé gratuites -> pour un site Web -> Referer (enter your wordpress url) -> enter personal data -> done) The register process can take several days. You will receive the API key via mail."),
+				"description" => __("Please create create an accoun <a href=\"https://geoservices.ign.fr/user/register\">here</a>. And create a key under 'Mes clés de services web' Once an account is created make sure to secure your key with a referer"),
 			],
 			'osdatahub.os.uk'=> [
 				"label" => "UK Ordnance Survey",
@@ -495,4 +495,62 @@ class Spotmap_Admin {
 		}
 		return $maps;
 	}
+	public function delete_images_from_map($attachment_id) {
+		error_log($attachment_id . "is being deleted");
+		// if($this->db->does_media_exist($attachment_id)){
+			$this->db->delete_media_point($attachment_id);
+		// }
+	}
+
+	// This functions get's called when new media is uploaded and adds it to the spotmap table if GPS info is part of EXIF data
+	public function add_images_to_map($attachment_id) {
+		$guid = get_post_field('guid', $attachment_id);
+		$filepath = get_attached_file($attachment_id);
+		$exif = exif_read_data($filepath, 0, true);
+		// error_log("exif: ".print_r($exif,true));
+		// if media has no GPS/timetaken info skip
+		if (!isset($exif["GPS"])) { return; }
+		if (!isset($exif["EXIF"]['DateTimeOriginal'])) { return; }
+		
+		$latitude = $this->gps($exif["GPS"]["GPSLatitude"], $exif["GPS"]["GPSLatitudeRef"]);
+		$longitude = $this->gps($exif["GPS"]["GPSLongitude"], $exif["GPS"]["GPSLongitudeRef"]);
+		$timestamp = strtotime($exif["EXIF"]['DateTimeOriginal']);
+		$image = get_post_field('guid', $attachment_id);
+
+		$this->db->insert_point([
+			"latitude" => $latitude,
+			"longitude" => $longitude,
+			"unixTime" => $timestamp,
+			"timestamp" => $longitude,
+			"feedName" => "media",
+			"feedId" => "media",
+			"messengerName" => "media",
+			"messageType" => "MEDIA",
+			"modelId" => $attachment_id,
+			"messageContent" => $image
+
+
+		]);
+		// error_log("location: ".$latitude.' '.$longitude);
+		// update_post_meta( $attachment_id, 'Location', ['latitude' => $latitude,'longitude' => $longitude]);
+	}
+	// https://stackoverflow.com/questions/2526304/php-extract-gps-exif-data
+	private function gps($coordinate, $hemisphere) {
+		if (is_string($coordinate)) {
+		  $coordinate = array_map("trim", explode(",", $coordinate));
+		}
+		for ($i = 0; $i < 3; $i++) {
+		  $part = explode('/', $coordinate[$i]);
+		  if (count($part) == 1) {
+			$coordinate[$i] = $part[0];
+		  } else if (count($part) == 2) {
+			$coordinate[$i] = floatval($part[0])/floatval($part[1]);
+		  } else {
+			$coordinate[$i] = 0;
+		  }
+		}
+		list($degrees, $minutes, $seconds) = $coordinate;
+		$sign = ($hemisphere == 'W' || $hemisphere == 'S') ? -1 : 1;
+		return $sign * ($degrees + $minutes/60 + $seconds/3600);
+	  }
 }
