@@ -123,25 +123,33 @@ class Spotmap_Database {
 		if ($point['longitude'] > 180 || $point['longitude']< -180){
 			$point['longitude'] = $last_point->longitude;
 		}
+		$data = [
+			'feed_name' => $point['feedName'],
+			'type' => $point['messageType'],
+			'time' => $point['unixTime'],
+			'latitude' => $point['latitude'],
+			'longitude' => $point['longitude'],
+			'model' => $point['modelId'],
+			'device_name' => $point['messengerName'],
+			'message' => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
+			'custom_message' => !empty( get_option('spotmap_custom_messages')[$point['messageType']] ) ? get_option('spotmap_custom_messages')[$point['messageType']] : NULL,
+			'feed_id' => $point['feedId']
+		];
+		if (array_key_exists('id', $point)){
+			$data['id']= $point['id'];
+		}
+		if (array_key_exists('battery_status', $point)){
+			$data['battery_status']= $point['batteryState'];
+		}
+		if (array_key_exists('altitude', $point)){
+			$data['altitude']= $point['altitude'];
+		}
+		if (array_key_exists('local_timezone', $point)){
+			$data['local_timezone']= $point['local_timezone'];
+		}
 		global $wpdb;
-		$result = $wpdb->insert(
-			$wpdb->prefix."spotmap_points",	[
-				'feed_name' => $point['feedName'],
-				'id' => $point['id'],
-				'type' => $point['messageType'],
-				'time' => $point['unixTime'],
-				'latitude' => $point['latitude'],
-				'longitude' => $point['longitude'],
-				'local_timezone' => NULL,
-				'model' => $point['modelId'],
-				'device_name' => $point['messengerName'],
-				'altitude' => $point['altitude'],
-				'battery_status' => $point['batteryState'],
-				'message' => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
-				'custom_message' => !empty( get_option('spotmap_custom_messages')[$point['messageType']] ) ? get_option('spotmap_custom_messages')[$point['messageType']] : NULL,
-				'feed_id' => $point['feedId']
-			]
-		);
+		$result = $wpdb->insert($wpdb->prefix."spotmap_points",	$data);
+		
 		// schedule event to calc local timezone 
 		wp_schedule_single_event( time(), 'spotmap_get_timezone_hook' );
 		return $result;
@@ -157,7 +165,18 @@ class Spotmap_Database {
 		$result = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE id = {$id}");
 		return $result ? true : false;
 	}
+	
+	function does_media_exist($attachment_id){
+		global $wpdb;
+		$result = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE model = {$attachment_id}");
+		return $result ? true : false;
+	}
+	function delete_media_point($attachment_id){
+		global $wpdb;
+		$result = $wpdb->delete($wpdb->prefix . 'spotmap_points', array('model' => $attachment_id));
 
+		return $result ? true : false;
+	}
 	function rename_feed_name ($old_name,$new_name){
 		global $wpdb;
 		// error_log('reanem feed');

@@ -6,7 +6,7 @@ class Spotmap_Activator {
 		$table_name = $wpdb->prefix."spotmap_points";
 		$charset_collate = $wpdb->get_charset_collate();
 		$sql = "CREATE TABLE {$table_name} (
-		    `id` int(11) unsigned NOT NULL,
+		    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
             `type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
             `time` int(11) unsigned NOT NULL,
             `latitude` float(11,7) NOT NULL,
@@ -25,7 +25,7 @@ class Spotmap_Activator {
             )$charset_collate";
 
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-		dbDelta( $sql );
+		dbDelta( $sql , true);
 
 		//activate cron for every 2.5min to get latest data from feed
 		if ( ! wp_next_scheduled( 'spotmap_api_crawler_hook' ) ) {
@@ -86,6 +86,11 @@ class Spotmap_Activator {
 						'icon' => "stop-circle",
 						'customMessage' => "",
 				],
+				'MEDIA' => [
+						'iconShape' => "marker",
+						'icon' => "camera-retro",
+						'customMessage' => "",
+				],
 			],
 			"spotmap_default_values" => [
 				'maps' => "openstreetmap,opentopomap",
@@ -96,7 +101,7 @@ class Spotmap_Activator {
 				'splitlines' => '12',
 			]
 		];
-		
+		// error_log(print_r(array_diff(get_option("spotmap_marker"),$defaults["spotmap_marker"]),true));
 		foreach ($defaults as $option_name => $value) {
 			if(!get_option($option_name)){
 				add_option($option_name, $defaults[$option_name]);
