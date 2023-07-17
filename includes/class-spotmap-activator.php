@@ -2,6 +2,10 @@
 
 class Spotmap_Activator {
 	public static function activate() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-spotmap-admin.php';
+		$db = new Spotmap_Database();
+		$admin = new Spotmap_Admin();
 		global $wpdb;
 		$table_name = $wpdb->prefix."spotmap_points";
 		$charset_collate = $wpdb->get_charset_collate();
@@ -114,6 +118,24 @@ class Spotmap_Activator {
 			}
 		}
 		
+		$args = array(
+			'post_type' => 'attachment',
+			'post_mime_type' => 'image',
+			'posts_per_page' => -1
+		);
+		
+		$attachments = get_posts($args);
 
+		if ($attachments) {
+			foreach ($attachments as $attachment) {
+				// Get attachment details
+				$attachment_id = $attachment->ID;
+				error_log($attachment_id);
+				if ($db->does_media_exist($attachment_id)) {
+					continue;
+				}
+				$admin->add_images_to_map($attachment_id);
+			}
+		} 
 	}
 }
