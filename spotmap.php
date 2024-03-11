@@ -33,6 +33,14 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-spotmap.php';
 
 function run_spotmap() {
 	$plugin = new Spotmap();
+	
 	$plugin->run();
 }
+// add_action( 'init', 'register_project_name_testimonial_block' );
 run_spotmap();
+
+
+// function register_project_name_testimonial_block() {
+// 	$tmp =  plugin_dir_url( __FILE__ ) . 'build/spotmap';
+//     register_block_type( $tm);
+// }

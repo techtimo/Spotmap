@@ -1,0 +1,32 @@
+{
+	"name": "spotmap",
+	"version": "1.0.0",
+	"license": "GPL-2.0-or-later",
+	"description": "Spotmap Block will render a map in your post/page",
+	"author": "Timo Giese",
+	"main": "build/index.js",
+	"scripts": {
+		"build": "wp-scripts build --webpack-copy-php",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"start": "wp-scripts start --webpack-copy-php",
+		"composer": "wp-env run cli --env-cwd=wp-content/plugins/gutenberg composer",
+		"wp-env-start": "wp-env start --xdebug",
+		"api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now"
+	},
+	"devDependencies": {
+		"@types/leaflet": "^1.9.8",
+		"@types/react": "^18.2.62",
+		"@wordpress/prettier-config": "^3.10.0",
+		"@wordpress/scripts": "^27.3.0"
+	},
+	"dependencies": {
+		"@wordpress/components": "^27.0.0",
+		"leaflet": "^1.9.4",
+		"react-leaflet": "^4.2.1"
+	},
+	"prettier": "@wordpress/prettier-config"
+}
