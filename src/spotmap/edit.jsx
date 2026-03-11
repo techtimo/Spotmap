@@ -68,6 +68,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			'leaflet-easy-button/easy-button.css',
 			'leaflet-beautify-marker/leaflet-beautify-marker-icon.css',
 			'css/custom.css',
+			'../includes/css/font-awesome-all.min.css',
 		];
 		const links = cssFiles
 			.filter(
@@ -88,6 +89,8 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	// On first insert, populate feeds from server defaults
 	useEffect( () => {
+		// On first insert, populate feeds from server defaults and wait
+		// for the re-render with the populated attributes before init.
 		if (
 			attributes.feeds.length === 0 &&
 			window.spotmapjsobj?.feeds
@@ -120,6 +123,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			mapId,
 			mapElement: container,
 			height: attributes.height,
+			enablePanning: false,
 		};
 
 		// Clean up previous map instance
