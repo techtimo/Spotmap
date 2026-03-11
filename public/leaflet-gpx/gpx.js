@@ -36,7 +36,7 @@
  * rendered on the Leaflet map.
  */
 
-var L = L || require('leaflet');
+'use strict';
 
 var _MAX_POINT_INTERVAL_MS = 15000;
 var _SECOND_IN_MILLIS = 1000;
@@ -45,29 +45,36 @@ var _HOUR_IN_MILLIS = 60 * _MINUTE_IN_MILLIS;
 var _DAY_IN_MILLIS = 24 * _HOUR_IN_MILLIS;
 
 var _GPX_STYLE_NS = 'http://www.topografix.com/GPX/gpx_style/0/2';
+var _DEFAULT_ICON = new L.Icon.Default;
+
+var _DEFAULT_MARKERS = {
+  startIcon: _DEFAULT_ICON,
+  endIcon: _DEFAULT_ICON,
+
+  // Based on 'sym' waypoint key
+  wptIcons: {
+    '': _DEFAULT_ICON,
+  },
+
+  // Based on 'type' waypoint key
+  wptTypeIcons: {
+    '': _DEFAULT_ICON
+  },
+
+  // Based on a regex over the waypoint's name
+  pointMatchers: [],
+};
 
 var _DEFAULT_MARKER_OPTS = {
-  startIconUrl: 'pin-icon-start.png',
-  endIconUrl: 'pin-icon-end.png',
-  shadowUrl: 'pin-shadow.png',
-  wptIcons: [],
-  wptIconsType: [],
-  wptIconUrls : {
-    '': 'pin-icon-wpt.png',
-  },
-  wptIconTypeUrls : {
-    '': 'pin-icon-wpt.png',
-  },
-  pointMatchers: [],
-  iconSize: [33, 50],
-  shadowSize: [50, 50],
+  iconSize: [33, 45],
   iconAnchor: [16, 45],
-  shadowAnchor: [16, 47],
   clickable: false
 };
+
 var _DEFAULT_POLYLINE_OPTS = {
   color: 'blue'
 };
+
 var _DEFAULT_GPX_OPTS = {
   parseElements: ['track', 'route', 'waypoint'],
   joinTrackSegments: true
@@ -76,10 +83,13 @@ var _DEFAULT_GPX_OPTS = {
 L.GPX = L.FeatureGroup.extend({
   initialize: function(gpx, options) {
     options.max_point_interval = options.max_point_interval || _MAX_POINT_INTERVAL_MS;
+    options.markers = this._merge_objs(
+      _DEFAULT_MARKERS,
+      options.markers || {});
     options.marker_options = this._merge_objs(
       _DEFAULT_MARKER_OPTS,
       options.marker_options || {});
-    options.polyline_options = options.polyline_options || {};
+    options.polyline_options = options.polyline_options || [];
     options.gpx_options = this._merge_objs(
       _DEFAULT_GPX_OPTS,
       options.gpx_options || {});
@@ -91,6 +101,7 @@ L.GPX = L.FeatureGroup.extend({
 
     this._gpx = gpx;
     this._layers = {};
+    this._prepare_markers(options.markers);
     this._init_info();
 
     if (gpx) {
@@ -131,12 +142,19 @@ L.GPX = L.FeatureGroup.extend({
     var s = this.get_duration_string(duration, hidems);
     return s.replace("'",':').replace('"','');
   },
-
+  _toFixed_helper: function(v, unit = 0) {
+    if (typeof(v) == 'number'){
+      return v.toFixed(unit);
+    }
+    return "?";
+  },
   // Public methods
   to_miles:            function(v) { return v / 1.60934; },
   to_ft:               function(v) { return v * 3.28084; },
   m_to_km:             function(v) { return v / 1000; },
   m_to_mi:             function(v) { return v / 1609.34; },
+  ms_to_kmh:           function(v) { return v * 3.6; },
+  ms_to_mih:           function(v) { return v / 1609.34 * 3600; },
 
   get_name:            function() { return this._info.name; },
   get_desc:            function() { return this._info.desc; },
@@ -167,20 +185,37 @@ L.GPX = L.FeatureGroup.extend({
     var _this = this;
     return this._info.elevation._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_km, null,
-        function(a, b) { return a.toFixed(2) + ' km, ' + b.toFixed(0) + ' m'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' km, ' + _this._toFixed_helper(b, 0) + ' m'; });
       });
   },
   get_elevation_data_imp: function() {
     var _this = this;
     return this._info.elevation._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_mi, _this.to_ft,
-        function(a, b) { return a.toFixed(2) + ' mi, ' + b.toFixed(0) + ' ft'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' mi, ' + _this._toFixed_helper(b, 0) + ' ft'; });
       });
   },
   get_elevation_max:      function() { return this._info.elevation.max; },
   get_elevation_min:      function() { return this._info.elevation.min; },
   get_elevation_max_imp:  function() { return this.to_ft(this.get_elevation_max()); },
   get_elevation_min_imp:  function() { return this.to_ft(this.get_elevation_min()); },
+
+  get_speed_data:         function() {
+    var _this = this;
+    return this._info.speed._points.map(
+      function(p) { return _this._prepare_data_point(p, _this.m_to_km, _this.ms_to_kmh,
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' km, ' + _this._toFixed_helper(b, 2) + ' km/h'; });
+      });
+  },
+  get_speed_data_imp: function() {
+    var _this = this;
+    return this._info.speed._points.map(
+      function(p) { return _this._prepare_data_point(p, _this.m_to_mi, _this.ms_to_mih,
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' mi, ' + _this._toFixed_helper(b, 2) + ' mi/h'; });
+      });
+  },
+  get_speed_max:          function() { return this.m_to_km(this._info.speed.max) * 3600; },
+  get_speed_max_imp:      function() { return this.to_miles(this.get_speed_max()); },
 
   get_average_hr:         function() { return this._info.hr.avg; },
   get_average_temp:         function() { return this._info.atemp.avg; },
@@ -189,42 +224,42 @@ L.GPX = L.FeatureGroup.extend({
     var _this = this;
     return this._info.hr._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_km, null,
-        function(a, b) { return a.toFixed(2) + ' km, ' + b.toFixed(0) + ' bpm'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' km, ' + _this._toFixed_helper(b, 0) + ' bpm'; });
       });
   },
   get_heartrate_data_imp: function() {
     var _this = this;
     return this._info.hr._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_mi, null,
-        function(a, b) { return a.toFixed(2) + ' mi, ' + b.toFixed(0) + ' bpm'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' mi, ' + _this._toFixed_helper(b, 0) + ' bpm'; });
       });
   },
   get_cadence_data:     function() {
     var _this = this;
     return this._info.cad._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_km, null,
-        function(a, b) { return a.toFixed(2) + ' km, ' + b.toFixed(0) + ' rpm'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' km, ' + _this._toFixed_helper(b, 0) + ' rpm'; });
       });
   },
   get_temp_data:     function() {
     var _this = this;
     return this._info.atemp._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_km, null,
-        function(a, b) { return a.toFixed(2) + ' km, ' + b.toFixed(0) + ' degrees'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' km, ' + _this._toFixed_helper(b, 0) + ' degrees'; });
       });
   },
   get_cadence_data_imp:     function() {
     var _this = this;
     return this._info.cad._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_mi, null,
-        function(a, b) { return a.toFixed(2) + ' mi, ' + b.toFixed(0) + ' rpm'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' mi, ' + _this._toFixed_helper(b, 0) + ' rpm'; });
       });
   },
   get_temp_data_imp:     function() {
     var _this = this;
     return this._info.atemp._points.map(
       function(p) { return _this._prepare_data_point(p, _this.m_to_mi, null,
-        function(a, b) { return a.toFixed(2) + ' mi, ' + b.toFixed(0) + ' degrees'; });
+        function(a, b) { return _this._toFixed_helper(a, 2) + ' mi, ' + _this._toFixed_helper(b, 0) + ' degrees'; });
       });
   },
 
@@ -248,11 +283,37 @@ L.GPX = L.FeatureGroup.extend({
     return r;
   },
 
+  _prepare_markers: function(markers) {
+    function iconize(url) {
+      return new L.GPXTrackIcon({iconUrl: url});
+    }
+
+    Object.entries(markers).forEach(([key, value]) => {
+      if (key === 'wptIcons' || key === 'wptTypeIcons') {
+        markers[key] = this._prepare_markers(value);
+      } else if (key === 'pointMatchers') {
+        markers[key] = value.map(e => {
+          if (typeof(e.icon) === 'string') {
+            e.icon = iconize(e.icon);
+          }
+          return e;
+        });
+      } else if (typeof(value) === 'string') {
+        markers[key] = iconize(value);
+      } else if (typeof(value) === 'object' && value !== null) {
+        markers[key] = value;
+      }
+    });
+
+    return markers;
+  },
+
   _init_info: function() {
     this._info = {
       name: null,
       length: 0.0,
       elevation: {gain: 0.0, loss: 0.0, max: 0.0, min: Infinity, _points: []},
+      speed : {max: 0.0, _points: []},
       hr: {avg: 0, _total: 0, _points: []},
       duration: {start: null, end: null, moving: 0, total: 0},
       atemp: {avg: 0, _total: 0, _points: []},
@@ -264,14 +325,18 @@ L.GPX = L.FeatureGroup.extend({
     if (async == undefined) async = this.options.async;
     if (options == undefined) options = this.options;
 
+    var _this = this;
     var req = new window.XMLHttpRequest();
     req.open('GET', url, async);
     try {
       req.overrideMimeType('text/xml'); // unsupported by IE
     } catch(e) {}
-    req.onreadystatechange = function() {
-      if (req.readyState != 4) return;
-      if(req.status == 200) cb(req.responseXML, options);
+    req.onloadend = function() {
+      if (req.status == 200) {
+        cb(req.responseXML, options);
+      } else {
+        _this.fire('error', { err: 'Error fetching resource: ' + url });
+      }
     };
     req.send(null);
   },
@@ -326,7 +391,10 @@ L.GPX = L.FeatureGroup.extend({
       // routes are <rtept> tags inside <rte> sections
       var routes = xml.getElementsByTagName('rte');
       for (i = 0; i < routes.length; i++) {
-        layers = layers.concat(this._parse_segment(routes[i], options, {}, 'rtept'));
+        var route = routes[i];
+        var base_style = this._extract_styling(route);
+        var polyline_options = this._get_polyline_options(options.polyline_options, i);
+        layers = layers.concat(this._parse_segment(routes[i], options, base_style, polyline_options, 'rtept'));
       }
     }
 
@@ -335,14 +403,15 @@ L.GPX = L.FeatureGroup.extend({
       var tracks = xml.getElementsByTagName('trk');
       for (i = 0; i < tracks.length; i++) {
         var track = tracks[i];
-        var polyline_options = this._extract_styling(track);
+        var base_style = this._extract_styling(track);
+        var polyline_options = this._get_polyline_options(options.polyline_options, i);
 
         if (options.gpx_options.joinTrackSegments) {
-          layers = layers.concat(this._parse_segment(track, options, polyline_options, 'trkpt'));
+          layers = layers.concat(this._parse_segment(track, options, base_style, polyline_options, 'trkpt'));
         } else {
           var segments = track.getElementsByTagName('trkseg');
           for (j = 0; j < segments.length; j++) {
-            layers = layers.concat(this._parse_segment(segments[j], options, polyline_options, 'trkpt'));
+            layers = layers.concat(this._parse_segment(segments[j], options, base_style, polyline_options, 'trkpt'));
           }
         }
       }
@@ -361,57 +430,51 @@ L.GPX = L.FeatureGroup.extend({
             el[i].getAttribute('lon'));
 
         var nameEl = el[i].getElementsByTagName('name');
-        var name = '';
-        if (nameEl.length > 0) {
-          name = nameEl[0].textContent;
-        }
+        var name = nameEl.length > 0 ? nameEl[0].textContent : '';
 
         var descEl = el[i].getElementsByTagName('desc');
-        var desc = '';
-        if (descEl.length > 0) {
-          desc = descEl[0].textContent;
-        }
+        var desc = descEl.length > 0 ? descEl[0].textContent : '';
 
         var symEl = el[i].getElementsByTagName('sym');
-        var symKey = '';
-        if (symEl.length > 0) {
-          symKey = symEl[0].textContent;
-        }
-		
+        var symKey = symEl.length > 0 ? symEl[0].textContent : null;
+
         var typeEl = el[i].getElementsByTagName('type');
-        var typeKey = '';
-        if (typeEl.length > 0) {
-          typeKey = typeEl[0].textContent;
-        }
-		
+        var typeKey = typeEl.length > 0 ? typeEl[0].textContent : null;
+
         /*
          * Add waypoint marker based on the waypoint symbol key.
          *
          * First look for a configured icon for that symKey. If not found, look
          * for a configured icon URL for that symKey and build an icon from it.
+         * If none of those match, look through the point matchers for a match
+         * on the waypoint's name.
+         *
          * Otherwise, fall back to the default icon if one was configured, or
-         * finally to the default icon URL.
+         * finally to the default icon URL, if one was configured.
          */
-        var wptIcons = options.marker_options.wptIcons;
-        var wptIconUrls = options.marker_options.wptIconUrls;
-        var wptIconsType = options.marker_options.wptIconsType;
-        var wptIconTypeUrls = options.marker_options.wptIconTypeUrls;
+        var wptIcons = options.markers.wptIcons;
+        var wptTypeIcons = options.markers.wptTypeIcons;
+        var ptMatchers = options.markers.pointMatchers || [];
         var symIcon;
-        if (wptIcons && wptIcons[symKey]) {
+        if (wptIcons && symKey && wptIcons[symKey]) {
           symIcon = wptIcons[symKey];
-        } else if (wptIconsType && wptIconsType[typeKey]){
-          symIcon = wptIconsType[typeKey];
-        } else if (wptIconUrls && wptIconUrls[symKey]){
-          symIcon = new L.GPXTrackIcon({iconUrl: wptIconUrls[symKey]});
-        } else if (wptIconTypeUrls && wptIconTypeUrls[typeKey]){
-          symIcon = new L.GPXTrackIcon({iconUrl: wptIconTypeUrls[typeKey]});	
+        } else if (wptTypeIcons && typeKey && wptTypeIcons[typeKey]) {
+          symIcon = wptTypeIcons[typeKey];
+        } else if (ptMatchers.length > 0) {
+          for (var j = 0; j < ptMatchers.length; j++) {
+            if (ptMatchers[j].regex.test(name)) {
+              symIcon = ptMatchers[j].icon;
+              break;
+            }
+          }
         } else if (wptIcons && wptIcons['']) {
           symIcon = wptIcons[''];
-        } else if (wptIconUrls && wptIconUrls['']) {
-          symIcon = new L.GPXTrackIcon({iconUrl: wptIconUrls['']});
-        } else {
-          console.log('No icon or icon URL configured for symbol type "' + symKey
-            + '", and no fallback configured; ignoring waypoint.');
+        }
+
+        if (!symIcon) {
+          console.log(
+            'No waypoint icon could be matched for symKey=%s,typeKey=%s,name=%s on waypoint %o',
+            symKey, typeKey, name, el[i]);
           continue;
         }
 
@@ -434,7 +497,7 @@ L.GPX = L.FeatureGroup.extend({
     }
   },
 
-  _parse_segment: function(line, options, polyline_options, tag) {
+  _parse_segment: function(line, options, base_style, polyline_options, tag) {
     var el = line.getElementsByTagName(tag);
     if (!el.length) return [];
 
@@ -447,7 +510,7 @@ L.GPX = L.FeatureGroup.extend({
       var _, ll = new L.LatLng(
         el[i].getAttribute('lat'),
         el[i].getAttribute('lon'));
-      ll.meta = { time: null, ele: null, hr: null, cad: null, atemp: null };
+      ll.meta = { time: null, ele: null, hr: null, cad: null, atemp: null, speed: null };
 
       _ = el[i].getElementsByTagName('time');
       if (_.length > 0) {
@@ -455,16 +518,31 @@ L.GPX = L.FeatureGroup.extend({
       } else {
         ll.meta.time = new Date('1970-01-01T00:00:00');
       }
+      var time_diff = last != null ? Math.abs(ll.meta.time - last.meta.time) : 0;
 
       _ = el[i].getElementsByTagName('ele');
       if (_.length > 0) {
         ll.meta.ele = parseFloat(_[0].textContent);
+      } else {
+        // If the point doesn't have an <ele> tag, assume it has the same
+        // elevation as the point before it (if it had one).
+        ll.meta.ele = last != null ? last.meta.ele : null;
+      }
+      var ele_diff = last != null ? ll.meta.ele - last.meta.ele : 0;
+      var dist_3d = last != null ? this._dist3d(last, ll) : 0;
+
+      _ = el[i].getElementsByTagName('speed');
+      if (_.length > 0) {
+        ll.meta.speed = parseFloat(_[0].textContent);
+      } else {
+        // speed in meter per second
+        ll.meta.speed = time_diff > 0 ? 1000.0 * dist_3d / time_diff : 0;
       }
 
       _ = el[i].getElementsByTagName('name');
       if (_.length > 0) {
         var name = _[0].textContent;
-        var ptMatchers = options.marker_options.pointMatchers || [];
+        var ptMatchers = options.markers.pointMatchers || [];
 
         for (var j = 0; j < ptMatchers.length; j++) {
           if (ptMatchers[j].regex.test(name)) {
@@ -473,6 +551,8 @@ L.GPX = L.FeatureGroup.extend({
           }
         }
       }
+
+      this._info.length += dist_3d;
 
       _ = el[i].getElementsByTagNameNS('*', 'hr');
       if (_.length > 0) {
@@ -498,31 +578,29 @@ L.GPX = L.FeatureGroup.extend({
       if (ll.meta.ele > this._info.elevation.max) {
         this._info.elevation.max = ll.meta.ele;
       }
-
       if (ll.meta.ele < this._info.elevation.min) {
         this._info.elevation.min = ll.meta.ele;
       }
-
       this._info.elevation._points.push([this._info.length, ll.meta.ele]);
-      this._info.duration.end = ll.meta.time;
 
-      if (last != null) {
-        this._info.length += this._dist3d(last, ll);
+      if (ll.meta.speed > this._info.speed.max) {
+        this._info.speed.max = ll.meta.speed;
+      }
+      this._info.speed._points.push([this._info.length, ll.meta.speed]);
 
-        var t = ll.meta.ele - last.meta.ele;
-        if (t > 0) {
-          this._info.elevation.gain += t;
-        } else {
-          this._info.elevation.loss += Math.abs(t);
-        }
-
-        t = Math.abs(ll.meta.time - last.meta.time);
-        this._info.duration.total += t;
-        if (t < options.max_point_interval) {
-          this._info.duration.moving += t;
-        }
-      } else if (this._info.duration.start == null) {
+      if ((last == null) && (this._info.duration.start == null)) {
         this._info.duration.start = ll.meta.time;
+      }
+      this._info.duration.end = ll.meta.time;
+      this._info.duration.total += time_diff;
+      if (time_diff < options.max_point_interval) {
+        this._info.duration.moving += time_diff;
+      }
+
+      if (ele_diff > 0) {
+        this._info.elevation.gain += ele_diff;
+      } else {
+        this._info.elevation.loss += Math.abs(ele_diff);
       }
 
       last = ll;
@@ -530,27 +608,27 @@ L.GPX = L.FeatureGroup.extend({
     }
 
     // add track
-    var l = new L.Polyline(coords, this._extract_styling(line, polyline_options, options.polyline_options));
+    var l = new L.Polyline(coords, this._extract_styling(line, base_style, polyline_options));
     this.fire('addline', { line: l, element: line });
     layers.push(l);
 
-    if (options.marker_options.startIcon || options.marker_options.startIconUrl) {
+    if (options.markers.startIcon) {
       // add start pin
       var marker = new L.Marker(coords[0], {
         clickable: options.marker_options.clickable,
-        icon: options.marker_options.startIcon || new L.GPXTrackIcon({iconUrl: options.marker_options.startIconUrl})
+        icon: options.markers.startIcon,
       });
-      this.fire('addpoint', { point: marker, point_type: 'start', element: el[0] });
+      this.fire('addpoint', { point: marker, point_type: 'start', element: el[0], line: line });
       layers.push(marker);
     }
 
-    if (options.marker_options.endIcon || options.marker_options.endIconUrl) {
+    if (options.markers.endIcon) {
       // add end pin
       var marker = new L.Marker(coords[coords.length-1], {
         clickable: options.marker_options.clickable,
-        icon: options.marker_options.endIcon || new L.GPXTrackIcon({iconUrl: options.marker_options.endIconUrl})
+        icon: options.markers.endIcon,
       });
-      this.fire('addpoint', { point: marker, point_type: 'end', element: el[el.length-1] });
+      this.fire('addpoint', { point: marker, point_type: 'end', element: el[el.length-1], line: line });
       layers.push(marker);
     }
 
@@ -568,6 +646,17 @@ L.GPX = L.FeatureGroup.extend({
     return layers;
   },
 
+  _get_polyline_options: function(polyline_options, i) {
+    /*
+     * Handle backwards compatibility with polyline_options being provided as a single object.
+     * In this situation, the provided style is expected to apply to all routes and tracks in the file.
+     */
+    if (! Array.isArray(polyline_options)) {
+      return polyline_options;
+    }
+    return polyline_options[i] || {};
+  },
+
   _extract_styling: function(el, base, overrides) {
     var style = this._merge_objs(_DEFAULT_POLYLINE_OPTS, base);
     var e = el.getElementsByTagNameNS(_GPX_STYLE_NS, 'line');
@@ -580,6 +669,12 @@ L.GPX = L.FeatureGroup.extend({
       if (_.length > 0) style.weight = _[0].textContent;
       var _ = e[0].getElementsByTagName('linecap');
       if (_.length > 0) style.lineCap = _[0].textContent;
+      var _ = e[0].getElementsByTagName('linejoin');
+      if (_.length > 0) style.lineJoin = _[0].textContent;
+      var _ = e[0].getElementsByTagName('dasharray');
+      if (_.length > 0) style.dashArray = _[0].textContent;
+      var _ = e[0].getElementsByTagName('dashoffset');
+      if (_.length > 0) style.dashOffset = _[0].textContent;
     }
     return this._merge_objs(style, overrides)
   },
@@ -609,9 +704,3 @@ L.GPX = L.FeatureGroup.extend({
     return deg * Math.PI / 180;
   }
 });
-
-if (typeof module === 'object' && typeof module.exports === 'object') {
-  module.exports = L;
-} else if (typeof define === 'function' && define.amd) {
-  define(L);
-}

@@ -4,12 +4,14 @@
   "description": "[![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)",
   "main": "index.js",
   "scripts": {
-    "build": "wp-scripts build --webpack-src-dir=src",
+    "copy-deps": "node scripts/copy-deps.js",
+    "build": "npm run copy-deps && wp-scripts build --webpack-src-dir=src",
     "start": "wp-scripts start --webpack-src-dir=src",
     "wp-env": "wp-env",
-    "env:start": "wp-env start --xdebug=debug",
+    "env:start": "wp-env start --debug --xdebug=debug",
     "env:stop": "wp-env stop",
-    "env:destroy": "wp-env destroy"
+    "env:destroy": "wp-env destroy",
+    "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now"
   },
   "repository": {
     "type": "git",
@@ -25,5 +27,14 @@
   "devDependencies": {
     "@wordpress/env": "^10.39.0",
     "@wordpress/scripts": "^31.6.0"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.3",
+    "leaflet": "^1.9.4",
+    "leaflet-easybutton": "^2.4.0",
+    "leaflet-gpx": "^2.2.0",
+    "leaflet-textpath": "^1.3.0",
+    "leaflet-tilelayer-swiss": "^2.2.1",
+    "leaflet.fullscreen": "^5.3.0"
   }
 }

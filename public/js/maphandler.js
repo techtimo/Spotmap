@@ -42,14 +42,15 @@ class Spotmap {
         }
 
         var mapOptions = {
-            fullscreenControl: true,
             scrollWheelZoom: false,
             attributionControl: false,
+            dragging: this.options.enablePanning ?? true,
         };
         this.map = L.map(el, mapOptions);
+        new L.Control.FullScreen().addTo(this.map);
         L.control.scale().addTo(this.map);
         // use no prefix in attribution
-        L.control.attribution({prefix: ''}).addTo(this.map);
+        // L.control.attribution({prefix: ''}).addTo(this.map);
         // enable scrolling with mouse once the map was focused
         this.map.once('focus', function () { self.map.scrollWheelZoom.enable(); });
 
@@ -71,6 +72,8 @@ class Spotmap {
         }
         self.layerControl.addTo(self.map);
         this.getPoints(function (response) {
+            // Bail out if the map was destroyed (e.g. React effect re-ran)
+            if (!self.map || !self.map._container) return;
             // console.log(response);
             // this is the case if explicitly no feeds were provided
             if(!response.empty){
@@ -284,6 +287,8 @@ class Spotmap {
     getPoints(callback, options) {
         var self = this;
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response) {
+            // Bail out if the map was destroyed before the response arrived
+            if (!self.map || !self.map._container) return;
             let feeds = true;
             if(self.options.feeds && self.options.feeds.length == 0){
                 feeds = false
@@ -547,11 +552,11 @@ class Spotmap {
         this.layers.feeds[feedName].points.push(point);
         this.layers.feeds[feedName].markers.push(marker);
         this.layers.feeds[feedName].featureGroup.addLayer(marker)
-        jQuery("#spotmap_" + point.id).click(function () {
+        jQuery("#spotmap_" + point.id).on('click', function () {
             marker.togglePopup();
             self.map.panTo(coordinates)
         });
-        jQuery("#spotmap_" + point.id).dblclick(function () {
+        jQuery("#spotmap_" + point.id).on('dblclick', function () {
             marker.togglePopup();
             self.map.setView(coordinates, 14)
         });
@@ -603,6 +608,13 @@ class Spotmap {
         }
         return L.BeautifyIcon.icon(iconOptions)
     }
+    /**
+     * Adds the given point to a line according to the feedname and the splitLines option. 
+     * If there is no line for the feed, it creates a new one. 
+     * If the difference between the given point and the last point of the line is bigger than the splitLines option, it creates a new line.
+     * @param {*} point 
+     * @returns boolean - returns false if the point is not added to a line, true if the point is added to a line
+     */
     addPointToLine(point){
         let feedName = point.feed_name;
         if (feedName == 'media')
@@ -623,6 +635,7 @@ class Spotmap {
             lastPoint = this.layers.feeds[feedName].points[ numberOfPointsAddedToMap - 2 ];
         }
         let length = this.layers.feeds[feedName].lines.length;
+        // if there is a last point and the difference between the given point and the last point is bigger than the splitLines option, start a new line
         if(lastPoint && point.unixtime - lastPoint.unixtime >= splitLines * 60 * 60){
             // start new line and add to map
             let line = this.addNewLine(feedName);
@@ -643,7 +656,7 @@ class Spotmap {
     addNewLine(feedName){
         let color = this.getOption('color', { 'feed': feedName });
         let line = L.polyline([],{ color: color });
-        
+        // add arrows to line ►
         line.setText('  \u25BA  ', {
             repeat: true,
             offset: 2, 
