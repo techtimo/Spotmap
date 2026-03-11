@@ -75,14 +75,14 @@ cd spotmap
 # 2. Install Node.js dependencies
 npm install
 
-# 3. Start the local WordPress environment (runs on http://localhost:4013)
-npm run wp-env-start
+# 3. Start the local WordPress environment (runs on http://localhost:8888)
+npm run env:start
 
 # 4. Start the JavaScript build watcher (hot-reload on file changes)
 npm start
 ```
 
-WordPress admin is available at **http://localhost:4013/wp-admin** with the default credentials `admin` / `password`.
+WordPress admin is available at **http://localhost:8888/wp-admin** with the default credentials `admin` / `password`.
 
 The plugin is automatically mounted and activated in the local environment via `.wp-env.json`.
 
@@ -90,7 +90,7 @@ The plugin is automatically mounted and activated in the local environment via `
 
 | Command | Description |
 |---|---|
-| `npm run wp-env-start` | Start the local WordPress environment (with XDebug) |
+| `npm run env:start` | Start the local WordPress environment (with XDebug) |
 | `npm start` | Start the JS/CSS build watcher for development |
 | `npm run build` | Create a production build |
 | `npm run lint:js` | Lint JavaScript files |
