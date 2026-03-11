@@ -11,7 +11,12 @@
     "env:start": "wp-env start --debug --xdebug=debug",
     "env:stop": "wp-env stop",
     "env:destroy": "wp-env destroy",
-    "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now"
+    "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now",
+    "format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip"
   },
   "repository": {
     "type": "git",
