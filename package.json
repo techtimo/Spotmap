@@ -1,0 +1,29 @@
+{
+  "name": "spotmap",
+  "version": "1.0.0",
+  "description": "[![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)",
+  "main": "index.js",
+  "scripts": {
+    "build": "wp-scripts build --webpack-src-dir=src",
+    "start": "wp-scripts start --webpack-src-dir=src",
+    "wp-env": "wp-env",
+    "env:start": "wp-env start --xdebug=debug",
+    "env:stop": "wp-env stop",
+    "env:destroy": "wp-env destroy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techtimo/Spotmap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/techtimo/Spotmap/issues"
+  },
+  "homepage": "https://github.com/techtimo/Spotmap#readme",
+  "devDependencies": {
+    "@wordpress/env": "^10.39.0",
+    "@wordpress/scripts": "^31.6.0"
+  }
+}

@@ -19,18 +19,23 @@ class Spotmap {
         return this.layers.feeds.hasOwnProperty(feedName)
     }
     initMap() {
-        jQuery('#' + this.options.mapId).height(this.options.height);
+        // Support passing a DOM element directly (needed for iframe-based block editor)
+        var el = this.options.mapElement || document.getElementById(this.options.mapId);
+        if (!el) {
+            throw new Error('Map container not found.');
+        }
+        var $el = jQuery(el);
+        $el.height(this.options.height);
         var self = this;
 
-        let oldOptions = jQuery('#' + this.options.mapId).data('options');
-        jQuery('#' + this.options.mapId).data('options', this.options);
-        var container = L.DomUtil.get(this.options.mapId);
-        if (container != null) {
+        let oldOptions = $el.data('options');
+        $el.data('options', this.options);
+        if (el._leaflet_id) {
             if (!lodash.isEqual(this.options, oldOptions)) {
                 // https://github.com/Leaflet/Leaflet/issues/3962
-                container._leaflet_id = null;
-                jQuery('#' + this.options.mapId + " > .leaflet-control-container").empty();
-                jQuery('#' + this.options.mapId + " > .leaflet-pane").empty();
+                el._leaflet_id = null;
+                $el.children('.leaflet-control-container').empty();
+                $el.children('.leaflet-pane').empty();
             } else {
                 return 0;
             }
@@ -41,7 +46,7 @@ class Spotmap {
             scrollWheelZoom: false,
             attributionControl: false,
         };
-        this.map = L.map(this.options.mapId, mapOptions);
+        this.map = L.map(el, mapOptions);
         L.control.scale().addTo(this.map);
         // use no prefix in attribution
         L.control.attribution({prefix: ''}).addTo(this.map);
@@ -708,6 +713,7 @@ class Spotmap {
             bounds.extend(feedBounds);
             return bounds;
         }
-        
+
     }
 }
+window.Spotmap = Spotmap;

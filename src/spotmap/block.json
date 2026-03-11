@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "spotmap/spotmap",
+	"title": "Spotmap",
+	"category": "embed",
+	"icon": "location-alt",
+	"description": "Display a Leaflet map with GPS tracking points from your SPOT device.",
+	"keywords": [ "map", "gps", "spot", "gpx", "tracking" ],
+	"supports": {
+		"align": [ "wide", "full" ],
+		"html": false
+	},
+	"attributes": {
+		"maps": {
+			"type": "array",
+			"default": [ "opentopomap", "openstreetmap" ]
+		},
+		"feeds": {
+			"type": "array",
+			"default": []
+		},
+		"styles": {
+			"type": "object",
+			"default": {}
+		},
+		"height": {
+			"type": "number",
+			"default": 500
+		},
+		"mapcenter": {
+			"type": "string",
+			"default": "all"
+		},
+		"filterPoints": {
+			"type": "number",
+			"default": 10
+		},
+		"lastPoint": {
+			"type": "boolean",
+			"default": false
+		},
+		"autoReload": {
+			"type": "boolean",
+			"default": false
+		},
+		"debug": {
+			"type": "boolean",
+			"default": false
+		},
+		"dateRange": {
+			"type": "object",
+			"default": { "from": "", "to": "" }
+		},
+		"gpx": {
+			"type": "array",
+			"default": []
+		},
+		"mapOverlays": {
+			"type": "array",
+			"default": []
+		}
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:../../public/render-block.php"
+}

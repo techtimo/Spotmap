@@ -1,7 +1,8 @@
 <?php
 class Spotmap_Public{
-	
+
 	public $db;
+	public $admin;
 
 	function __construct() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
@@ -19,15 +20,15 @@ class Spotmap_Public{
 		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
     }
 
+	public function register_block(){
+		$block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap';
+		register_block_type( $block_path );
+	}
+
 	public function enqueue_block_editor_assets(){
 		$this->enqueue_scripts();
 		$this->enqueue_styles();
-		wp_enqueue_script( 'spotmap-block', plugins_url('js/block.js', __FILE__),['wp-blocks','wp-element','wp-block-editor','wp-components','wp-compose',]);
-		$this->localize_js_script('spotmap-block');
-		register_block_type( 'spotmap/spotmap', array(
-			'editor_script' => 'spotmap-block',
-			'render_callback' => [$this, 'show_spotmap_block'],
-		) );
+		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
 	}
 
 	public function enqueue_scripts(){
