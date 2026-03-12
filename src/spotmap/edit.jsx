@@ -210,6 +210,8 @@ export default function Edit( { attributes, setAttributes } ) {
 				{ /* General Settings */ }
 				<PanelBody title={ __( 'General Settings' ) } initialOpen>
 					<FormTokenField
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Feeds' ) }
 						suggestions={ availableFeeds }
 						value={ attributes.feeds }
@@ -218,6 +220,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<FormTokenField
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Maps' ) }
 						suggestions={ availableMaps }
 						value={ attributes.maps }
@@ -227,6 +231,8 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 					{ availableOverlays.length > 0 && (
 						<FormTokenField
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
 							label={ __( 'Overlays' ) }
 							suggestions={ availableOverlays }
 							value={ attributes.mapOverlays }
@@ -236,6 +242,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					) }
 					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Zoom to' ) }
 						value={ attributes.mapcenter }
 						options={ [
@@ -249,6 +257,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<RangeControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Height (px)' ) }
 						value={ attributes.height }
 						onChange={ ( value ) =>
@@ -266,6 +276,8 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ false }
 				>
 					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Show points from' ) }
 						value={
 							DATE_PRESETS_FROM.find(
@@ -314,6 +326,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					) }
 					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Show points to' ) }
 						value={
 							DATE_PRESETS_TO.find(
@@ -382,6 +396,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							clearable={ false }
 						/>
 						<ToggleControl
+							__nextHasNoMarginBottom
 							label={ __( 'Connect points with line' ) }
 							checked={
 								!! attributes.styles?.[ feed ]
@@ -403,6 +418,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 						{ attributes.styles?.[ feed ]?.splitLinesEnabled && (
 							<TextControl
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
 								label={ __( 'Split lines (hours)' ) }
 								value={
 									attributes.styles?.[ feed ]?.splitLines ||
@@ -475,6 +492,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					initialOpen={ false }
 				>
 					<ToggleControl
+						__nextHasNoMarginBottom
 						label={ __( 'Show last point' ) }
 						checked={ attributes.lastPoint }
 						onChange={ ( value ) =>
@@ -485,6 +503,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 					<TextControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 						label={ __( 'Hide nearby points (meters)' ) }
 						value={ attributes.filterPoints }
 						onChange={ ( value ) =>
@@ -497,6 +517,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 					<ToggleControl
+						__nextHasNoMarginBottom
 						label={ __( 'Auto-reload' ) }
 						checked={ attributes.autoReload }
 						onChange={ ( value ) =>
@@ -507,6 +528,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 					/>
 					<ToggleControl
+						__nextHasNoMarginBottom
 						label={ __( 'Debug' ) }
 						checked={ attributes.debug }
 						onChange={ ( value ) =>
