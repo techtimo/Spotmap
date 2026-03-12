@@ -126,19 +126,25 @@ export default function Edit( { attributes, setAttributes } ) {
 			enablePanning: false,
 		};
 
-		// Clean up previous map instance
-		if ( container._leaflet_id ) {
-			container._leaflet_id = null;
-			container.innerHTML = '';
+		// Clean up previous map instance properly
+		if ( spotmapRef.current ) {
+			spotmapRef.current._destroyed = true;
+			if ( spotmapRef.current.map?.remove ) {
+				spotmapRef.current.map.remove();
+			}
+			spotmapRef.current = null;
 		}
 
 		let timer;
 		try {
-			spotmapRef.current = new window.Spotmap( options );
-			spotmapRef.current.initMap();
+			const sm = new window.Spotmap( options );
+			spotmapRef.current = sm;
+			sm.initMap();
 			// Leaflet needs a size recalc after the block wrapper settles
 			timer = setTimeout( () => {
-				spotmapRef.current?.map?.invalidateSize?.();
+				if ( ! sm._destroyed ) {
+					sm.map?.invalidateSize?.();
+				}
 			}, 200 );
 		} catch ( e ) {
 			console.error( 'Spotmap init error:', e );
@@ -146,9 +152,12 @@ export default function Edit( { attributes, setAttributes } ) {
 
 		return () => {
 			clearTimeout( timer );
-			if ( container._leaflet_id ) {
-				container._leaflet_id = null;
-				container.innerHTML = '';
+			if ( spotmapRef.current ) {
+				spotmapRef.current._destroyed = true;
+				if ( spotmapRef.current.map?.remove ) {
+					spotmapRef.current.map.remove();
+				}
+				spotmapRef.current = null;
 			}
 		};
 	}, [
