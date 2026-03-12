@@ -2,7 +2,8 @@
  * Copy front-end dependencies from node_modules to public/ so WordPress can
  * enqueue them as separate scripts/styles (no bundling).
  *
- * Run via: npm run copy-deps
+ * Run via: npm run copy-deps          (dev – keeps source maps)
+ *          npm run copy-deps:prod     (production – strips sourceMappingURL)
  */
 
 const fs = require( 'fs' );
@@ -13,10 +14,37 @@ const pub = ( ...parts ) => path.join( root, 'public', ...parts );
 const nm = ( ...parts ) => path.join( root, 'node_modules', ...parts );
 const inc = ( ...parts ) => path.join( root, 'includes', ...parts );
 
+const stripMaps = process.argv.includes( '--strip-maps' );
+
+function stripSourceMappingURL( filePath ) {
+	const content = fs.readFileSync( filePath, 'utf8' );
+	const stripped = content.replace( /\/[*/]#\s*sourceMappingURL=.*?(?:\*\/|$)/gm, '' );
+	if ( content !== stripped ) {
+		fs.writeFileSync( filePath, stripped, 'utf8' );
+		console.log( `  (stripped sourceMappingURL from ${ path.relative( root, filePath ) })` );
+	}
+}
+
 function copyFile( src, dest ) {
 	fs.mkdirSync( path.dirname( dest ), { recursive: true } );
 	fs.copyFileSync( src, dest );
 	console.log( `  ${ path.relative( root, src ) } -> ${ path.relative( root, dest ) }` );
+}
+
+/**
+ * Copy a JS file. In dev mode, also copies the .map file if it exists.
+ * In production mode (--strip-maps), strips the sourceMappingURL comment.
+ */
+function copyJsFile( src, dest ) {
+	copyFile( src, dest );
+	if ( stripMaps ) {
+		stripSourceMappingURL( dest );
+	} else {
+		const mapSrc = src + '.map';
+		if ( fs.existsSync( mapSrc ) ) {
+			copyFile( mapSrc, dest + '.map' );
+		}
+	}
 }
 
 function copyDir( src, dest ) {
@@ -33,10 +61,10 @@ function copyDir( src, dest ) {
 	}
 }
 
-console.log( 'Copying front-end dependencies...\n' );
+console.log( `Copying front-end dependencies${ stripMaps ? ' (production)' : ' (dev)' }...\n` );
 
 // Leaflet core
-copyFile( nm( 'leaflet', 'dist', 'leaflet.js' ), pub( 'leaflet', 'leaflet.js' ) );
+copyJsFile( nm( 'leaflet', 'dist', 'leaflet.js' ), pub( 'leaflet', 'leaflet.js' ) );
 copyFile( nm( 'leaflet', 'dist', 'leaflet.css' ), pub( 'leaflet', 'leaflet.css' ) );
 // Leaflet marker images: custom colored icons live in public/leaflet/images/
 // and already include the standard ones, so skip copying upstream images.
@@ -57,12 +85,10 @@ copyFile( nm( 'leaflet-easybutton', 'src', 'easy-button.css' ), pub( 'leaflet-ea
 copyFile( nm( 'leaflet-textpath', 'leaflet.textpath.js' ), pub( 'leaflet-textpath', 'leaflet.textpath.js' ) );
 
 // Leaflet TileLayer Swiss
-copyFile( nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.js' ), pub( 'leaflet-tilelayer-swisstopo', 'Leaflet.TileLayer.Swiss.umd.js' ) );
+copyJsFile( nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.js' ), pub( 'leaflet-tilelayer-swisstopo', 'Leaflet.TileLayer.Swiss.umd.js' ) );
 
 // Font Awesome
 copyFile( nm( '@fortawesome', 'fontawesome-free', 'css', 'all.min.css' ), inc( 'css', 'font-awesome-all.min.css' ) );
 copyDir( nm( '@fortawesome', 'fontawesome-free', 'webfonts' ), inc( 'webfonts' ) );
-
-// TODO: remove source map file references from copied CSS files, or copy source maps as well
 
 console.log( '\nDone.' );
