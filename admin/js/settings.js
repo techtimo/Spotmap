@@ -1,6 +1,6 @@
 const $ = jQuery;
 $(document).ready(function () {
-    $("#spotmap-add-feed-button").click(function () {
+    $("#spotmap-add-feed-button").on("click", function () {
         const api = $('#spotmap-add-feed-select').find(":selected").val();
         console.log('test'+api)
         if (api == 'findmespot') {
@@ -31,7 +31,7 @@ $(document).ready(function () {
         }
     });
     // to update the font awesome preview in the dashboard Marker section
-    $(".spotmap-icon-input").change(function(){
+    $(".spotmap-icon-input").on("change", function(){
         let value = $(this).val()
         let icon = $(this).next();
         icon.removeClass().addClass("fas").addClass("fa-"+value);
