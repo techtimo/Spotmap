@@ -73,7 +73,7 @@ class Spotmap {
         self.layerControl.addTo(self.map);
         this.getPoints(function (response) {
             // Bail out if the map was destroyed (e.g. React effect re-ran)
-            if (!self.map || !self.map._container) return;
+            if (self._destroyed || !self.map || !self.map._mapPane) return;
             // console.log(response);
             // this is the case if explicitly no feeds were provided
             if(!response.empty){
@@ -288,7 +288,7 @@ class Spotmap {
         var self = this;
         jQuery.post(spotmapjsobj.ajaxUrl, options.body, function (response) {
             // Bail out if the map was destroyed before the response arrived
-            if (!self.map || !self.map._container) return;
+            if (self._destroyed || !self.map || !self.map._mapPane) return;
             let feeds = true;
             if(self.options.feeds && self.options.feeds.length == 0){
                 feeds = false
