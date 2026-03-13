@@ -40,7 +40,7 @@ class Spotmap_Public{
 			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
 			array_merge(
 				$map_asset['dependencies'],
-				[ 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
+				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
 			),
 			$map_asset['version'],
 			true
