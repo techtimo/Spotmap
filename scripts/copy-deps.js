@@ -66,8 +66,7 @@ console.log( `Copying front-end dependencies${ stripMaps ? ' (production)' : ' (
 // Leaflet core
 copyJsFile( nm( 'leaflet', 'dist', 'leaflet.js' ), pub( 'leaflet', 'leaflet.js' ) );
 copyFile( nm( 'leaflet', 'dist', 'leaflet.css' ), pub( 'leaflet', 'leaflet.css' ) );
-// Leaflet marker images: custom colored icons live in public/leaflet/images/
-// and already include the standard ones, so skip copying upstream images.
+copyDir( nm( 'leaflet', 'dist', 'images' ), pub( 'leaflet', 'images' ) );
 
 // Leaflet Fullscreen (file names changed in v5)
 copyFile( nm( 'leaflet.fullscreen', 'dist', 'Control.FullScreen.umd.js' ), pub( 'leafletfullscreen', 'leaflet.fullscreen.js' ) );
@@ -90,5 +89,9 @@ copyJsFile( nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.
 // Font Awesome
 copyFile( nm( '@fortawesome', 'fontawesome-free', 'css', 'all.min.css' ), inc( 'css', 'font-awesome-all.min.css' ) );
 copyDir( nm( '@fortawesome', 'fontawesome-free', 'webfonts' ), inc( 'webfonts' ) );
+
+// Plugin custom styles (authored in src/css/, served from public/css/)
+const src = ( ...parts ) => path.join( root, 'src', ...parts );
+copyFile( src( 'css', 'custom.css' ), pub( 'css', 'custom.css' ) );
 
 console.log( '\nDone.' );
