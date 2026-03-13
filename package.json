@@ -14,10 +14,10 @@
     "env:destroy": "wp-env destroy",
     "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now",
     "format": "wp-scripts format",
-		"lint:css": "wp-scripts lint-style",
-		"lint:js": "wp-scripts lint-js",
-		"packages-update": "wp-scripts packages-update",
-		"plugin-zip": "npm run build && wp-scripts plugin-zip"
+    "lint:css": "wp-scripts lint-style",
+    "lint:js": "wp-scripts lint-js",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "npm run build && wp-scripts plugin-zip"
   },
   "repository": {
     "type": "git",
@@ -31,8 +31,11 @@
   },
   "homepage": "https://github.com/techtimo/Spotmap#readme",
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@wordpress/env": "^10.39.0",
-    "@wordpress/scripts": "^31.6.0"
+    "@wordpress/scripts": "^31.6.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
