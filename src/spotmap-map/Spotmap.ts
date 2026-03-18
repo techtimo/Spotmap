@@ -13,6 +13,8 @@ import {
 	SINGLE_POINT_ZOOM,
 } from './constants';
 import { debug as debugLog, getColorDot } from './utils';
+
+const DOWNLOAD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;fill:currentColor"><path d="M18 11.3l-1-1.1-4 3.9V4h-1.7v10.1l-4-3.9-1.1 1.1 5.9 5.8 5.9-5.8zm-2.9 7.2H8.9v1.5h6.2v-1.5z"/></svg>';
 import { DataFetcher } from './DataFetcher';
 import { LayerManager } from './LayerManager';
 import { MarkerManager } from './MarkerManager';
@@ -299,6 +301,10 @@ export class Spotmap {
 				polyline_options: { color },
 			};
 
+			const downloadLink = entry.download
+				? ` <a href="${ entry.url }" download title="Download GPX" style="text-decoration:none;color:inherit;vertical-align:middle;" onclick="event.stopPropagation()">${ DOWNLOAD_SVG }</a>`
+				: '';
+
 			const track = new L.GPX( entry.url, gpxOptions )
 				.on( 'loaded', () => {
 					if (
@@ -309,16 +315,18 @@ export class Spotmap {
 					}
 				} )
 				.on( 'addline', ( e: L.LeafletEvent ) => {
-					( e as L.LeafletEvent & { line: L.Polyline } ).line.bindPopup( entry.title );
+					( e as L.LeafletEvent & { line: L.Polyline } ).line.bindPopup( entry.title + downloadLink );
 				} );
 
-			const html = ` ${ getColorDot( color ) }`;
+			const html = ` ${ getColorDot( color ) }${ downloadLink }`;
 			this.layers.gpx[ entry.title ] = {
 				featureGroup: L.featureGroup( [ track ] ),
 			};
-			this.layers.gpx[ entry.title ].featureGroup.addTo(
-				this.map
-			);
+			if ( entry.visible !== false ) {
+				this.layers.gpx[ entry.title ].featureGroup.addTo(
+					this.map
+				);
+			}
 			this.layerManager.layerControl.addOverlay(
 				this.layers.gpx[ entry.title ].featureGroup,
 				entry.title + html
