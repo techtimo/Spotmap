@@ -76,6 +76,9 @@ export interface FeedStyle {
 	color: string;
 	splitLines?: number | false;
 	splitLinesEnabled?: boolean;
+	lineWidth?: number;    // 1–6px, default 2
+	lineOpacity?: number;  // 0.2–1.0, default 1.0
+	visible?: boolean;     // default true (unset = visible)
 }
 
 export interface GpxTrackConfig {

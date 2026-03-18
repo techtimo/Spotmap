@@ -119,22 +119,19 @@ export class LayerManager {
 	 */
 	addFeedsToMap(): void {
 		const feedNames = Object.keys( this.layers.feeds );
-		const totalLayers = feedNames.length + ( this.options.gpx?.length ?? 0 );
 
 		for ( const feedName of feedNames ) {
 			const feed = this.layers.feeds[ feedName ];
-			feed.featureGroup.addTo( this.map );
 
-			if ( totalLayers === 1 ) {
-				this.layerControl.addOverlay(
-					feed.featureGroup,
-					feedName
-				);
-			} else {
-				const color = this.getFeedColor( feedName );
-				const label = `${ feedName } ${ getColorDot( color ) }`;
-				this.layerControl.addOverlay( feed.featureGroup, label );
+			// Respect per-feed visibility — still register in layer control
+			// so the public user can toggle the feed back on.
+			if ( this.isFeedVisible( feedName ) ) {
+				feed.featureGroup.addTo( this.map );
 			}
+
+			const color = this.getFeedColor( feedName );
+			const label = `${ feedName } ${ getColorDot( color ) }`;
+			this.layerControl.addOverlay( feed.featureGroup, label );
 		}
 	}
 
@@ -166,6 +163,28 @@ export class LayerManager {
 		// Treat 0 as disabled (falsy), matching the old behaviour where
 		// `if (!splitLines) return false` would short-circuit on 0.
 		return style.splitLines || false;
+	}
+
+	/**
+	 * Get the line width (px) for a feed's polylines.
+	 */
+	getFeedLineWidth( feedName: string ): number {
+		return this.options.styles[ feedName ]?.lineWidth ?? 2;
+	}
+
+	/**
+	 * Get the line opacity for a feed's polylines.
+	 */
+	getFeedLineOpacity( feedName: string ): number {
+		return this.options.styles[ feedName ]?.lineOpacity ?? 1.0;
+	}
+
+	/**
+	 * Whether a feed should be initially visible on the map.
+	 * Unset (undefined) defaults to visible.
+	 */
+	isFeedVisible( feedName: string ): boolean {
+		return this.options.styles[ feedName ]?.visible !== false;
 	}
 
 	/**

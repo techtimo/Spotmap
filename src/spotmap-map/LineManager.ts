@@ -76,7 +76,9 @@ export class LineManager {
 	 */
 	createLine( feedName: string ): L.Polyline {
 		const color = this.layerManager.getFeedColor( feedName );
-		const line = L.polyline( [], { color } );
+		const weight = this.layerManager.getFeedLineWidth( feedName );
+		const opacity = this.layerManager.getFeedLineOpacity( feedName );
+		const line = L.polyline( [], { color, weight, opacity } );
 
 		// Add directional arrows using the TextPath plugin
 		( line as unknown as { setText: ( text: string, options: Record< string, unknown > ) => void } ).setText(
