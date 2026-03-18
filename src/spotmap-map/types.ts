@@ -85,6 +85,8 @@ export interface GpxTrackConfig {
 	url: string;
 	title: string;
 	color?: string;
+	visible?: boolean;   // default true (unset = visible)
+	download?: boolean;  // default false — show download icon in layer control & popup
 	id?: number;
 }
 

@@ -33,6 +33,7 @@
   "devDependencies": {
     "@types/leaflet": "^1.9.21",
     "@wordpress/env": "^10.39.0",
+    "@wordpress/icons": "^11.8.0",
     "@wordpress/scripts": "^31.6.0",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3"

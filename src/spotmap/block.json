@@ -59,6 +59,26 @@
 		"mapOverlays": {
 			"type": "array",
 			"default": []
+		},
+		"enablePanning": {
+			"type": "boolean",
+			"default": true
+		},
+		"scrollWheelZoom": {
+			"type": "boolean",
+			"default": false
+		},
+		"locateButton": {
+			"type": "boolean",
+			"default": false
+		},
+		"fullscreenButton": {
+			"type": "boolean",
+			"default": true
+		},
+		"navigationButtons": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"editorScript": "file:./index.js",

@@ -22,8 +22,13 @@ $options = wp_json_encode( array(
 	'autoReload'   => ! empty( $attributes['autoReload'] ),
 	'debug'        => ! empty( $attributes['debug'] ),
 	'dateRange'    => ! empty( $attributes['dateRange'] ) ? $attributes['dateRange'] : array( 'from' => '', 'to' => '' ),
-	'gpx'          => ! empty( $attributes['gpx'] ) ? $attributes['gpx'] : array(),
-	'mapId'        => $map_id,
+	'gpx'             => ! empty( $attributes['gpx'] ) ? $attributes['gpx'] : array(),
+	'enablePanning'     => isset( $attributes['enablePanning'] ) ? (bool) $attributes['enablePanning'] : true,
+	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : false,
+	'locateButton'      => isset( $attributes['locateButton'] ) ? (bool) $attributes['locateButton'] : false,
+	'fullscreenButton'  => isset( $attributes['fullscreenButton'] ) ? (bool) $attributes['fullscreenButton'] : true,
+	'navigationButtons' => isset( $attributes['navigationButtons'] ) ? (bool) $attributes['navigationButtons'] : true,
+	'mapId'             => $map_id,
 ) );
 
 $height = ! empty( $attributes['height'] ) ? intval( $attributes['height'] ) : 500;
