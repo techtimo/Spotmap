@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from '@wordpress/element';
 import {
+	BlockControls,
 	InspectorControls,
 	MediaUpload,
 	useBlockProps,
@@ -10,10 +11,13 @@ import {
 	ToggleControl,
 	SelectControl,
 	ColorPalette,
-	FormTokenField,
 	Button,
 	RangeControl,
 	DateTimePicker,
+	ToolbarGroup,
+	ToolbarButton,
+	Dropdown,
+	CheckboxControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
@@ -46,6 +50,22 @@ const DATE_PRESETS_TO = [
 	{ label: 'last day', value: 'last-1-day' },
 	{ label: 'a specific date', value: 'specific' },
 ];
+
+// Inline SVG for the Maps toolbar button (no @wordpress/icons dependency needed)
+const MAP_ICON = (
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5">
+		<path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z" />
+		<path d="M9 3v15M15 6v15" />
+	</svg>
+);
+
+const DEFAULT_FEED_STYLE = {
+	color: 'blue',
+	splitLines: 0,
+	lineWidth: 2,
+	lineOpacity: 1.0,
+	visible: true,
+};
 
 export default function Edit( { attributes, setAttributes } ) {
 	const mapRef = useRef( null );
@@ -87,10 +107,8 @@ export default function Edit( { attributes, setAttributes } ) {
 		return () => links.forEach( ( l ) => l.remove() );
 	}, [] );
 
-	// On first insert, populate feeds from server defaults
+	// On first insert, populate feeds and apply admin-configured defaults.
 	useEffect( () => {
-		// On first insert, populate feeds from server defaults and wait
-		// for the re-render with the populated attributes before init.
 		if (
 			attributes.feeds.length === 0 &&
 			window.spotmapjsobj?.feeds
@@ -101,12 +119,23 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			const defaultStyles = {};
 			feedNames.forEach( ( name ) => {
-				defaultStyles[ name ] = { color: 'blue', splitLines: 0 };
+				defaultStyles[ name ] = { ...DEFAULT_FEED_STYLE };
 			} );
+
+			// Read admin-configured defaults (set in Settings → Spotmap → Defaults tab)
+			const dv = window.spotmapjsobj?.defaultValues ?? {};
+			const defaultMaps = dv.maps
+				? dv.maps.split( ',' ).map( ( m ) => m.trim() ).filter( Boolean )
+				: attributes.maps;
+			const defaultHeight = dv.height ? parseInt( dv.height, 10 ) : attributes.height;
+			const defaultMapcenter = dv.mapcenter || attributes.mapcenter;
 
 			setAttributes( {
 				feeds: feedNames,
 				styles: defaultStyles,
+				maps: defaultMaps,
+				height: defaultHeight,
+				mapcenter: defaultMapcenter,
 			} );
 		}
 	}, [] );
@@ -193,6 +222,32 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { styles: newStyles } );
 	};
 
+	const toggleFeed = ( feed, checked ) => {
+		const next = checked
+			? [ ...attributes.feeds, feed ]
+			: attributes.feeds.filter( ( f ) => f !== feed );
+		const newStyles = { ...attributes.styles };
+		if ( checked && ! newStyles[ feed ] ) {
+			newStyles[ feed ] = { ...DEFAULT_FEED_STYLE };
+		}
+		setAttributes( { feeds: next, styles: newStyles } );
+	};
+
+	const toggleMap = ( mapKey, checked ) => {
+		const next = checked
+			? [ ...attributes.maps, mapKey ]
+			: attributes.maps.filter( ( m ) => m !== mapKey );
+		setAttributes( { maps: next } );
+	};
+
+	const toggleOverlay = ( overlayKey, checked ) => {
+		const current = attributes.mapOverlays || [];
+		const next = checked
+			? [ ...current, overlayKey ]
+			: current.filter( ( o ) => o !== overlayKey );
+		setAttributes( { mapOverlays: next } );
+	};
+
 	const dateFromValue = attributes.dateRange?.from || '';
 	const dateToValue = attributes.dateRange?.to || '';
 	const isCustomDateFrom =
@@ -204,43 +259,116 @@ export default function Edit( { attributes, setAttributes } ) {
 		( dateToValue &&
 			! DATE_PRESETS_TO.find( ( o ) => o.value === dateToValue ) );
 
+	const dropdownContentStyle = { padding: '8px', minWidth: '200px' };
+	const checklistStyle = { display: 'flex', flexDirection: 'column', gap: '6px' };
+
 	return (
 		<>
+			{ /* Block toolbar — Feeds / Maps+Overlays dropdowns */ }
+			<BlockControls>
+				<ToolbarGroup>
+					<Dropdown
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								label={ __( 'Feeds' ) }
+								onClick={ onToggle }
+								aria-expanded={ isOpen }
+								icon="rss"
+							>
+								{ __( 'Feeds' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ () => (
+							<div style={ dropdownContentStyle }>
+								{ availableFeeds.length === 0 && (
+									<p>{ __( 'No feeds configured.' ) }</p>
+								) }
+								<div style={ checklistStyle }>
+									{ availableFeeds.map( ( feed ) => (
+										<CheckboxControl
+											key={ feed }
+											__nextHasNoMarginBottom
+											label={ feed }
+											checked={ attributes.feeds.includes( feed ) }
+											onChange={ ( checked ) =>
+												toggleFeed( feed, checked )
+											}
+										/>
+									) ) }
+								</div>
+							</div>
+						) }
+					/>
+				</ToolbarGroup>
+				<ToolbarGroup>
+					<Dropdown
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								label={ __( 'Maps' ) }
+								onClick={ onToggle }
+								aria-expanded={ isOpen }
+								icon={ MAP_ICON }
+							>
+								{ __( 'Maps' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ () => (
+							<div style={ dropdownContentStyle }>
+								{ availableMaps.length === 0 && (
+									<p>{ __( 'No maps available.' ) }</p>
+								) }
+								<div style={ checklistStyle }>
+									{ availableMaps.map( ( mapKey ) => (
+										<CheckboxControl
+											key={ mapKey }
+											__nextHasNoMarginBottom
+											label={
+												window.spotmapjsobj?.maps[ mapKey ]
+													?.label ?? mapKey
+											}
+											checked={ attributes.maps.includes( mapKey ) }
+											onChange={ ( checked ) =>
+												toggleMap( mapKey, checked )
+											}
+										/>
+									) ) }
+								</div>
+								{ availableOverlays.length > 0 && (
+									<>
+										<hr style={ { margin: '8px 0', border: 'none', borderTop: '1px solid #ddd' } } />
+										<p style={ { margin: '0 0 6px', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', color: '#757575' } }>
+											{ __( 'Overlays' ) }
+										</p>
+										<div style={ checklistStyle }>
+											{ availableOverlays.map( ( overlayKey ) => (
+												<CheckboxControl
+													key={ overlayKey }
+													__nextHasNoMarginBottom
+													label={
+														window.spotmapjsobj?.overlays[
+															overlayKey
+														]?.label ?? overlayKey
+													}
+													checked={ (
+														attributes.mapOverlays || []
+													).includes( overlayKey ) }
+													onChange={ ( checked ) =>
+														toggleOverlay( overlayKey, checked )
+													}
+												/>
+											) ) }
+										</div>
+									</>
+								) }
+							</div>
+						) }
+					/>
+				</ToolbarGroup>
+			</BlockControls>
+
 			<InspectorControls>
 				{ /* General Settings */ }
 				<PanelBody title={ __( 'General Settings' ) } initialOpen>
-					<FormTokenField
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __( 'Feeds' ) }
-						suggestions={ availableFeeds }
-						value={ attributes.feeds }
-						onChange={ ( value ) =>
-							setAttributes( { feeds: value } )
-						}
-					/>
-					<FormTokenField
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __( 'Maps' ) }
-						suggestions={ availableMaps }
-						value={ attributes.maps }
-						onChange={ ( value ) =>
-							setAttributes( { maps: value } )
-						}
-					/>
-					{ availableOverlays.length > 0 && (
-						<FormTokenField
-							__nextHasNoMarginBottom
-							__next40pxDefaultSize
-							label={ __( 'Overlays' ) }
-							suggestions={ availableOverlays }
-							value={ attributes.mapOverlays }
-							onChange={ ( value ) =>
-								setAttributes( { mapOverlays: value } )
-							}
-						/>
-					) }
 					<SelectControl
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
@@ -433,6 +561,44 @@ export default function Edit( { attributes, setAttributes } ) {
 								) }
 							/>
 						) }
+						<RangeControl
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+							label={ __( 'Line width (px)' ) }
+							value={
+								attributes.styles?.[ feed ]?.lineWidth ?? 2
+							}
+							onChange={ ( value ) =>
+								updateStyle( feed, 'lineWidth', value )
+							}
+							min={ 1 }
+							max={ 6 }
+							step={ 1 }
+						/>
+						<RangeControl
+							__nextHasNoMarginBottom
+							__next40pxDefaultSize
+							label={ __( 'Line opacity' ) }
+							value={
+								attributes.styles?.[ feed ]?.lineOpacity ?? 1.0
+							}
+							onChange={ ( value ) =>
+								updateStyle( feed, 'lineOpacity', value )
+							}
+							min={ 0.2 }
+							max={ 1.0 }
+							step={ 0.1 }
+						/>
+						<ToggleControl
+							__nextHasNoMarginBottom
+							label={ __( 'Visible' ) }
+							checked={
+								attributes.styles?.[ feed ]?.visible !== false
+							}
+							onChange={ ( value ) =>
+								updateStyle( feed, 'visible', value )
+							}
+						/>
 					</PanelBody>
 				) ) }
 
@@ -486,7 +652,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					) }
 				</PanelBody>
 
-				{ /* Experimental */ }
+				{ /* Advanced */ }
 				<PanelBody
 					title={ __( 'Advanced' ) }
 					initialOpen={ false }
