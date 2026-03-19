@@ -20,6 +20,7 @@ import {
 	CheckboxControl,
 	Modal,
 	Popover,
+	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { brush, calendar, settings, upload, trash } from '@wordpress/icons';
 import { uploadMedia } from '@wordpress/media-utils';
@@ -106,6 +107,72 @@ const SectionHeader = ( { label } ) => (
 const Divider = ( { spaced = false } ) => (
 	<hr style={ { margin: spaced ? '8px 0' : 0, border: 'none', borderTop: '1px solid #ddd' } } />
 );
+
+// Toggle with a flyout sub-popover that reveals on hover.
+function NavigationButtonsControl( { value, onChange } ) {
+	const [ open, setOpen ] = useState( false );
+	const anchorRef = useRef( null );
+	const closeTimer = useRef( null );
+	const update = ( key, v ) => onChange( { ...value, [ key ]: v } );
+
+	const scheduleClose = () => {
+		closeTimer.current = setTimeout( () => setOpen( false ), 150 );
+	};
+	const cancelClose = () => {
+		if ( closeTimer.current ) {
+			clearTimeout( closeTimer.current );
+		}
+	};
+
+	return (
+		<div
+			ref={ anchorRef }
+			onMouseEnter={ () => { cancelClose(); setOpen( true ); } }
+			onMouseLeave={ scheduleClose }
+		>
+			<ToggleControl
+				__nextHasNoMarginBottom
+				label={ __( 'Zoom-to navigation buttons' ) }
+				checked={ value.enabled }
+				onChange={ ( v ) => update( 'enabled', v ) }
+			/>
+			{ open && (
+				<Popover
+					anchor={ anchorRef.current }
+					placement="right-start"
+					focusOnMount={ false }
+					onClose={ () => setOpen( false ) }
+				>
+					<div
+						style={ { padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' } }
+						onMouseEnter={ cancelClose }
+						onMouseLeave={ scheduleClose }
+					>
+						<SectionHeader label={ __( 'Show buttons' ) } />
+						<CheckboxControl
+							__nextHasNoMarginBottom
+							label={ __( 'All points' ) }
+							checked={ value.allPoints }
+							onChange={ ( v ) => update( 'allPoints', v ) }
+						/>
+						<CheckboxControl
+							__nextHasNoMarginBottom
+							label={ __( 'Latest point' ) }
+							checked={ value.latestPoint }
+							onChange={ ( v ) => update( 'latestPoint', v ) }
+						/>
+						<CheckboxControl
+							__nextHasNoMarginBottom
+							label={ __( 'GPX tracks' ) }
+							checked={ value.gpxTracks }
+							onChange={ ( v ) => update( 'gpxTracks', v ) }
+						/>
+					</div>
+				</Popover>
+			) }
+		</div>
+	);
+}
 
 const GPX_PAGE_SIZE = 10;
 
@@ -414,6 +481,13 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
 				/>
 				<ToggleControl
 					__nextHasNoMarginBottom
+					label={ __( 'Show last point' ) }
+					checked={ !! s.lastPoint }
+					onChange={ ( value ) => onUpdate( 'lastPoint', value ) }
+					help={ __( 'Highlight the latest point with a large circle marker' ) }
+				/>
+				<ToggleControl
+					__nextHasNoMarginBottom
 					label={ __( 'Show on map' ) }
 					checked={ s.visible !== false }
 					onChange={ ( value ) => onUpdate( 'visible', value ) }
@@ -556,7 +630,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		attributes.dateRange,
 		attributes.gpx,
 		attributes.mapOverlays,
-		attributes.lastPoint,
 		attributes.debug,
 		attributes.scrollWheelZoom,
 		attributes.locateButton,
@@ -928,6 +1001,28 @@ export default function Edit( { attributes, setAttributes } ) {
 								<Divider />
 
 								<div>
+									<SectionHeader label={ __( 'Data' ) } />
+									<div style={ { display: 'flex', flexDirection: 'column', gap: '8px' } }>
+										<UnitControl
+											label={ __( 'Hide nearby points' ) }
+											value={ `${ attributes.filterPoints }m` }
+											units={ [ { value: 'm', label: 'Meter', default: 10 } ] }
+											onChange={ ( value ) => setAttributes( { filterPoints: parseInt( value ) || 0 } ) }
+											help={ __( 'Hide points within this radius to reduce clutter' ) }
+										/>
+										<ToggleControl
+											__nextHasNoMarginBottom
+											label={ __( 'Auto-reload' ) }
+											checked={ attributes.autoReload }
+											onChange={ ( value ) => setAttributes( { autoReload: value } ) }
+											help={ __( 'Refresh map data every 30 seconds' ) }
+										/>
+									</div>
+								</div>
+
+								<Divider />
+
+								<div>
 									<SectionHeader label={ __( 'Controls' ) } />
 									<div style={ { display: 'flex', flexDirection: 'column', gap: '4px' } }>
 										<ToggleControl
@@ -942,12 +1037,9 @@ export default function Edit( { attributes, setAttributes } ) {
 											checked={ attributes.fullscreenButton }
 											onChange={ ( value ) => setAttributes( { fullscreenButton: value } ) }
 										/>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Zoom-to navigation buttons' ) }
-											checked={ attributes.navigationButtons }
+										<NavigationButtonsControl
+											value={ attributes.navigationButtons }
 											onChange={ ( value ) => setAttributes( { navigationButtons: value } ) }
-											help={ __( 'Show buttons to zoom to all points, last trip, or latest point' ) }
 										/>
 									</div>
 								</div>
@@ -960,28 +1052,6 @@ export default function Edit( { attributes, setAttributes } ) {
 			{ /* Sidebar — Advanced only */ }
 			<InspectorControls>
 				<PanelBody title={ __( 'Advanced' ) } initialOpen={ false }>
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Show last point' ) }
-						checked={ attributes.lastPoint }
-						onChange={ ( value ) => setAttributes( { lastPoint: value } ) }
-						help={ __( 'Highlight the latest point with a large marker' ) }
-					/>
-					<TextControl
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __( 'Hide nearby points (meters)' ) }
-						value={ attributes.filterPoints }
-						onChange={ ( value ) => setAttributes( { filterPoints: parseInt( value, 10 ) || 0 } ) }
-						help={ __( 'Hide points within this radius to reduce clutter' ) }
-					/>
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Auto-reload' ) }
-						checked={ attributes.autoReload }
-						onChange={ ( value ) => setAttributes( { autoReload: value } ) }
-						help={ __( 'Refresh map data every 30 seconds without page reload' ) }
-					/>
 					<ToggleControl
 						__nextHasNoMarginBottom
 						label={ __( 'Debug' ) }
