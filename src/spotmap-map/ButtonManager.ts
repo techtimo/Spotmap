@@ -1,5 +1,6 @@
 import type { SpotmapOptions, NavigationButtonsConfig } from './types';
 import type { BoundsManager } from './BoundsManager';
+import 'leaflet-easybutton';
 
 /**
  * Manages the easyButton navigation controls on the map.
@@ -88,17 +89,17 @@ export class ButtonManager {
 			return null;
 		}
 
-		const states = active.map( ( s, i ) => {
+		const states: L.EasyButtonState[] = active.map( ( s, i ) => {
 			const nextName = active[ ( i + 1 ) % active.length ].stateName;
 			return {
 				stateName: s.stateName,
 				icon: s.icon,
 				title: s.title,
-				onClick: ( control: L.EasyButton ) => {
+				onClick: ( control: L.Control.EasyButton ) => {
 					this.boundsManager.fitBounds( s.target );
 					control.state( nextName );
 				},
-			};
+			} as L.EasyButtonState;
 		} );
 
 		return L.easyButton( { states } );
