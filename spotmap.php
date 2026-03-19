@@ -17,6 +17,8 @@
 // Block direct access
 defined( 'ABSPATH' ) or die();
 
+require_once plugin_dir_path( __FILE__ ) . 'vendor-prefixed/autoload.php';
+
 register_activation_hook( __FILE__, 'activate_spotmap' );
 function activate_spotmap() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spotmap-activator.php';

@@ -1,0 +1,26 @@
+{
+  "name": "techtimo/spotmap",
+  "description": "Spotmap WordPress plugin",
+  "type": "wordpress-plugin",
+  "require": {
+    "symfony/yaml": "^7.0"
+  },
+  "require-dev": {
+    "brianhenryie/strauss": "^0.19"
+  },
+  "extra": {
+    "strauss": {
+      "target_directory": "vendor-prefixed",
+      "namespace_prefix": "Spotmap\\",
+      "classmap_prefix": "Spotmap_",
+      "create_autoloader": true,
+      "packages": [
+        "symfony/yaml"
+      ]
+    }
+  },
+  "scripts": {
+    "post-install-cmd": ["vendor/bin/strauss"],
+    "post-update-cmd": ["vendor/bin/strauss"]
+  }
+}
