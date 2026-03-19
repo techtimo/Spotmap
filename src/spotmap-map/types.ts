@@ -47,7 +47,6 @@ export interface SpotmapOptions {
 	// Navigation & view
 	mapcenter: MapCenter;
 	filterPoints: number;
-	lastPoint: boolean;
 
 	// Behavior
 	autoReload: boolean;
@@ -62,7 +61,14 @@ export interface SpotmapOptions {
 	fullscreenButton?: boolean;
 	scaleControl?: boolean;
 	locateButton?: boolean;
-	navigationButtons?: boolean;
+	navigationButtons?: NavigationButtonsConfig;
+}
+
+export interface NavigationButtonsConfig {
+	enabled: boolean;
+	allPoints: boolean;
+	latestPoint: boolean;
+	gpxTracks: boolean;
 }
 
 export type MapCenter = 'all' | 'last' | 'last-trip' | 'gpx' | 'feeds';
@@ -79,6 +85,7 @@ export interface FeedStyle {
 	lineWidth?: number;    // 1–6px, default 2
 	lineOpacity?: number;  // 0.2–1.0, default 1.0
 	visible?: boolean;     // default true (unset = visible)
+	lastPoint?: boolean;   // highlight the latest point with a large circle marker
 }
 
 export interface GpxTrackConfig {

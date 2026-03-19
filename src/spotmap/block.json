@@ -36,10 +36,6 @@
 			"type": "number",
 			"default": 10
 		},
-		"lastPoint": {
-			"type": "boolean",
-			"default": false
-		},
 		"autoReload": {
 			"type": "boolean",
 			"default": false
@@ -77,8 +73,8 @@
 			"default": true
 		},
 		"navigationButtons": {
-			"type": "boolean",
-			"default": true
+			"type": "object",
+			"default": { "enabled": true, "allPoints": true, "latestPoint": true, "gpxTracks": true }
 		}
 	},
 	"editorScript": "file:./index.js",

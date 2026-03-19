@@ -1,4 +1,4 @@
-import type { SpotmapOptions } from './types';
+import type { SpotmapOptions, NavigationButtonsConfig } from './types';
 import type { BoundsManager } from './BoundsManager';
 
 /**
@@ -26,8 +26,12 @@ export class ButtonManager {
 	addButtons(): void {
 		const buttons: L.Control[] = [];
 
-		if ( this.options.navigationButtons !== false ) {
-			buttons.push( this.createNavigationButton() );
+		const navOpts = this.options.navigationButtons;
+		if ( navOpts?.enabled ) {
+			const button = this.createNavigationButton( navOpts );
+			if ( button ) {
+				buttons.push( button );
+			}
 		}
 
 		if ( this.options.locateButton !== false ) {
@@ -39,41 +43,65 @@ export class ButtonManager {
 		}
 	}
 
-	private createNavigationButton(): L.Control {
-		const hasGpx =
-			this.options.gpx && this.options.gpx.length > 0;
+	private createNavigationButton( navOpts: NavigationButtonsConfig ): L.Control | null {
+		const hasGpx = !! ( this.options.gpx && this.options.gpx.length > 0 );
 
-		return L.easyButton( {
-			states: [
-				{
-					stateName: 'all',
-					icon: 'fa-globe',
-					title: 'Show all points',
-					onClick: ( control ) => {
-						this.boundsManager.fitBounds( 'all' );
-						control.state( 'last' );
-					},
+		const STATE_DEFS: Array< {
+			key: keyof NavigationButtonsConfig;
+			stateName: string;
+			icon: string;
+			title: string;
+			target: 'all' | 'last' | 'gpx';
+			needsGpx?: boolean;
+		} > = [
+			{
+				key: 'allPoints',
+				stateName: 'all',
+				icon: 'fa-globe',
+				title: 'Show all points',
+				target: 'all',
+			},
+			{
+				key: 'latestPoint',
+				stateName: 'last',
+				icon: 'fa-map-pin',
+				title: 'Jump to last known location',
+				target: 'last',
+			},
+			{
+				key: 'gpxTracks',
+				stateName: 'gpx',
+				icon: '<span class="target">Tr.</span>',
+				title: 'Show GPX track(s)',
+				target: 'gpx',
+				needsGpx: true,
+			},
+		];
+
+		const active = STATE_DEFS.filter(
+			( s ) =>
+				navOpts[ s.key ] !== false &&
+				( ! s.needsGpx || hasGpx )
+		);
+
+		if ( active.length === 0 ) {
+			return null;
+		}
+
+		const states = active.map( ( s, i ) => {
+			const nextName = active[ ( i + 1 ) % active.length ].stateName;
+			return {
+				stateName: s.stateName,
+				icon: s.icon,
+				title: s.title,
+				onClick: ( control: L.EasyButton ) => {
+					this.boundsManager.fitBounds( s.target );
+					control.state( nextName );
 				},
-				{
-					stateName: 'last',
-					icon: 'fa-map-pin',
-					title: 'Jump to last known location',
-					onClick: ( control ) => {
-						this.boundsManager.fitBounds( 'last' );
-						control.state( hasGpx ? 'gpx' : 'all' );
-					},
-				},
-				{
-					stateName: 'gpx',
-					icon: '<span class="target">Tr.</span>',
-					title: 'Show GPX track(s)',
-					onClick: ( control ) => {
-						this.boundsManager.fitBounds( 'gpx' );
-						control.state( 'all' );
-					},
-				},
-			],
+			};
 		} );
+
+		return L.easyButton( { states } );
 	}
 
 	private createLocateButton(): L.Control {

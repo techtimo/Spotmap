@@ -18,7 +18,6 @@ $options = wp_json_encode( array(
 	'height'       => ! empty( $attributes['height'] ) ? $attributes['height'] : 500,
 	'mapcenter'    => ! empty( $attributes['mapcenter'] ) ? $attributes['mapcenter'] : 'all',
 	'filterPoints' => isset( $attributes['filterPoints'] ) ? $attributes['filterPoints'] : 10,
-	'lastPoint'    => ! empty( $attributes['lastPoint'] ),
 	'autoReload'   => ! empty( $attributes['autoReload'] ),
 	'debug'        => ! empty( $attributes['debug'] ),
 	'dateRange'    => ! empty( $attributes['dateRange'] ) ? $attributes['dateRange'] : array( 'from' => '', 'to' => '' ),
@@ -27,7 +26,7 @@ $options = wp_json_encode( array(
 	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : false,
 	'locateButton'      => isset( $attributes['locateButton'] ) ? (bool) $attributes['locateButton'] : false,
 	'fullscreenButton'  => isset( $attributes['fullscreenButton'] ) ? (bool) $attributes['fullscreenButton'] : true,
-	'navigationButtons' => isset( $attributes['navigationButtons'] ) ? (bool) $attributes['navigationButtons'] : true,
+	'navigationButtons' => isset( $attributes['navigationButtons'] ) ? $attributes['navigationButtons'] : true,
 	'mapId'             => $map_id,
 ) );
 

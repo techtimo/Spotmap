@@ -180,6 +180,7 @@ export class Spotmap {
 
 			this.loadGpxTracks( response );
 			this.layerManager.addFeedsToMap();
+			this.addLastPointMarkers();
 
 			if (
 				response.empty &&
@@ -331,6 +332,28 @@ export class Spotmap {
 				this.layers.gpx[ entry.title ].featureGroup,
 				entry.title + html
 			);
+		}
+	}
+
+	private addLastPointMarkers(): void {
+		for ( const [ feedName, feed ] of Object.entries( this.layers.feeds ) ) {
+			if ( ! this.options.styles?.[ feedName ]?.lastPoint ) {
+				continue;
+			}
+			const lp = feed.points.at( -1 );
+			if ( ! lp ) {
+				continue;
+			}
+			const color = this.layerManager.getFeedColor( feedName );
+			const icon = L.BeautifyIcon.icon( {
+				iconShape: 'marker',
+				icon: 'circle',
+				textColor: color,
+				borderColor: color,
+			} );
+			L.marker( [ lp.latitude, lp.longitude ], { icon, zIndexOffset: 1000 } )
+				.bindPopup( MarkerManager.getPopupHtml( lp ) )
+				.addTo( feed.featureGroup );
 		}
 	}
 
