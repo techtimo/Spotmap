@@ -459,11 +459,13 @@ class Spotmap_Admin {
 		wp_schedule_single_event( time()+2, 'spotmap_get_timezone_hook' );
 	}
 	function get_maps_config_content($section){
-		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
-		if(file_exists($maps_file)){
-			return json_decode(file_get_contents($maps_file),true)[$section];
+		static $config = null;
+		if($config === null){
+			$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.yaml';
+			if(!file_exists($maps_file)) return null;
+			$config = \Spotmap\Symfony\Component\Yaml\Yaml::parseFile($maps_file);
 		}
-		return;
+		return $config[$section] ?? null;
 	}
 
 	public function get_overlays(){
