@@ -139,7 +139,7 @@ function NavigationButtonsControl( { value, onChange } ) {
 			{ open && (
 				<Popover
 					anchor={ anchorRef.current }
-					placement="right-start"
+					placement="left-end"
 					focusOnMount={ false }
 					onClose={ () => setOpen( false ) }
 				>
