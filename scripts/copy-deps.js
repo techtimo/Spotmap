@@ -83,6 +83,10 @@ copyFile( nm( 'leaflet-easybutton', 'src', 'easy-button.css' ), pub( 'leaflet-ea
 // Leaflet TextPath
 copyFile( nm( 'leaflet-textpath', 'leaflet.textpath.js' ), pub( 'leaflet-textpath', 'leaflet.textpath.js' ) );
 
+// Leaflet Beautify Marker
+copyFile( nm( 'beautifymarker', 'leaflet-beautify-marker-icon.js' ), pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.js' ) );
+copyFile( nm( 'beautifymarker', 'leaflet-beautify-marker-icon.css' ), pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.css' ) );
+
 // Leaflet TileLayer Swiss
 copyJsFile( nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.js' ), pub( 'leaflet-tilelayer-swisstopo', 'Leaflet.TileLayer.Swiss.umd.js' ) );
 
