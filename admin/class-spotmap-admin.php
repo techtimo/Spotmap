@@ -14,6 +14,16 @@ class Spotmap_Admin {
 		wp_enqueue_script('spotmap-settings', plugins_url('js/settings.js', __FILE__), ['jquery'], false, true);
 	}
 
+	public function ensure_cron_scheduled() {
+		if ( get_transient( 'spotmap_cron_checked' ) ) {
+			return;
+		}
+		if ( ! wp_next_scheduled( 'spotmap_api_crawler_hook' ) ) {
+			wp_schedule_event( time(), 'twohalf_min', 'spotmap_api_crawler_hook' );
+		}
+		set_transient( 'spotmap_cron_checked', 1, 5 * MINUTE_IN_SECONDS );
+	}
+
 	public function add_cron_schedule($schedules){
 		$schedules['twohalf_min'] = array(
 			'interval' => 150,
