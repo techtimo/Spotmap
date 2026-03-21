@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	colors="true"
+>
+	<coverage>
+		<include>
+			<directory>includes/</directory>
+			<directory>admin/</directory>
+			<directory>public/</directory>
+		</include>
+		<exclude>
+			<directory>vendor/</directory>
+			<directory>vendor-prefixed/</directory>
+		</exclude>
+	</coverage>
+
+	<testsuites>
+		<testsuite name="unit">
+			<directory>tests/</directory>
+		</testsuite>
+	</testsuites>
+</phpunit>

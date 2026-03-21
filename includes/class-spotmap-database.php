@@ -11,6 +11,35 @@ class Spotmap_Database {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
 	}
 
+	/**
+	 * Create (or update) the plugin table. Safe to call multiple times via dbDelta.
+	 */
+	public static function create_table(): void {
+		global $wpdb;
+		$charset_collate = $wpdb->get_charset_collate();
+		$sql = "CREATE TABLE {$wpdb->prefix}spotmap_points (
+		    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+		    `type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,
+		    `time` int(11) unsigned NOT NULL,
+		    `latitude` float(11,7) NOT NULL,
+		    `longitude` float(11,7) NOT NULL,
+		    `altitude` int(11) DEFAULT NULL,
+		    `battery_status` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `custom_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `feed_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `feed_id` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `model` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `device_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `local_timezone` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    PRIMARY KEY (`id`),
+		    UNIQUE KEY `id_UNIQUE` (`id`)
+		    ) $charset_collate";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql, true );
+	}
+
 	public function get_all_feednames(){
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points");
