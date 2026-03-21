@@ -10,3 +10,7 @@ vendor-prefixed/
 # public/ has its own .gitignore — only the two authored PHP files are tracked
 includes/css/
 includes/webfonts/
+
+# Test artifacts
+.phpunit.result.cache
+coverage/
