@@ -3,6 +3,7 @@
 class Spotmap_Activator {
 	public static function activate() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-spotmap-admin.php';
 		$db = new Spotmap_Database();
 		$admin = new Spotmap_Admin();
@@ -39,84 +40,8 @@ class Spotmap_Activator {
 			wp_schedule_single_event( time(),'spotmap_get_timezone_hook' );
 		}
 		
-		// activate for first time
-		if(!get_option('spotmap_api_providers')){
-			$data_r = ['findmespot' => "Spot Feed"];
-			add_option('spotmap_api_providers', $data_r);
-		}
-		if(!get_option('spotmap_custom_messages')){
-			add_option('spotmap_custom_messages', []);
-		}
-
-		$defaults =[
-			"spotmap_marker" => [
-				'HELP' => [
-						'iconShape' => "marker",
-						'icon' => "life-ring",
-						'customMessage' => "",
-				],
-				'HELP-CANCEL' => [
-						'iconShape' => "marker",
-						'icon' => "check-double",
-						'customMessage' => "",
-				],
-				'CUSTOM' => [
-						'iconShape' => "marker",
-						'icon' => "comment-dots",
-						'customMessage' => "",
-				],
-				'OK' => [
-						'iconShape' => "marker",
-						'icon' => "thumbs-up",
-						'customMessage' => "",
-				],
-				'STATUS' => [
-						'iconShape' => "circle",
-						'icon' => "check-circle",
-						'customMessage' => "",
-				],
-				'UNLIMITED-TRACK' => [
-						'iconShape' => "circle-dot",
-						'icon' => "user",
-						'customMessage' => "",
-				],
-				'NEWMOVEMENT' => [
-						'iconShape' => "circle",
-						'icon' => "play-circle",
-						'customMessage' => "",
-				],
-				'STOP' => [
-						'iconShape' => "circle",
-						'icon' => "stop-circle",
-						'customMessage' => "",
-				],
-				'MEDIA' => [
-						'iconShape' => "marker",
-						'icon' => "camera-retro",
-						'customMessage' => "",
-				],
-			],
-			"spotmap_default_values" => [
-				'maps' => "openstreetmap,opentopomap",
-				'height' => 500,
-				'mapcenter' => 'all',
-				'width' => 'normal',
-				'color' => 'blue,red',
-				'splitlines' => '12',
-			]
-		];
-		// error_log(print_r(array_diff(get_option("spotmap_marker"),$defaults["spotmap_marker"]),true));
-		foreach ($defaults as $option_name => $value) {
-			if(!get_option($option_name)){
-				add_option($option_name, $defaults[$option_name]);
-			} else {
-				foreach (get_option($option_name) as $index => &$value) {
-					if(empty($value)){
-						$value = $defaults[$option_name][$index];
-					}
-				}
-			}
-		}
+		// Ensure all plugin options exist and include expected keys.
+		Spotmap_Options::ensure_defaults();
 		
 		$args = array(
 			'post_type' => 'attachment',

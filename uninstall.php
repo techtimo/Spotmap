@@ -5,11 +5,10 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
-foreach (get_option("spotmap_api_providers") as $key => $count) {
-    delete_option('spotmap_'.$key.'_name');
-    delete_option('spotmap_'.$key.'_id');
-    delete_option('spotmap_'.$key.'_password');
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-spotmap-options.php';
 
+foreach (Spotmap_Options::get_dynamic_provider_option_names() as $option_name) {
+    delete_option($option_name);
 }
 delete_option("spotmap_api_providers");
 

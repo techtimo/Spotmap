@@ -6,6 +6,7 @@ class Spotmap_Public{
 
 	function __construct() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
 		$this->db = new Spotmap_Database();
 		$this->admin = new Spotmap_Admin();
     }
@@ -57,14 +58,15 @@ class Spotmap_Public{
 	}
 
 	function localize_js_script($script_slug){
+		$default_values = Spotmap_Options::get_settings();
 		wp_localize_script($script_slug, 'spotmapjsobj', [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'maps' => $this->admin->get_maps(),
 			'overlays' => $this->admin->get_overlays(),
 			'url' =>  plugin_dir_url( __FILE__ ),
 			'feeds' => $this->db->get_all_feednames(),
-			'defaultValues' => get_option('spotmap_default_values'),
-			'marker' => get_option('spotmap_marker'),
+			'defaultValues' => $default_values,
+			'marker' => Spotmap_Options::get_marker_options(),
 
 		]);
 	}
@@ -77,6 +79,7 @@ class Spotmap_Public{
 	}
 	function show_point_overview($atts){
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
+		$default_filter_points = Spotmap_Options::get_setting('filter-points');
 		$a = array_merge(
 			shortcode_atts([
 				'count'=> 10,
@@ -87,7 +90,7 @@ class Spotmap_Public{
 				'date' => '',
 				'date-range-to' => '',
 				'auto-reload' => FALSE,
-				'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
+				'filter-points' => $default_filter_points,
 			], $atts),
 			$atts);
 		// get the keys that don't require a value
@@ -145,14 +148,15 @@ class Spotmap_Public{
 		}
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
+		$defaults = Spotmap_Options::get_settings();
 		$a = array_merge(
 			shortcode_atts( [
-				'height' => !empty( get_option('spotmap_default_values')['height'] ) ?get_option('spotmap_default_values')['height'] : 500,
-				'mapcenter' => !empty( get_option('spotmap_default_values')['mapcenter'] ) ?get_option('spotmap_default_values')['mapcenter'] : 'all',
+				'height' => $defaults['height'],
+				'mapcenter' => $defaults['mapcenter'],
 				'feeds' => $this->db->get_all_feednames(),
-				'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
-				'colors' => !empty(get_option('spotmap_default_values')['color']) ?get_option('spotmap_default_values')['color'] : 'blue,red',
-				'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
+				'width' => $defaults['width'],
+				'colors' => $defaults['color'],
+				'splitlines' => $defaults['splitlines'],
 				'auto-reload' => FALSE,
 				'last-point' => FALSE,
 				'date-range-from' => NULL,
@@ -161,9 +165,9 @@ class Spotmap_Public{
 				'gpx-name' => [],
 				'gpx-url' => [],
 				'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-				'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'openstreetmap,opentopomap',
-				'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : NULL,
-				'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
+				'maps' => $defaults['maps'],
+				'map-overlays' => $defaults['map-overlays'],
+				'filter-points' => $defaults['filter-points'],
 				'debug'=> FALSE,
 			], $atts ),
 			$atts);
