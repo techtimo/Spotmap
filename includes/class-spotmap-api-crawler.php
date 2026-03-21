@@ -12,7 +12,6 @@ class Spotmap_Api_Crawler {
 	
 	public function get_data( $feed_name, $id, $pwd = ""){
 		if($this->api == 'findmespot'){
-			// error_log($feed_name. $id.$pwd);
 			return $this->get_data_findmespot($feed_name, $id, $pwd);
 		} else{
 			trigger_error('API ${this->api} is unknown', E_USER_WARNING);
@@ -20,18 +19,15 @@ class Spotmap_Api_Crawler {
 	}
 
 	private function get_data_findmespot ($feed_name, $id, $pwd){
-		// error_log($feed_name. $id . $pwd);
 		$i = 0;
 		while (true) {
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$id.'/message.json?start='.$i;
 			if (!empty($pwd)) {
 				$feed_url .= '&feedPassword=' . $pwd;
 			}
-			
-			// error_log($feed_url);
+
 			$jsonraw = wp_remote_retrieve_body( wp_remote_get( $feed_url ) );
 			if(empty($jsonraw)){
-				// error_log("Empty Response");
 				return false;
 			}
 	

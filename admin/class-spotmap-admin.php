@@ -48,7 +48,7 @@ class Spotmap_Admin {
 
 			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_name',['sanitize_callback'=>[$this, 'validate_feed_name']]);
 			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_id', ['sanitize_callback'=>[$this, 'validate_feed_id']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_password');
+			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_password', ['sanitize_callback' => 'sanitize_text_field']);
 			if($count < 1){
 				continue;
 			}
