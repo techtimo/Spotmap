@@ -12,6 +12,7 @@
     "env:start": "wp-env start --debug --xdebug=debug",
     "env:stop": "wp-env stop",
     "env:destroy": "wp-env destroy",
+    "env:logs": "wp-env run wordpress bash -c \"tail -F /var/www/html/wp-content/debug.log\"",
     "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now",
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",

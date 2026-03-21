@@ -2,6 +2,15 @@
 
 class Spotmap_Database {
 
+	/**
+	 * Loads option helper dependencies used by the database layer.
+	 *
+	 * @return void
+	 */
+	function __construct() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
+	}
+
 	public function get_all_feednames(){
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points");
@@ -103,8 +112,9 @@ class Spotmap_Database {
 			if(!empty($point->custom_message)){
 				$point->message = $point->custom_message;
 			}
-			if(!empty(get_option('spotmap_custom_messages')[$point->type])){
-				$point->message = get_option('spotmap_custom_messages')[$point->type];
+			$custom_message = Spotmap_Options::get_custom_message($point->type);
+			if(!empty($custom_message)){
+				$point->message = $custom_message;
 			}
 		}
 		return $points;
@@ -123,6 +133,7 @@ class Spotmap_Database {
 		if ($point['longitude'] > 180 || $point['longitude']< -180){
 			$point['longitude'] = $last_point->longitude;
 		}
+		$custom_message = Spotmap_Options::get_custom_message($point['messageType']);
 		$data = [
 			'feed_name' => $point['feedName'],
 			'type' => $point['messageType'],
@@ -132,7 +143,7 @@ class Spotmap_Database {
 			'model' => $point['modelId'],
 			'device_name' => $point['messengerName'],
 			'message' => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
-			'custom_message' => !empty( get_option('spotmap_custom_messages')[$point['messageType']] ) ? get_option('spotmap_custom_messages')[$point['messageType']] : NULL,
+			'custom_message' => !empty($custom_message) ? $custom_message : NULL,
 			'feed_id' => $point['feedId']
 		];
 		if (array_key_exists('id', $point)){

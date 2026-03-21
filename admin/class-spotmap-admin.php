@@ -6,6 +6,7 @@ class Spotmap_Admin {
 
 	function __construct() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
 		$this->db = new Spotmap_Database();
 	}
 	
@@ -39,8 +40,9 @@ class Spotmap_Admin {
 		// error_log(print_r(get_option('spotmap_marker'),TRUE));
 		
 		// FEED SECTION
-		foreach (get_option("spotmap_api_providers") as $provider => $name) {
-			$ids = get_option("spotmap_".$provider."_id");
+		$providers = Spotmap_Options::get_api_providers();
+		foreach ($providers as $provider => $name) {
+			$ids = Spotmap_Options::get_provider_field($provider, 'id');
 			
 			$count = empty($ids) ? 1 : count($ids);
 
@@ -63,11 +65,7 @@ class Spotmap_Admin {
 					'password' => ['label' => __('Feed password'), 'type' => 'password', "description" => __("Leave this empty if the feed is public")], 
 				];
 				foreach ($settings as $key => $value) {
-					$pre_populated_value = '';
-					$option = get_option('spotmap_'.$provider.'_' . $key . '');
-					if (!empty($option)){
-						$pre_populated_value =  get_option('spotmap_'.$provider.'_' . $key . '')[$i];
-					}
+					$pre_populated_value = Spotmap_Options::get_provider_field_value($provider, $key, $i, '');
 					add_settings_field(
 						'spotmap_'.$provider.'_' . $key . '['.$i.']',
 						$value["label"],
@@ -96,13 +94,14 @@ class Spotmap_Admin {
 			[ __("Medium marker"), "circle"],
 			[ __("Big marker"), "marker"],
 		];
+		$marker_options = Spotmap_Options::get_marker_options();
 		$settings = [];
 		foreach ($point_types as $point_type) {
 			$settings[$point_type] = [
 				"type" => "dropdown",
 				"options" => $dropdown_options,
 				"id" => "spotmap_marker[" . $point_type . "][iconShape]",
-				"value" => isset( get_option('spotmap_marker')[$point_type]['iconShape'] ) ? get_option('spotmap_marker')[$point_type]['iconShape'] : ''
+				"value" => isset($marker_options[$point_type]['iconShape']) ? $marker_options[$point_type]['iconShape'] : ''
 			];
 		}
 		$this::add_bulk_settings($settings,'spotmap-marker-group','spotmap-marker-shape-section');
@@ -122,7 +121,7 @@ class Spotmap_Admin {
 				"type" => "icon",
 				"size" => 30,
 				"id" => "spotmap_marker[".$point_type."][icon]",
-				"value" => isset(get_option('spotmap_marker')[$point_type]['icon'] ) ? get_option('spotmap_marker')[$point_type]['icon'] : '',
+				"value" => isset($marker_options[$point_type]['icon'] ) ? $marker_options[$point_type]['icon'] : '',
 			];
 		}
 
@@ -142,7 +141,7 @@ class Spotmap_Admin {
 			$settings[$point_type] = [
 				"type" => in_array($point_type,["HELP", "HELP-CANCEL", "CUSTOM", "OK"]) ? "textarea" : "text",
 				"id" => "spotmap_marker[".$point_type."][customMessage]",
-				"value" => isset(get_option('spotmap_marker')[$point_type]['customMessage'] ) ? get_option('spotmap_marker')[$point_type]['customMessage'] : '',
+				"value" => isset($marker_options[$point_type]['customMessage'] ) ? $marker_options[$point_type]['customMessage'] : '',
 			];
 		}
 
@@ -189,9 +188,10 @@ class Spotmap_Admin {
 				"description" => "For adventures in the UK, you can create a free plan at the <a href=\"https://osdatahub.os.uk/plans\">UK Ordnance Survey</a>. Afterwards follow the guide on <a href=\"https://osdatahub.os.uk/docs/wmts/gettingStarted\">how to create a project</a>.",
 			],
 		];
+		$api_tokens = Spotmap_Options::get_api_tokens();
 		foreach ($settings as $index => &$setting) {
 			$setting["id"] = 'spotmap_api_tokens['.$index.']';
-			$setting["value"] = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
+			$setting["value"] = isset($api_tokens[$index]) ? $api_tokens[$index] : '';
 		}
 
 		$this::add_bulk_settings($settings,'spotmap-thirdparties-group','spotmap-thirdparty-section');
@@ -233,9 +233,10 @@ class Spotmap_Admin {
 					"type" => "number",
 				],
 		];
+		$default_values = Spotmap_Options::get_settings();
 		foreach ($settings as $index => &$setting) {
 			$setting["id"] = 'spotmap_default_values['.$index.']';
-			$setting["value"] = isset( get_option('spotmap_default_values')[$index] ) ? get_option('spotmap_default_values')[$index] : '';
+			$setting["value"] = $default_values[$index] ?? '';
 		}
 		$this::add_bulk_settings($settings,'spotmap-defaults-group','spotmap-defaults');
 	}
@@ -350,25 +351,30 @@ class Spotmap_Admin {
 	}
 	
 	function validate_feed_name($new_feed_name){
+		$existing_feed_names = Spotmap_Options::get_provider_field('findmespot', 'name');
+		$existing_feed_ids = Spotmap_Options::get_provider_field('findmespot', 'id');
+
 		foreach ($new_feed_name as $index => &$feed_name) {
 			$feed_name = sanitize_text_field($feed_name);
-			$old_feed_name = get_option("spotmap_findmespot_name")[$index];
+			$old_feed_name = isset($existing_feed_names[$index]) ? $existing_feed_names[$index] : '';
 			if(empty($feed_name)){
 				continue;
 			} else if ($feed_name == $old_feed_name){
 				continue;
 			}
-			$feed_id= get_option("spotmap_findmespot_id")[$index];
+			$feed_id = isset($existing_feed_ids[$index]) ? $existing_feed_ids[$index] : '';
 			$result = $this->db->rename_feed_name($old_feed_name, $feed_name);
 		}
 		return $new_feed_name;
 	}
 	
 	function validate_feed_id($new_feed_id){
+		$existing_feed_ids = Spotmap_Options::get_provider_field('findmespot', 'id');
+
 		foreach ($new_feed_id as $index => &$feed_id) {
 			$feed_id = sanitize_text_field($feed_id);
 			// error_log($feed_id);
-			$old_feed_id = get_option("spotmap_findmespot_id")[$index];
+			$old_feed_id = isset($existing_feed_ids[$index]) ? $existing_feed_ids[$index] : '';
 			if(empty($feed_id)){
 				unset($new_feed_id[$index]);
 				continue;
@@ -377,11 +383,20 @@ class Spotmap_Admin {
 			}
 
 			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$feed_id.'/message.json';
-			$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
-			//if feed is empty bail out here
-			if (empty($json) || isset($json['response']['errors']) && $json['response']['errors']['error']['code'] === "E-0160"){
-				// error_log('stay with old value');
+			$response = wp_remote_get( $feed_url );
+			$json = is_wp_error( $response ) ? [] : json_decode( wp_remote_retrieve_body( $response ), true );
+			$api_error = isset( $json['response']['errors']['error'] ) ? $json['response']['errors']['error'] : null;
+			$has_api_error = !empty( $api_error );
+			$is_invalid = empty( $json ) || $has_api_error;
+
+			// Prevent invalid ids from being stored: keep the previous value when available.
+			if ( $is_invalid ){
 				add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id: "'.$feed_id.'" is not valid.', 'error' );
+				if ( !empty( $old_feed_id ) ) {
+					$new_feed_id[$index] = $old_feed_id;
+				} else {
+					unset( $new_feed_id[$index] );
+				}
 			}
 		}
 		return $new_feed_id;
@@ -410,8 +425,9 @@ class Spotmap_Admin {
 	function get_feed_data(){
 		// error_log("Checking for new feed data ...");
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
-		foreach (get_option("spotmap_api_providers") as $key => $name) {
-			$ids = get_option("spotmap_".$key."_id");
+		$providers = Spotmap_Options::get_api_providers();
+		foreach ($providers as $key => $name) {
+			$ids = Spotmap_Options::get_provider_field($key, 'id');
 			$count = count($ids);
 			if($count < 1){
 				continue;
@@ -419,25 +435,14 @@ class Spotmap_Admin {
 			$crawler = new Spotmap_Api_Crawler("findmespot");
 			for ($i=0; $i < $count; $i++) {
 				if($key == 'findmespot'){
-					$feed_name = get_option('spotmap_'.$key.'_name')[$i];
+					$feed_name = Spotmap_Options::get_provider_field_value($key, 'name', $i, '');
 					$id = $ids[$i];
-					$pwd = get_option('spotmap_'.$key.'_password')[$i];
+					$pwd = Spotmap_Options::get_provider_field_value($key, 'password', $i, '');
 					
 					$crawler->get_data($feed_name, $id, $pwd);
 				}
 			}
 
-		}
-		// error_log("cron job started");
-        if (!get_option('spotmap_options')) {
-			// trigger_error('no values found');
-			return;
-		}
-		foreach (get_option("spotmap_options") as $key => $count) {
-			if($count < 1){
-				continue;
-			}
-			
 		}
 	}
 	function get_local_timezone(){
@@ -448,8 +453,11 @@ class Spotmap_Admin {
 		if(empty($row)){
 			return;
 		}
-		$token = get_option('spotmap_api_tokens')['timezonedb'];
-		$url = "http://api.timezonedb.com/v2.1/get-time-zone?key=".get_option('spotmap_api_tokens')["timezonedb"]."&format=json&by=position&lat=".$row->latitude."&lng=".$row->longitude;
+		$token = Spotmap_Options::get_api_token('timezonedb');
+		if (empty($token)) {
+			return;
+		}
+		$url = "http://api.timezonedb.com/v2.1/get-time-zone?key=".$token."&format=json&by=position&lat=".$row->latitude."&lng=".$row->longitude;
 		$response = wp_remote_get( $url );
 		// error_log( wp_remote_retrieve_response_code($response) );
 		$json = wp_remote_retrieve_body( $response );
@@ -493,7 +501,7 @@ class Spotmap_Admin {
 			["option" => 'geoservices.ign.fr', "token"=>"geoportailToken"],
 			["option" => 'osdatahub.os.uk', "token"=>"osdatahubToken"],
 		];
-		$api_tokens = get_option('spotmap_api_tokens');
+		$api_tokens = Spotmap_Options::get_api_tokens();
 		foreach ($maps as $name => &$data) {
 			foreach ($api_names as $i => $options) {
 				if(isset($data['options'][$options['token']])){
