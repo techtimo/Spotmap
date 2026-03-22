@@ -1,0 +1,4 @@
+coverage/
+build/
+public/
+vendor/

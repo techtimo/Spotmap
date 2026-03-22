@@ -40,10 +40,7 @@ export class DataFetcher {
 				for ( const [ subKey, subVal ] of Object.entries(
 					value as Record< string, unknown >
 				) ) {
-					params.append(
-						`${ key }[${ subKey }]`,
-						String( subVal )
-					);
+					params.append( `${ key }[${ subKey }]`, String( subVal ) );
 				}
 			} else {
 				params.append( key, String( value ) );

@@ -32,10 +32,7 @@ export class LineManager {
 			return false;
 		}
 
-		const coordinates: L.LatLngTuple = [
-			point.latitude,
-			point.longitude,
-		];
+		const coordinates: L.LatLngTuple = [ point.latitude, point.longitude ];
 
 		const splitLines = this.layerManager.getFeedSplitLines( feedName );
 		if ( splitLines === false ) {
@@ -81,17 +78,21 @@ export class LineManager {
 		const line = L.polyline( [], { color, weight, opacity } );
 
 		// Add directional arrows using the TextPath plugin
-		( line as unknown as { setText: ( text: string, options: Record< string, unknown > ) => void } ).setText(
-			LINE_ARROW_CHAR,
-			{
-				repeat: true,
-				offset: LINE_ARROW_OFFSET,
-				attributes: {
-					fill: 'black',
-					'font-size': LINE_ARROW_FONT_SIZE,
-				},
+		(
+			line as unknown as {
+				setText: (
+					text: string,
+					options: Record< string, unknown >
+				) => void;
 			}
-		);
+		 ).setText( LINE_ARROW_CHAR, {
+			repeat: true,
+			offset: LINE_ARROW_OFFSET,
+			attributes: {
+				fill: 'black',
+				'font-size': LINE_ARROW_FONT_SIZE,
+			},
+		} );
 
 		return line;
 	}

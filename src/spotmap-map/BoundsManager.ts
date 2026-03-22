@@ -55,9 +55,7 @@ export class BoundsManager {
 		return allBounds;
 	}
 
-	private getLastBounds(
-		option: 'last' | 'last-trip'
-	): L.LatLngBounds {
+	private getLastBounds( option: 'last' | 'last-trip' ): L.LatLngBounds {
 		let latestUnixtime = 0;
 		let latestFeedName = '';
 
@@ -79,16 +77,12 @@ export class BoundsManager {
 
 		if ( option === 'last' ) {
 			const bounds = L.latLngBounds( [] );
-			bounds.extend( [
-				latestPoint.latitude,
-				latestPoint.longitude,
-			] );
+			bounds.extend( [ latestPoint.latitude, latestPoint.longitude ] );
 			return bounds;
 		}
 
 		// 'last-trip': return the bounds of the last polyline for that feed
-		const lastLine =
-			this.layers.feeds[ latestFeedName ]?.lines.at( -1 );
+		const lastLine = this.layers.feeds[ latestFeedName ]?.lines.at( -1 );
 		return lastLine ? lastLine.getBounds() : L.latLngBounds( [] );
 	}
 

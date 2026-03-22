@@ -18,17 +18,27 @@ const stripMaps = process.argv.includes( '--strip-maps' );
 
 function stripSourceMappingURL( filePath ) {
 	const content = fs.readFileSync( filePath, 'utf8' );
-	const stripped = content.replace( /\/[*/]#\s*sourceMappingURL=.*?(?:\*\/|$)/gm, '' );
+	const stripped = content.replace(
+		/\/[*/]#\s*sourceMappingURL=.*?(?:\*\/|$)/gm,
+		''
+	);
 	if ( content !== stripped ) {
 		fs.writeFileSync( filePath, stripped, 'utf8' );
-		console.log( `  (stripped sourceMappingURL from ${ path.relative( root, filePath ) })` );
+		console.log(
+			`  (stripped sourceMappingURL from ${ path.relative(
+				root,
+				filePath
+			) })`
+		);
 	}
 }
 
 function copyFile( src, dest ) {
 	fs.mkdirSync( path.dirname( dest ), { recursive: true } );
 	fs.copyFileSync( src, dest );
-	console.log( `  ${ path.relative( root, src ) } -> ${ path.relative( root, dest ) }` );
+	console.log(
+		`  ${ path.relative( root, src ) } -> ${ path.relative( root, dest ) }`
+	);
 }
 
 /**
@@ -56,43 +66,88 @@ function copyDir( src, dest ) {
 			copyDir( srcPath, destPath );
 		} else {
 			fs.copyFileSync( srcPath, destPath );
-			console.log( `  ${ path.relative( root, srcPath ) } -> ${ path.relative( root, destPath ) }` );
+			console.log(
+				`  ${ path.relative( root, srcPath ) } -> ${ path.relative(
+					root,
+					destPath
+				) }`
+			);
 		}
 	}
 }
 
-console.log( `Copying front-end dependencies${ stripMaps ? ' (production)' : ' (dev)' }...\n` );
+console.log(
+	`Copying front-end dependencies${
+		stripMaps ? ' (production)' : ' (dev)'
+	}...\n`
+);
 
 // Leaflet core
-copyJsFile( nm( 'leaflet', 'dist', 'leaflet.js' ), pub( 'leaflet', 'leaflet.js' ) );
-copyFile( nm( 'leaflet', 'dist', 'leaflet.css' ), pub( 'leaflet', 'leaflet.css' ) );
+copyJsFile(
+	nm( 'leaflet', 'dist', 'leaflet.js' ),
+	pub( 'leaflet', 'leaflet.js' )
+);
+copyFile(
+	nm( 'leaflet', 'dist', 'leaflet.css' ),
+	pub( 'leaflet', 'leaflet.css' )
+);
 copyDir( nm( 'leaflet', 'dist', 'images' ), pub( 'leaflet', 'images' ) );
 
 // Leaflet Fullscreen (file names changed in v5)
-copyFile( nm( 'leaflet.fullscreen', 'dist', 'Control.FullScreen.umd.js' ), pub( 'leafletfullscreen', 'leaflet.fullscreen.js' ) );
-copyFile( nm( 'leaflet.fullscreen', 'dist', 'Control.FullScreen.css' ), pub( 'leafletfullscreen', 'leaflet.fullscreen.css' ) );
+copyFile(
+	nm( 'leaflet.fullscreen', 'dist', 'Control.FullScreen.umd.js' ),
+	pub( 'leafletfullscreen', 'leaflet.fullscreen.js' )
+);
+copyFile(
+	nm( 'leaflet.fullscreen', 'dist', 'Control.FullScreen.css' ),
+	pub( 'leafletfullscreen', 'leaflet.fullscreen.css' )
+);
 
 // Leaflet GPX
 copyFile( nm( 'leaflet-gpx', 'gpx.js' ), pub( 'leaflet-gpx', 'gpx.js' ) );
 copyDir( nm( 'leaflet-gpx', 'icons' ), pub( 'leaflet-gpx' ) );
 
 // Leaflet EasyButton
-copyFile( nm( 'leaflet-easybutton', 'src', 'easy-button.js' ), pub( 'leaflet-easy-button', 'easy-button.js' ) );
-copyFile( nm( 'leaflet-easybutton', 'src', 'easy-button.css' ), pub( 'leaflet-easy-button', 'easy-button.css' ) );
+copyFile(
+	nm( 'leaflet-easybutton', 'src', 'easy-button.js' ),
+	pub( 'leaflet-easy-button', 'easy-button.js' )
+);
+copyFile(
+	nm( 'leaflet-easybutton', 'src', 'easy-button.css' ),
+	pub( 'leaflet-easy-button', 'easy-button.css' )
+);
 
 // Leaflet TextPath
-copyFile( nm( 'leaflet-textpath', 'leaflet.textpath.js' ), pub( 'leaflet-textpath', 'leaflet.textpath.js' ) );
+copyFile(
+	nm( 'leaflet-textpath', 'leaflet.textpath.js' ),
+	pub( 'leaflet-textpath', 'leaflet.textpath.js' )
+);
 
 // Leaflet Beautify Marker
-copyFile( nm( 'beautifymarker', 'leaflet-beautify-marker-icon.js' ), pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.js' ) );
-copyFile( nm( 'beautifymarker', 'leaflet-beautify-marker-icon.css' ), pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.css' ) );
+copyFile(
+	nm( 'beautifymarker', 'leaflet-beautify-marker-icon.js' ),
+	pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.js' )
+);
+copyFile(
+	nm( 'beautifymarker', 'leaflet-beautify-marker-icon.css' ),
+	pub( 'leaflet-beautify-marker', 'leaflet-beautify-marker-icon.css' )
+);
 
 // Leaflet TileLayer Swiss
-copyJsFile( nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.js' ), pub( 'leaflet-tilelayer-swisstopo', 'Leaflet.TileLayer.Swiss.umd.js' ) );
+copyJsFile(
+	nm( 'leaflet-tilelayer-swiss', 'dist', 'Leaflet.TileLayer.Swiss.umd.js' ),
+	pub( 'leaflet-tilelayer-swisstopo', 'Leaflet.TileLayer.Swiss.umd.js' )
+);
 
 // Font Awesome
-copyFile( nm( '@fortawesome', 'fontawesome-free', 'css', 'all.min.css' ), inc( 'css', 'font-awesome-all.min.css' ) );
-copyDir( nm( '@fortawesome', 'fontawesome-free', 'webfonts' ), inc( 'webfonts' ) );
+copyFile(
+	nm( '@fortawesome', 'fontawesome-free', 'css', 'all.min.css' ),
+	inc( 'css', 'font-awesome-all.min.css' )
+);
+copyDir(
+	nm( '@fortawesome', 'fontawesome-free', 'webfonts' ),
+	inc( 'webfonts' )
+);
 
 // Plugin custom styles (authored in src/css/, served from public/css/)
 const src = ( ...parts ) => path.join( root, 'src', ...parts );

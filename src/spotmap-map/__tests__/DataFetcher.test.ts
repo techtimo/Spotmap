@@ -86,7 +86,7 @@ describe( 'DataFetcher.removeClosePoints', () => {
 		const pts = [
 			makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
 			makePoint( 47.0, 8.0000001, 'UNLIMITED-TRACK', 2 ), // close
-			makePoint( 48.0, 9.0, 'UNLIMITED-TRACK', 3 ),        // far — new anchor
+			makePoint( 48.0, 9.0, 'UNLIMITED-TRACK', 3 ), // far — new anchor
 			makePoint( 48.0, 9.0000001, 'UNLIMITED-TRACK', 4 ), // close to new anchor
 		];
 		const result = DataFetcher.removeClosePoints( pts, 50 );
@@ -113,7 +113,10 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
 describe( 'DataFetcher.removeClosePoints — sentiero_italia load test', () => {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const raw: Record< string, string >[] = require( '../../../examples/sentiero_italia.json' );
+	const raw: Record<
+		string,
+		string
+	>[] = require( '../../../examples/sentiero_italia.json' );
 	const points: SpotPoint[] = raw.map( ( p, i ) => ( {
 		id: Number( p.id ) || i,
 		feed_name: p.feed_name ?? 'spot',
@@ -175,7 +178,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 		const serverPoints = [ makePoint( 47.0, 8.0 ) ];
 		mockFetch( serverPoints );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		const result = await fetcher.fetchPoints( minimalBody );
 
 		expect( result ).toEqual( serverPoints );
@@ -184,7 +189,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 	it( 'returns the response as-is when empty flag is set', async () => {
 		mockFetch( { empty: true } );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		const result = await fetcher.fetchPoints( minimalBody );
 
 		expect( ( result as { empty: boolean } ).empty ).toBe( true );
@@ -193,7 +200,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 	it( 'returns the response as-is when error flag is set', async () => {
 		mockFetch( { error: true } );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		const result = await fetcher.fetchPoints( minimalBody );
 
 		expect( ( result as { error: boolean } ).error ).toBe( true );
@@ -207,7 +216,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 		];
 		mockFetch( serverPoints );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		const result = await fetcher.fetchPoints( minimalBody, 50 );
 
 		expect( ( result as SpotPoint[] ).length ).toBe( 1 );
@@ -216,7 +227,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 	it( 'sends a POST request to the given URL', async () => {
 		const mock = mockFetch( [] );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		await fetcher.fetchPoints( minimalBody );
 
 		expect( mock ).toHaveBeenCalledWith(
@@ -228,8 +241,13 @@ describe( 'DataFetcher.fetchPoints', () => {
 	it( 'encodes array body values as key[] params', async () => {
 		const mock = mockFetch( [] );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
-		await fetcher.fetchPoints( { action: 'spotmap', feeds: [ 'f1', 'f2' ] } as AjaxRequestBody & { feeds: string[] } );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
+		await fetcher.fetchPoints( {
+			action: 'spotmap',
+			feeds: [ 'f1', 'f2' ],
+		} as AjaxRequestBody & { feeds: string[] } );
 
 		const body: string = mock.mock.calls[ 0 ][ 1 ].body;
 		expect( body ).toContain( 'feeds%5B%5D=f1' );
@@ -243,7 +261,9 @@ describe( 'DataFetcher.fetchPoints', () => {
 
 describe( 'DataFetcher.abort', () => {
 	it( 'does not throw when called before any fetch', () => {
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		expect( () => fetcher.abort() ).not.toThrow();
 	} );
 
@@ -251,14 +271,17 @@ describe( 'DataFetcher.abort', () => {
 		// fetch never resolves — simulates a slow network
 		global.fetch = jest.fn().mockReturnValue( new Promise( () => {} ) );
 
-		const fetcher = new DataFetcher( 'https://example.com/wp-admin/admin-ajax.php' );
+		const fetcher = new DataFetcher(
+			'https://example.com/wp-admin/admin-ajax.php'
+		);
 		const promise = fetcher.fetchPoints( minimalBody );
 
 		fetcher.abort();
 
 		// The AbortController abort signal is passed to fetch; the promise stays
 		// pending but we can verify fetch was called with a signal.
-		const signal = ( global.fetch as jest.Mock ).mock.calls[ 0 ][ 1 ].signal;
+		const signal = ( global.fetch as jest.Mock ).mock.calls[ 0 ][ 1 ]
+			.signal;
 		expect( signal.aborted ).toBe( true );
 
 		// Prevent unhandled promise rejection

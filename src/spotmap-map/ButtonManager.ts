@@ -44,7 +44,9 @@ export class ButtonManager {
 		}
 	}
 
-	private createNavigationButton( navOpts: NavigationButtonsConfig ): L.Control | null {
+	private createNavigationButton(
+		navOpts: NavigationButtonsConfig
+	): L.Control | null {
 		const hasGpx = !! ( this.options.gpx && this.options.gpx.length > 0 );
 
 		const STATE_DEFS: Array< {
@@ -80,9 +82,7 @@ export class ButtonManager {
 		];
 
 		const active = STATE_DEFS.filter(
-			( s ) =>
-				navOpts[ s.key ] !== false &&
-				( ! s.needsGpx || hasGpx )
+			( s ) => navOpts[ s.key ] !== false && ( ! s.needsGpx || hasGpx )
 		);
 
 		if ( active.length === 0 ) {

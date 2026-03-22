@@ -4,7 +4,6 @@ import type {
 	AjaxRequestBody,
 	AjaxResponse,
 	TableOptions,
-	MapCenter,
 } from './types';
 import {
 	DEFAULT_CENTER,
@@ -14,7 +13,8 @@ import {
 } from './constants';
 import { debug as debugLog, getColorDot } from './utils';
 
-const DOWNLOAD_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;fill:currentColor"><path d="M18 11.3l-1-1.1-4 3.9V4h-1.7v10.1l-4-3.9-1.1 1.1 5.9 5.8 5.9-5.8zm-2.9 7.2H8.9v1.5h6.2v-1.5z"/></svg>';
+const DOWNLOAD_SVG =
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;fill:currentColor"><path d="M18 11.3l-1-1.1-4 3.9V4h-1.7v10.1l-4-3.9-1.1 1.1 5.9 5.8 5.9-5.8zm-2.9 7.2H8.9v1.5h6.2v-1.5z"/></svg>';
 import { DataFetcher } from './DataFetcher';
 import { LayerManager } from './LayerManager';
 import { MarkerManager } from './MarkerManager';
@@ -71,20 +71,23 @@ export class Spotmap {
 
 		// If the element already has a Leaflet map and options haven't changed,
 		// skip re-initialization.
-		const oldOptions = ( el as HTMLElement & { _spotmapOptions?: SpotmapOptions } )._spotmapOptions;
-		( el as HTMLElement & { _spotmapOptions?: SpotmapOptions } )._spotmapOptions = this.options;
+		const oldOptions = (
+			el as HTMLElement & { _spotmapOptions?: SpotmapOptions }
+		 )._spotmapOptions;
+		(
+			el as HTMLElement & { _spotmapOptions?: SpotmapOptions }
+		 )._spotmapOptions = this.options;
 
-		if (
-			( el as HTMLElement & { _leaflet_id?: number } )._leaflet_id
-		) {
+		if ( ( el as HTMLElement & { _leaflet_id?: number } )._leaflet_id ) {
 			if (
-				JSON.stringify( this.options ) ===
-				JSON.stringify( oldOptions )
+				JSON.stringify( this.options ) === JSON.stringify( oldOptions )
 			) {
 				return;
 			}
 			// Reset the Leaflet instance on the element
-			( el as HTMLElement & { _leaflet_id?: number | null } )._leaflet_id = null;
+			(
+				el as HTMLElement & { _leaflet_id?: number | null }
+			 )._leaflet_id = null;
 			// Clear child panes
 			el.querySelectorAll( '.leaflet-control-container' ).forEach(
 				( c ) => {
@@ -129,20 +132,13 @@ export class Spotmap {
 			this.layers,
 			this.layerManager
 		);
-		this.lineManager = new LineManager(
-			this.layers,
-			this.layerManager
-		);
-		this.boundsManager = new BoundsManager(
-			this.map,
-			this.layers
-		);
+		this.lineManager = new LineManager( this.layers, this.layerManager );
+		this.boundsManager = new BoundsManager( this.map, this.layers );
 		this.buttonManager = new ButtonManager(
 			this.map,
 			this.options,
 			this.boundsManager
 		);
-
 
 		// Add tile layers and controls
 		this.layerManager.addBaseLayers();
@@ -171,7 +167,7 @@ export class Spotmap {
 			}
 
 			if ( ! response.empty ) {
-				for ( const entry of response as import( './types' ).SpotPoint[] ) {
+				for ( const entry of response as import('./types').SpotPoint[] ) {
 					this.ensureFeedLayer( entry.feed_name );
 					this.markerManager.addPoint( entry );
 					this.lineManager.addPointToLine( entry );
@@ -188,17 +184,12 @@ export class Spotmap {
 			) {
 				this.showEmptyState();
 			} else {
-				this.boundsManager.fitBounds(
-					this.options.mapcenter
-				);
+				this.boundsManager.fitBounds( this.options.mapcenter );
 			}
 
 			this.layerManager.addOverlays();
 
-			if (
-				this.options.autoReload &&
-				! response.empty
-			) {
+			if ( this.options.autoReload && ! response.empty ) {
 				this.startAutoReload( body );
 			}
 		} catch ( err ) {
@@ -222,15 +213,13 @@ export class Spotmap {
 				type: ( this.options as unknown as TableOptions ).type,
 			} ),
 			...( ( this.options as unknown as TableOptions ).orderBy && {
-				orderBy: ( this.options as unknown as TableOptions )
-					.orderBy,
+				orderBy: ( this.options as unknown as TableOptions ).orderBy,
 			} ),
 			...( ( this.options as unknown as TableOptions ).limit && {
 				limit: ( this.options as unknown as TableOptions ).limit,
 			} ),
 			...( ( this.options as unknown as TableOptions ).groupBy && {
-				groupBy: ( this.options as unknown as TableOptions )
-					.groupBy,
+				groupBy: ( this.options as unknown as TableOptions ).groupBy,
 			} ),
 		};
 
@@ -277,9 +266,7 @@ export class Spotmap {
 		}
 
 		for ( const entry of this.options.gpx ) {
-			const color = this.layerManager.getGpxColor(
-				entry.color
-			);
+			const color = this.layerManager.getGpxColor( entry.color );
 			const gpxOptions = {
 				async: true,
 				marker_options: {
@@ -295,9 +282,7 @@ export class Spotmap {
 					},
 					startIconUrl: '',
 					endIconUrl: '',
-					shadowUrl:
-						spotmapjsobj.url +
-						'leaflet-gpx/pin-shadow.png',
+					shadowUrl: spotmapjsobj.url + 'leaflet-gpx/pin-shadow.png',
 				},
 				polyline_options: { color },
 			};
@@ -308,15 +293,14 @@ export class Spotmap {
 
 			const track = new L.GPX( entry.url, gpxOptions )
 				.on( 'loaded', () => {
-					if (
-						this.options.mapcenter === 'gpx' ||
-						response.empty
-					) {
+					if ( this.options.mapcenter === 'gpx' || response.empty ) {
 						this.boundsManager.fitBounds( 'gpx' );
 					}
 				} )
 				.on( 'addline', ( e: L.LeafletEvent ) => {
-					( e as L.LeafletEvent & { line: L.Polyline } ).line.bindPopup( entry.title + downloadLink );
+					(
+						e as L.LeafletEvent & { line: L.Polyline }
+					 ).line.bindPopup( entry.title + downloadLink );
 				} );
 
 			const html = ` ${ getColorDot( color ) }${ downloadLink }`;
@@ -324,9 +308,7 @@ export class Spotmap {
 				featureGroup: L.featureGroup( [ track ] ),
 			};
 			if ( entry.visible !== false ) {
-				this.layers.gpx[ entry.title ].featureGroup.addTo(
-					this.map
-				);
+				this.layers.gpx[ entry.title ].featureGroup.addTo( this.map );
 			}
 			this.layerManager.layerControl.addOverlay(
 				this.layers.gpx[ entry.title ].featureGroup,
@@ -336,7 +318,9 @@ export class Spotmap {
 	}
 
 	private addLastPointMarkers(): void {
-		for ( const [ feedName, feed ] of Object.entries( this.layers.feeds ) ) {
+		for ( const [ feedName, feed ] of Object.entries(
+			this.layers.feeds
+		) ) {
 			if ( ! this.options.styles?.[ feedName ]?.lastPoint ) {
 				continue;
 			}
@@ -351,7 +335,10 @@ export class Spotmap {
 				textColor: color,
 				borderColor: color,
 			} );
-			L.marker( [ lp.latitude, lp.longitude ], { icon, zIndexOffset: 1000 } )
+			L.marker( [ lp.latitude, lp.longitude ], {
+				icon,
+				zIndexOffset: 1000,
+			} )
 				.bindPopup( MarkerManager.getPopupHtml( lp ) )
 				.addTo( feed.featureGroup );
 		}
@@ -383,7 +370,7 @@ export class Spotmap {
 					return;
 				}
 
-				for ( const entry of response as import( './types' ).SpotPoint[] ) {
+				for ( const entry of response as import('./types').SpotPoint[] ) {
 					const feedName = entry.feed_name;
 					const feed = this.layers.feeds[ feedName ];
 					if ( ! feed ) {
@@ -391,24 +378,16 @@ export class Spotmap {
 					}
 
 					const lastPoint = feed.points.at( -1 );
-					if (
-						lastPoint &&
-						lastPoint.unixtime < entry.unixtime
-					) {
+					if ( lastPoint && lastPoint.unixtime < entry.unixtime ) {
 						this.debug(
 							`Found a new point for Feed: ${ feedName }`
 						);
 						this.markerManager.addPoint( entry );
 						this.lineManager.addPointToLine( entry );
 
-						if (
-							this.options.mapcenter === 'last'
-						) {
+						if ( this.options.mapcenter === 'last' ) {
 							this.map.setView(
-								[
-									entry.latitude,
-									entry.longitude,
-								],
+								[ entry.latitude, entry.longitude ],
 								SINGLE_POINT_ZOOM
 							);
 						}

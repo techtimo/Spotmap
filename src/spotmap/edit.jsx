@@ -58,7 +58,15 @@ const DATE_PRESETS_TO = [
 
 // Inline SVG for the Maps toolbar button
 const MAP_ICON = (
-	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5">
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		width="24"
+		height="24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
 		<path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z" />
 		<path d="M9 3v15M15 6v15" />
 	</svg>
@@ -66,19 +74,43 @@ const MAP_ICON = (
 
 // Satellite icon (inline SVG)
 const SATELLITE_ICON = (
-	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		width="20"
+		height="20"
+		fill="currentColor"
+	>
 		<g transform="rotate(45 12 12)">
-			{/* Left solar panel */}
-			<rect x="1.5" y="10.5" width="5" height="3" rx="0.4"/>
-			{/* Right solar panel */}
-			<rect x="17.5" y="10.5" width="5" height="3" rx="0.4"/>
-			{/* Body */}
-			<rect x="8" y="9" width="8" height="6" rx="1"/>
+			{ /* Left solar panel */ }
+			<rect x="1.5" y="10.5" width="5" height="3" rx="0.4" />
+			{ /* Right solar panel */ }
+			<rect x="17.5" y="10.5" width="5" height="3" rx="0.4" />
+			{ /* Body */ }
+			<rect x="8" y="9" width="8" height="6" rx="1" />
 		</g>
-		{/* Signal arcs, bottom-left */}
-		<path d="M5 19 Q2.5 16.5 5 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-		<path d="M3.5 20.5 Q-0.5 16.5 3.5 12.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-		<path d="M7 17.5 Q5.5 16 7 14.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+		{ /* Signal arcs, bottom-left */ }
+		<path
+			d="M5 19 Q2.5 16.5 5 14"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
+		<path
+			d="M3.5 20.5 Q-0.5 16.5 3.5 12.5"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
+		<path
+			d="M7 17.5 Q5.5 16 7 14.5"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
 	</svg>
 );
 
@@ -92,20 +124,36 @@ const DEFAULT_FEED_STYLE = {
 
 // Returns options for a date SelectControl, appending a custom value entry if needed.
 const buildDateOptions = ( value, presets ) =>
-	value && ! presets.find( ( o ) => o.value === value ) && value !== 'specific'
+	value &&
+	! presets.find( ( o ) => o.value === value ) &&
+	value !== 'specific'
 		? [ ...presets, { label: value, value } ]
 		: presets;
 
 // Reusable section header for popovers.
 const SectionHeader = ( { label } ) => (
-	<p style={ { margin: '0 0 8px', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', color: '#757575' } }>
+	<p
+		style={ {
+			margin: '0 0 8px',
+			fontWeight: 600,
+			fontSize: '11px',
+			textTransform: 'uppercase',
+			color: '#757575',
+		} }
+	>
 		{ label }
 	</p>
 );
 
 // Reusable divider line.
 const Divider = ( { spaced = false } ) => (
-	<hr style={ { margin: spaced ? '8px 0' : 0, border: 'none', borderTop: '1px solid #ddd' } } />
+	<hr
+		style={ {
+			margin: spaced ? '8px 0' : 0,
+			border: 'none',
+			borderTop: '1px solid #ddd',
+		} }
+	/>
 );
 
 // Toggle with a flyout sub-popover that reveals on hover.
@@ -127,7 +175,10 @@ function NavigationButtonsControl( { value, onChange } ) {
 	return (
 		<div
 			ref={ anchorRef }
-			onMouseEnter={ () => { cancelClose(); setOpen( true ); } }
+			onMouseEnter={ () => {
+				cancelClose();
+				setOpen( true );
+			} }
 			onMouseLeave={ scheduleClose }
 		>
 			<ToggleControl
@@ -144,7 +195,13 @@ function NavigationButtonsControl( { value, onChange } ) {
 					onClose={ () => setOpen( false ) }
 				>
 					<div
-						style={ { padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '140px' } }
+						style={ {
+							padding: '8px 12px',
+							display: 'flex',
+							flexDirection: 'column',
+							gap: '4px',
+							minWidth: '140px',
+						} }
 						onMouseEnter={ cancelClose }
 						onMouseLeave={ scheduleClose }
 					>
@@ -177,7 +234,15 @@ function NavigationButtonsControl( { value, onChange } ) {
 const GPX_PAGE_SIZE = 10;
 
 // GPX manager modal — central hub for managing GPX tracks.
-function GpxManagerModal( { gpx, onAdd, onUpload, onRemoveAll, onRemoveOne, setAttributes, onClose } ) {
+function GpxManagerModal( {
+	gpx,
+	onAdd,
+	onUpload,
+	onRemoveAll,
+	onRemoveOne,
+	setAttributes,
+	onClose,
+} ) {
 	const uploadInputRef = useRef( null );
 	const [ page, setPage ] = useState( 0 );
 	const [ isDragging, setIsDragging ] = useState( false );
@@ -189,8 +254,8 @@ function GpxManagerModal( { gpx, onAdd, onUpload, onRemoveAll, onRemoveOne, setA
 			styleTarget === 'all'
 				? gpx.map( ( t ) => ( { ...t, [ key ]: value } ) )
 				: gpx.map( ( t, i ) =>
-					i === styleTarget ? { ...t, [ key ]: value } : t
-				);
+						i === styleTarget ? { ...t, [ key ]: value } : t
+				  );
 		setAttributes( { gpx: updated } );
 	};
 
@@ -250,12 +315,23 @@ function GpxManagerModal( { gpx, onAdd, onUpload, onRemoveAll, onRemoveOne, setA
 
 	return (
 		<Modal
-			title={ styleTarget !== null ? __( 'GPX — Style' ) : __( 'GPX Tracks' ) }
-			onRequestClose={ styleTarget !== null ? () => setStyleTarget( null ) : onClose }
+			title={
+				styleTarget !== null ? __( 'GPX — Style' ) : __( 'GPX Tracks' )
+			}
+			onRequestClose={
+				styleTarget !== null ? () => setStyleTarget( null ) : onClose
+			}
 			size="medium"
 		>
 			{ styleTarget !== null ? (
-				<div style={ { display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0' } }>
+				<div
+					style={ {
+						display: 'flex',
+						flexDirection: 'column',
+						gap: '16px',
+						padding: '8px 0',
+					} }
+				>
 					<Button
 						variant="tertiary"
 						icon="arrow-left-alt2"
@@ -270,7 +346,15 @@ function GpxManagerModal( { gpx, onAdd, onUpload, onRemoveAll, onRemoveOne, setA
 							: styleTrack?.title }
 					</p>
 					<div>
-						<p style={ { margin: '0 0 8px', fontWeight: 600, fontSize: '13px' } }>{ __( 'Color' ) }</p>
+						<p
+							style={ {
+								margin: '0 0 8px',
+								fontWeight: 600,
+								fontSize: '13px',
+							} }
+						>
+							{ __( 'Color' ) }
+						</p>
 						<ColorPalette
 							colors={ COLORS }
 							value={ styleTrack?.color || 'gold' }
@@ -284,135 +368,268 @@ function GpxManagerModal( { gpx, onAdd, onUpload, onRemoveAll, onRemoveOne, setA
 						label={ __( 'Show on map' ) }
 						checked={ styleTrack?.visible !== false }
 						onChange={ ( v ) => updateGpxProp( 'visible', v ) }
-						help={ __( 'Uncheck to hide this track without removing it' ) }
+						help={ __(
+							'Uncheck to hide this track without removing it'
+						) }
 					/>
 					<ToggleControl
 						__nextHasNoMarginBottom
 						label={ __( 'Show download button' ) }
 						checked={ !! styleTrack?.download }
 						onChange={ ( v ) => updateGpxProp( 'download', v ) }
-						help={ __( 'Show a download icon in the layer control and popup' ) }
+						help={ __(
+							'Show a download icon in the layer control and popup'
+						) }
 					/>
 				</div>
 			) : (
-			<div
-				onDragEnter={ handleDragEnter }
-				onDragLeave={ handleDragLeave }
-				onDragOver={ handleDragOver }
-				onDrop={ handleDrop }
-				style={ {
-					position: 'relative',
-					outline: isDragging ? '2px dashed #007cba' : '2px dashed transparent',
-					borderRadius: '4px',
-					padding: '4px',
-					transition: 'outline-color 0.1s',
-				} }
-			>
-				{ isDragging && (
-					<div style={ {
-						position: 'absolute', inset: 0, zIndex: 10,
-						background: 'rgba(0, 124, 186, 0.08)',
+				<div
+					onDragEnter={ handleDragEnter }
+					onDragLeave={ handleDragLeave }
+					onDragOver={ handleDragOver }
+					onDrop={ handleDrop }
+					style={ {
+						position: 'relative',
+						outline: isDragging
+							? '2px dashed #007cba'
+							: '2px dashed transparent',
 						borderRadius: '4px',
-						display: 'flex', alignItems: 'center', justifyContent: 'center',
-						pointerEvents: 'none',
-					} }>
-						<span style={ { fontWeight: 600, color: '#007cba', fontSize: '14px' } }>
-							{ __( 'Drop GPX files here' ) }
-						</span>
-					</div>
-				) }
-
-			{ /* Top action bar */ }
-			<div style={ { display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' } }>
-				<Button variant="primary" icon={ upload } onClick={ () => uploadInputRef.current?.click() }>
-					{ __( 'Upload' ) }
-				</Button>
-				<MediaUpload
-					allowedTypes={ [ 'text/xml' ] }
-					multiple
-					value={ gpx.map( ( t ) => t.id ) }
-					onSelect={ ( selection ) => { setPage( 0 ); onAdd( selection ); } }
-					render={ ( { open } ) => (
-						<Button variant="secondary" onClick={ open }>
-							{ __( 'Media Library' ) }
-						</Button>
-					) }
-				/>
-				<input
-					ref={ uploadInputRef }
-					type="file"
-					accept=".gpx,.xml"
-					multiple
-					style={ { display: 'none' } }
-					onChange={ handleFileChange }
-				/>
-				{ gpx.length > 0 && (
-					<>
-						<Button icon={ brush } label={ __( 'Style all tracks' ) } onClick={ () => setStyleTarget( 'all' ) } />
-						<Button icon={ trash } label={ __( 'Remove all tracks' ) } isDestructive onClick={ () => { onRemoveAll(); onClose(); } } />
-					</>
-				) }
-			</div>
-
-			{ /* Track table */ }
-			{ gpx.length > 0 && (
-				<>
-					<table style={ { width: '100%', borderCollapse: 'collapse' } }>
-						<tbody>
-							{ pageTracks.map( ( track, localIdx ) => {
-								const globalIdx = pageStart + localIdx;
-								return (
-									<tr key={ track.id } style={ { borderBottom: '1px solid #ddd' } }>
-										<td style={ { padding: '6px 8px 6px 0' } }>
-											<div style={ { display: 'flex', alignItems: 'center', gap: '4px' } }>
-												<Button icon={ brush } label={ __( 'Style this track' ) } onClick={ () => setStyleTarget( globalIdx ) } />
-												<span style={ {
-													display: 'block',
-													width: '16px',
-													height: '16px',
-													borderRadius: '50%',
-													background: track.color || 'gold',
-													flexShrink: 0,
-												} } />
-											</div>
-										</td>
-										<td style={ { padding: '6px 4px', width: '100%' } }>{ track.title }</td>
-										<td style={ { padding: '6px 0 6px 8px', width: '32px', textAlign: 'right' } }>
-											<Button icon={ trash } label={ __( 'Remove track' ) } isDestructive onClick={ () => onRemoveOne( globalIdx ) } />
-										</td>
-									</tr>
-								);
-							} ) }
-						</tbody>
-					</table>
-					{ totalPages > 1 && (
-						<div style={ { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' } }>
-							<Button
-								variant="secondary"
-								disabled={ safePage === 0 }
-								onClick={ () => setPage( safePage - 1 ) }
+						padding: '4px',
+						transition: 'outline-color 0.1s',
+					} }
+				>
+					{ isDragging && (
+						<div
+							style={ {
+								position: 'absolute',
+								inset: 0,
+								zIndex: 10,
+								background: 'rgba(0, 124, 186, 0.08)',
+								borderRadius: '4px',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								pointerEvents: 'none',
+							} }
+						>
+							<span
+								style={ {
+									fontWeight: 600,
+									color: '#007cba',
+									fontSize: '14px',
+								} }
 							>
-								{ __( '← Prev' ) }
-							</Button>
-							<span style={ { fontSize: '12px', color: '#757575' } }>
-								{ pageStart + 1 }–{ Math.min( pageStart + GPX_PAGE_SIZE, gpx.length ) } { __( 'of' ) } { gpx.length }
+								{ __( 'Drop GPX files here' ) }
 							</span>
-							<Button
-								variant="secondary"
-								disabled={ safePage >= totalPages - 1 }
-								onClick={ () => setPage( safePage + 1 ) }
-							>
-								{ __( 'Next →' ) }
-							</Button>
 						</div>
 					) }
-				</>
-			) }
 
-			{ gpx.length === 0 && (
-				<p style={ { color: '#757575', margin: 0 } }>{ __( 'No GPX tracks selected. Use Library or Upload to add tracks.' ) }</p>
-			) }
-			</div>
+					{ /* Top action bar */ }
+					<div
+						style={ {
+							display: 'flex',
+							gap: '8px',
+							marginBottom: '16px',
+							alignItems: 'center',
+						} }
+					>
+						<Button
+							variant="primary"
+							icon={ upload }
+							onClick={ () => uploadInputRef.current?.click() }
+						>
+							{ __( 'Upload' ) }
+						</Button>
+						<MediaUpload
+							allowedTypes={ [ 'text/xml' ] }
+							multiple
+							value={ gpx.map( ( t ) => t.id ) }
+							onSelect={ ( selection ) => {
+								setPage( 0 );
+								onAdd( selection );
+							} }
+							render={ ( { open } ) => (
+								<Button variant="secondary" onClick={ open }>
+									{ __( 'Media Library' ) }
+								</Button>
+							) }
+						/>
+						<input
+							ref={ uploadInputRef }
+							type="file"
+							accept=".gpx,.xml"
+							multiple
+							style={ { display: 'none' } }
+							onChange={ handleFileChange }
+						/>
+						{ gpx.length > 0 && (
+							<>
+								<Button
+									icon={ brush }
+									label={ __( 'Style all tracks' ) }
+									onClick={ () => setStyleTarget( 'all' ) }
+								/>
+								<Button
+									icon={ trash }
+									label={ __( 'Remove all tracks' ) }
+									isDestructive
+									onClick={ () => {
+										onRemoveAll();
+										onClose();
+									} }
+								/>
+							</>
+						) }
+					</div>
+
+					{ /* Track table */ }
+					{ gpx.length > 0 && (
+						<>
+							<table
+								style={ {
+									width: '100%',
+									borderCollapse: 'collapse',
+								} }
+							>
+								<tbody>
+									{ pageTracks.map( ( track, localIdx ) => {
+										const globalIdx = pageStart + localIdx;
+										return (
+											<tr
+												key={ track.id }
+												style={ {
+													borderBottom:
+														'1px solid #ddd',
+												} }
+											>
+												<td
+													style={ {
+														padding:
+															'6px 8px 6px 0',
+													} }
+												>
+													<div
+														style={ {
+															display: 'flex',
+															alignItems:
+																'center',
+															gap: '4px',
+														} }
+													>
+														<Button
+															icon={ brush }
+															label={ __(
+																'Style this track'
+															) }
+															onClick={ () =>
+																setStyleTarget(
+																	globalIdx
+																)
+															}
+														/>
+														<span
+															style={ {
+																display:
+																	'block',
+																width: '16px',
+																height: '16px',
+																borderRadius:
+																	'50%',
+																background:
+																	track.color ||
+																	'gold',
+																flexShrink: 0,
+															} }
+														/>
+													</div>
+												</td>
+												<td
+													style={ {
+														padding: '6px 4px',
+														width: '100%',
+													} }
+												>
+													{ track.title }
+												</td>
+												<td
+													style={ {
+														padding:
+															'6px 0 6px 8px',
+														width: '32px',
+														textAlign: 'right',
+													} }
+												>
+													<Button
+														icon={ trash }
+														label={ __(
+															'Remove track'
+														) }
+														isDestructive
+														onClick={ () =>
+															onRemoveOne(
+																globalIdx
+															)
+														}
+													/>
+												</td>
+											</tr>
+										);
+									} ) }
+								</tbody>
+							</table>
+							{ totalPages > 1 && (
+								<div
+									style={ {
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'space-between',
+										marginTop: '12px',
+									} }
+								>
+									<Button
+										variant="secondary"
+										disabled={ safePage === 0 }
+										onClick={ () =>
+											setPage( safePage - 1 )
+										}
+									>
+										{ __( '← Prev' ) }
+									</Button>
+									<span
+										style={ {
+											fontSize: '12px',
+											color: '#757575',
+										} }
+									>
+										{ pageStart + 1 }–
+										{ Math.min(
+											pageStart + GPX_PAGE_SIZE,
+											gpx.length
+										) }{ ' ' }
+										{ __( 'of' ) } { gpx.length }
+									</span>
+									<Button
+										variant="secondary"
+										disabled={ safePage >= totalPages - 1 }
+										onClick={ () =>
+											setPage( safePage + 1 )
+										}
+									>
+										{ __( 'Next →' ) }
+									</Button>
+								</div>
+							) }
+						</>
+					) }
+
+					{ gpx.length === 0 && (
+						<p style={ { color: '#757575', margin: 0 } }>
+							{ __(
+								'No GPX tracks selected. Use Library or Upload to add tracks.'
+							) }
+						</p>
+					) }
+				</div>
 			) }
 		</Modal>
 	);
@@ -427,9 +644,24 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
 			onRequestClose={ onClose }
 			size="medium"
 		>
-			<div style={ { display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0' } }>
+			<div
+				style={ {
+					display: 'flex',
+					flexDirection: 'column',
+					gap: '16px',
+					padding: '8px 0',
+				} }
+			>
 				<div>
-					<p style={ { margin: '0 0 8px', fontWeight: 600, fontSize: '13px' } }>{ __( 'Color' ) }</p>
+					<p
+						style={ {
+							margin: '0 0 8px',
+							fontWeight: 600,
+							fontSize: '13px',
+						} }
+					>
+						{ __( 'Color' ) }
+					</p>
 					<ColorPalette
 						colors={ COLORS }
 						value={ s.color || 'blue' }
@@ -455,8 +687,12 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
 						__next40pxDefaultSize
 						label={ __( 'Split lines (hours)' ) }
 						value={ s.splitLines || '' }
-						onChange={ ( value ) => onUpdate( 'splitLines', value ) }
-						help={ __( 'Hours between points before starting a new line segment' ) }
+						onChange={ ( value ) =>
+							onUpdate( 'splitLines', value )
+						}
+						help={ __(
+							'Hours between points before starting a new line segment'
+						) }
 					/>
 				) }
 				<RangeControl
@@ -484,14 +720,18 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
 					label={ __( 'Show last point' ) }
 					checked={ !! s.lastPoint }
 					onChange={ ( value ) => onUpdate( 'lastPoint', value ) }
-					help={ __( 'Highlight the latest point with a large circle marker' ) }
+					help={ __(
+						'Highlight the latest point with a large circle marker'
+					) }
 				/>
 				<ToggleControl
 					__nextHasNoMarginBottom
 					label={ __( 'Show on map' ) }
 					checked={ s.visible !== false }
 					onChange={ ( value ) => onUpdate( 'visible', value ) }
-					help={ __( 'Uncheck to hide this feed without removing it' ) }
+					help={ __(
+						'Uncheck to hide this feed without removing it'
+					) }
 				/>
 			</div>
 		</Modal>
@@ -533,7 +773,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			'../includes/css/font-awesome-all.min.css',
 		];
 		const links = cssFiles
-			.filter( ( file ) => ! doc.querySelector( `link[href="${ baseUrl + file }"]` ) )
+			.filter(
+				( file ) =>
+					! doc.querySelector( `link[href="${ baseUrl + file }"]` )
+			)
 			.map( ( file ) => {
 				const link = doc.createElement( 'link' );
 				link.rel = 'stylesheet';
@@ -558,9 +801,14 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			const dv = window.spotmapjsobj?.defaultValues ?? {};
 			const defaultMaps = dv.maps
-				? dv.maps.split( ',' ).map( ( m ) => m.trim() ).filter( Boolean )
+				? dv.maps
+						.split( ',' )
+						.map( ( m ) => m.trim() )
+						.filter( Boolean )
 				: attributes.maps;
-			const defaultHeight = dv.height ? parseInt( dv.height, 10 ) : attributes.height;
+			const defaultHeight = dv.height
+				? parseInt( dv.height, 10 )
+				: attributes.height;
 			const defaultMapcenter = dv.mapcenter || attributes.mapcenter;
 
 			setAttributes( {
@@ -644,11 +892,12 @@ export default function Edit( { attributes, setAttributes } ) {
 	const availableOverlays = window.spotmapjsobj?.overlays
 		? Object.keys( window.spotmapjsobj.overlays )
 		: [];
-	const availableFeeds = window.spotmapjsobj?.feeds
-		? Array.isArray( window.spotmapjsobj.feeds )
+	let availableFeeds = [];
+	if ( window.spotmapjsobj?.feeds ) {
+		availableFeeds = Array.isArray( window.spotmapjsobj.feeds )
 			? window.spotmapjsobj.feeds
-			: Object.keys( window.spotmapjsobj.feeds )
-		: [];
+			: Object.keys( window.spotmapjsobj.feeds );
+	}
 
 	const updateStyle = ( feed, key, value ) => {
 		const newStyles = { ...attributes.styles };
@@ -686,10 +935,12 @@ export default function Edit( { attributes, setAttributes } ) {
 	const dateToValue = attributes.dateRange?.to || '';
 	const isCustomDateFrom =
 		dateFromValue === 'specific' ||
-		( dateFromValue && ! DATE_PRESETS_FROM.find( ( o ) => o.value === dateFromValue ) );
+		( dateFromValue &&
+			! DATE_PRESETS_FROM.find( ( o ) => o.value === dateFromValue ) );
 	const isCustomDateTo =
 		dateToValue === 'specific' ||
-		( dateToValue && ! DATE_PRESETS_TO.find( ( o ) => o.value === dateToValue ) );
+		( dateToValue &&
+			! DATE_PRESETS_TO.find( ( o ) => o.value === dateToValue ) );
 
 	const mergeGpxTracks = ( newTracks, getTitle ) => {
 		const existing = attributes.gpx;
@@ -709,18 +960,35 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	const dropdownContentStyle = { padding: '8px', minWidth: '200px' };
-	const checklistStyle = { display: 'flex', flexDirection: 'column', gap: '6px' };
+	const checklistStyle = {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: '6px',
+	};
 
 	return (
 		<>
 			{ gpxManagerOpen && (
 				<GpxManagerModal
 					gpx={ attributes.gpx }
-					onAdd={ ( selection ) => mergeGpxTracks( selection, ( t ) => t.title ) }
-					onUpload={ ( uploaded ) => mergeGpxTracks( uploaded, ( t ) => t.title || t.filename || t.slug || String( t.id ) ) }
+					onAdd={ ( selection ) =>
+						mergeGpxTracks( selection, ( t ) => t.title )
+					}
+					onUpload={ ( uploaded ) =>
+						mergeGpxTracks(
+							uploaded,
+							( t ) =>
+								t.title ||
+								t.filename ||
+								t.slug ||
+								String( t.id )
+						)
+					}
 					onRemoveAll={ () => setAttributes( { gpx: [] } ) }
 					onRemoveOne={ ( i ) => {
-						const next = attributes.gpx.filter( ( _, idx ) => idx !== i );
+						const next = attributes.gpx.filter(
+							( _, idx ) => idx !== i
+						);
 						setAttributes( { gpx: next } );
 					} }
 					setAttributes={ setAttributes }
@@ -731,7 +999,9 @@ export default function Edit( { attributes, setAttributes } ) {
 				<FeedStyleModal
 					feed={ feedStyleModal }
 					style={ attributes.styles?.[ feedStyleModal ] }
-					onUpdate={ ( key, value ) => updateStyle( feedStyleModal, key, value ) }
+					onUpdate={ ( key, value ) =>
+						updateStyle( feedStyleModal, key, value )
+					}
 					onClose={ () => setFeedStyleModal( null ) }
 				/>
 			) }
@@ -760,32 +1030,56 @@ export default function Edit( { attributes, setAttributes } ) {
 									{ availableFeeds.map( ( feed ) => (
 										<div
 											key={ feed }
-											style={ { display: 'flex', alignItems: 'center', gap: '6px' } }
+											style={ {
+												display: 'flex',
+												alignItems: 'center',
+												gap: '6px',
+											} }
 										>
 											<div style={ { flex: 1 } }>
 												<CheckboxControl
 													__nextHasNoMarginBottom
 													label={ feed }
-													checked={ attributes.feeds.includes( feed ) }
-													onChange={ ( checked ) => toggleFeed( feed, checked ) }
+													checked={ attributes.feeds.includes(
+														feed
+													) }
+													onChange={ ( checked ) =>
+														toggleFeed(
+															feed,
+															checked
+														)
+													}
 												/>
 											</div>
 											<Button
 												icon={ brush }
-												label={ __( 'Style' ) + ' ' + feed }
+												label={
+													__( 'Style' ) + ' ' + feed
+												}
 												size="small"
 												variant="tertiary"
-												onClick={ () => { closeDropdown(); setFeedStyleModal( feed ); } }
-												style={ { minWidth: 'unset', padding: '2px 4px' } }
+												onClick={ () => {
+													closeDropdown();
+													setFeedStyleModal( feed );
+												} }
+												style={ {
+													minWidth: 'unset',
+													padding: '2px 4px',
+												} }
 											/>
-											<span style={ {
-												display: 'block',
-												width: '16px',
-												height: '16px',
-												borderRadius: '50%',
-												background: attributes.styles?.[ feed ]?.color || 'blue',
-												flexShrink: 0,
-											} } />
+											<span
+												style={ {
+													display: 'block',
+													width: '16px',
+													height: '16px',
+													borderRadius: '50%',
+													background:
+														attributes.styles?.[
+															feed
+														]?.color || 'blue',
+													flexShrink: 0,
+												} }
+											/>
 										</div>
 									) ) }
 								</div>
@@ -817,28 +1111,64 @@ export default function Edit( { attributes, setAttributes } ) {
 										<CheckboxControl
 											key={ mapKey }
 											__nextHasNoMarginBottom
-											label={ window.spotmapjsobj?.maps[ mapKey ]?.label ?? mapKey }
-											checked={ attributes.maps.includes( mapKey ) }
-											onChange={ ( checked ) => toggleMap( mapKey, checked ) }
+											label={
+												window.spotmapjsobj?.maps[
+													mapKey
+												]?.label ?? mapKey
+											}
+											checked={ attributes.maps.includes(
+												mapKey
+											) }
+											onChange={ ( checked ) =>
+												toggleMap( mapKey, checked )
+											}
 										/>
 									) ) }
 								</div>
 								{ availableOverlays.length > 0 && (
 									<>
 										<Divider spaced />
-										<p style={ { margin: '0 0 6px', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', color: '#757575' } }>
+										<p
+											style={ {
+												margin: '0 0 6px',
+												fontWeight: 600,
+												fontSize: '11px',
+												textTransform: 'uppercase',
+												color: '#757575',
+											} }
+										>
 											{ __( 'Overlays' ) }
 										</p>
 										<div style={ checklistStyle }>
-											{ availableOverlays.map( ( overlayKey ) => (
-												<CheckboxControl
-													key={ overlayKey }
-													__nextHasNoMarginBottom
-													label={ window.spotmapjsobj?.overlays[ overlayKey ]?.label ?? overlayKey }
-													checked={ ( attributes.mapOverlays || [] ).includes( overlayKey ) }
-													onChange={ ( checked ) => toggleOverlay( overlayKey, checked ) }
-												/>
-											) ) }
+											{ availableOverlays.map(
+												( overlayKey ) => (
+													<CheckboxControl
+														key={ overlayKey }
+														__nextHasNoMarginBottom
+														label={
+															window.spotmapjsobj
+																?.overlays[
+																overlayKey
+															]?.label ??
+															overlayKey
+														}
+														checked={ (
+															attributes.mapOverlays ||
+															[]
+														).includes(
+															overlayKey
+														) }
+														onChange={ (
+															checked
+														) =>
+															toggleOverlay(
+																overlayKey,
+																checked
+															)
+														}
+													/>
+												)
+											) }
 										</div>
 									</>
 								) }
@@ -856,15 +1186,17 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						{ __( 'GPX' ) }
 						{ attributes.gpx.length > 0 && (
-							<span style={ {
-								marginLeft: '4px',
-								background: '#1e1e1e',
-								color: '#fff',
-								borderRadius: '10px',
-								padding: '0 5px',
-								fontSize: '10px',
-								lineHeight: '16px',
-							} }>
+							<span
+								style={ {
+									marginLeft: '4px',
+									background: '#1e1e1e',
+									color: '#fff',
+									borderRadius: '10px',
+									padding: '0 5px',
+									fontSize: '10px',
+									lineHeight: '16px',
+								} }
+							>
 								{ attributes.gpx.length }
 							</span>
 						) }
@@ -873,7 +1205,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 				{ /* Time filter — calendar icon opens popover */ }
 				<ToolbarGroup>
-					<div ref={ timeFilterAnchorRef } style={ { display: 'inline-flex' } }>
+					<div
+						ref={ timeFilterAnchorRef }
+						style={ { display: 'inline-flex' } }
+					>
 						<ToolbarButton
 							label={ __( 'Time filter' ) }
 							onClick={ () => setTimeFilterOpen( ( v ) => ! v ) }
@@ -888,23 +1223,52 @@ export default function Edit( { attributes, setAttributes } ) {
 							onClose={ () => setTimeFilterOpen( false ) }
 							placement="bottom-start"
 						>
-							<div style={ { padding: '12px', minWidth: '260px', display: 'flex', flexDirection: 'column', gap: '12px' } }>
-								<p style={ { margin: 0, fontWeight: 600, fontSize: '13px' } }>{ __( 'Time filter' ) }</p>
+							<div
+								style={ {
+									padding: '12px',
+									minWidth: '260px',
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '12px',
+								} }
+							>
+								<p
+									style={ {
+										margin: 0,
+										fontWeight: 600,
+										fontSize: '13px',
+									} }
+								>
+									{ __( 'Time filter' ) }
+								</p>
 								<SelectControl
 									__nextHasNoMarginBottom
 									__next40pxDefaultSize
 									label={ __( 'Show points from' ) }
 									value={ dateFromValue }
-									options={ buildDateOptions( dateFromValue, DATE_PRESETS_FROM ) }
+									options={ buildDateOptions(
+										dateFromValue,
+										DATE_PRESETS_FROM
+									) }
 									onChange={ ( value ) =>
-										setAttributes( { dateRange: { ...attributes.dateRange, from: value } } )
+										setAttributes( {
+											dateRange: {
+												...attributes.dateRange,
+												from: value,
+											},
+										} )
 									}
 								/>
 								{ isCustomDateFrom && (
 									<DateTimePicker
 										currentDate={ new Date() }
 										onChange={ ( date ) =>
-											setAttributes( { dateRange: { ...attributes.dateRange, from: date } } )
+											setAttributes( {
+												dateRange: {
+													...attributes.dateRange,
+													from: date,
+												},
+											} )
 										}
 									/>
 								) }
@@ -913,16 +1277,29 @@ export default function Edit( { attributes, setAttributes } ) {
 									__next40pxDefaultSize
 									label={ __( 'Show points to' ) }
 									value={ dateToValue }
-									options={ buildDateOptions( dateToValue, DATE_PRESETS_TO ) }
+									options={ buildDateOptions(
+										dateToValue,
+										DATE_PRESETS_TO
+									) }
 									onChange={ ( value ) =>
-										setAttributes( { dateRange: { ...attributes.dateRange, to: value } } )
+										setAttributes( {
+											dateRange: {
+												...attributes.dateRange,
+												to: value,
+											},
+										} )
 									}
 								/>
 								{ isCustomDateTo && (
 									<DateTimePicker
 										currentDate={ new Date() }
 										onChange={ ( date ) =>
-											setAttributes( { dateRange: { ...attributes.dateRange, to: date } } )
+											setAttributes( {
+												dateRange: {
+													...attributes.dateRange,
+													to: date,
+												},
+											} )
 										}
 									/>
 								) }
@@ -933,7 +1310,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 				{ /* Map settings — gear icon opens popover */ }
 				<ToolbarGroup>
-					<div ref={ mapSettingsAnchorRef } style={ { display: 'inline-flex' } }>
+					<div
+						ref={ mapSettingsAnchorRef }
+						style={ { display: 'inline-flex' } }
+					>
 						<ToolbarButton
 							label={ __( 'Map settings' ) }
 							onClick={ () => setMapSettingsOpen( ( v ) => ! v ) }
@@ -948,29 +1328,63 @@ export default function Edit( { attributes, setAttributes } ) {
 							onClose={ () => setMapSettingsOpen( false ) }
 							placement="bottom-start"
 						>
-							<div style={ { padding: '12px', minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '16px' } }>
+							<div
+								style={ {
+									padding: '12px',
+									minWidth: '280px',
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '16px',
+								} }
+							>
 								<div>
 									<SectionHeader label={ __( 'Display' ) } />
-									<div style={ { display: 'flex', flexDirection: 'column', gap: '8px' } }>
+									<div
+										style={ {
+											display: 'flex',
+											flexDirection: 'column',
+											gap: '8px',
+										} }
+									>
 										<SelectControl
 											__nextHasNoMarginBottom
 											__next40pxDefaultSize
 											label={ __( 'Zoom to' ) }
 											value={ attributes.mapcenter }
 											options={ [
-												{ label: 'All points', value: 'all' },
-												{ label: 'Last trip', value: 'last-trip' },
-												{ label: 'Latest point', value: 'last' },
-												{ label: 'GPX tracks', value: 'gpx' },
+												{
+													label: 'All points',
+													value: 'all',
+												},
+												{
+													label: 'Last trip',
+													value: 'last-trip',
+												},
+												{
+													label: 'Latest point',
+													value: 'last',
+												},
+												{
+													label: 'GPX tracks',
+													value: 'gpx',
+												},
 											] }
-											onChange={ ( value ) => setAttributes( { mapcenter: value } ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													mapcenter: value,
+												} )
+											}
 										/>
 										<RangeControl
 											__nextHasNoMarginBottom
 											__next40pxDefaultSize
 											label={ __( 'Height (px)' ) }
 											value={ attributes.height }
-											onChange={ ( value ) => setAttributes( { height: value } ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													height: value,
+												} )
+											}
 											min={ 200 }
 											max={ 1200 }
 											step={ 50 }
@@ -981,19 +1395,37 @@ export default function Edit( { attributes, setAttributes } ) {
 								<Divider />
 
 								<div>
-									<SectionHeader label={ __( 'Interaction' ) } />
-									<div style={ { display: 'flex', flexDirection: 'column', gap: '4px' } }>
+									<SectionHeader
+										label={ __( 'Interaction' ) }
+									/>
+									<div
+										style={ {
+											display: 'flex',
+											flexDirection: 'column',
+											gap: '4px',
+										} }
+									>
 										<ToggleControl
 											__nextHasNoMarginBottom
 											label={ __( 'Enable panning' ) }
 											checked={ attributes.enablePanning }
-											onChange={ ( value ) => setAttributes( { enablePanning: value } ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													enablePanning: value,
+												} )
+											}
 										/>
 										<ToggleControl
 											__nextHasNoMarginBottom
 											label={ __( 'Scroll wheel zoom' ) }
-											checked={ attributes.scrollWheelZoom }
-											onChange={ ( value ) => setAttributes( { scrollWheelZoom: value } ) }
+											checked={
+												attributes.scrollWheelZoom
+											}
+											onChange={ ( value ) =>
+												setAttributes( {
+													scrollWheelZoom: value,
+												} )
+											}
 										/>
 									</div>
 								</div>
@@ -1002,20 +1434,45 @@ export default function Edit( { attributes, setAttributes } ) {
 
 								<div>
 									<SectionHeader label={ __( 'Data' ) } />
-									<div style={ { display: 'flex', flexDirection: 'column', gap: '8px' } }>
+									<div
+										style={ {
+											display: 'flex',
+											flexDirection: 'column',
+											gap: '8px',
+										} }
+									>
 										<UnitControl
 											label={ __( 'Hide nearby points' ) }
 											value={ `${ attributes.filterPoints }m` }
-											units={ [ { value: 'm', label: 'Meter', default: 10 } ] }
-											onChange={ ( value ) => setAttributes( { filterPoints: parseInt( value ) || 0 } ) }
-											help={ __( 'Hide points within this radius to reduce clutter' ) }
+											units={ [
+												{
+													value: 'm',
+													label: 'Meter',
+													default: 10,
+												},
+											] }
+											onChange={ ( value ) =>
+												setAttributes( {
+													filterPoints:
+														parseInt( value ) || 0,
+												} )
+											}
+											help={ __(
+												'Hide points within this radius to reduce clutter'
+											) }
 										/>
 										<ToggleControl
 											__nextHasNoMarginBottom
 											label={ __( 'Auto-reload' ) }
 											checked={ attributes.autoReload }
-											onChange={ ( value ) => setAttributes( { autoReload: value } ) }
-											help={ __( 'Refresh map data every 30 seconds' ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													autoReload: value,
+												} )
+											}
+											help={ __(
+												'Refresh map data every 30 seconds'
+											) }
 										/>
 									</div>
 								</div>
@@ -1024,22 +1481,44 @@ export default function Edit( { attributes, setAttributes } ) {
 
 								<div>
 									<SectionHeader label={ __( 'Controls' ) } />
-									<div style={ { display: 'flex', flexDirection: 'column', gap: '4px' } }>
+									<div
+										style={ {
+											display: 'flex',
+											flexDirection: 'column',
+											gap: '4px',
+										} }
+									>
 										<ToggleControl
 											__nextHasNoMarginBottom
 											label={ __( 'Location button' ) }
 											checked={ attributes.locateButton }
-											onChange={ ( value ) => setAttributes( { locateButton: value } ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													locateButton: value,
+												} )
+											}
 										/>
 										<ToggleControl
 											__nextHasNoMarginBottom
 											label={ __( 'Fullscreen button' ) }
-											checked={ attributes.fullscreenButton }
-											onChange={ ( value ) => setAttributes( { fullscreenButton: value } ) }
+											checked={
+												attributes.fullscreenButton
+											}
+											onChange={ ( value ) =>
+												setAttributes( {
+													fullscreenButton: value,
+												} )
+											}
 										/>
 										<NavigationButtonsControl
-											value={ attributes.navigationButtons }
-											onChange={ ( value ) => setAttributes( { navigationButtons: value } ) }
+											value={
+												attributes.navigationButtons
+											}
+											onChange={ ( value ) =>
+												setAttributes( {
+													navigationButtons: value,
+												} )
+											}
 										/>
 									</div>
 								</div>
@@ -1056,7 +1535,9 @@ export default function Edit( { attributes, setAttributes } ) {
 						__nextHasNoMarginBottom
 						label={ __( 'Debug' ) }
 						checked={ attributes.debug }
-						onChange={ ( value ) => setAttributes( { debug: value } ) }
+						onChange={ ( value ) =>
+							setAttributes( { debug: value } )
+						}
 					/>
 				</PanelBody>
 			</InspectorControls>
@@ -1073,7 +1554,6 @@ export default function Edit( { attributes, setAttributes } ) {
 					},
 				} ) }
 			>
-
 				<div
 					ref={ mapRef }
 					id={ mapId }

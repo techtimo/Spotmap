@@ -16,11 +16,7 @@ export class LayerManager {
 	private readonly layers: SpotmapLayers;
 	readonly layerControl: L.Control.Layers;
 
-	constructor(
-		map: L.Map,
-		options: SpotmapOptions,
-		layers: SpotmapLayers
-	) {
+	constructor( map: L.Map, options: SpotmapOptions, layers: SpotmapLayers ) {
 		this.map = map;
 		this.options = options;
 		this.layers = layers;
@@ -78,7 +74,7 @@ export class LayerManager {
 	}
 
 	private createTileLayer(
-		config: import( './types' ).TileLayerConfig
+		config: import('./types').TileLayerConfig
 	): L.TileLayer | L.TileLayer.WMS {
 		return config.wms
 			? L.tileLayer.wms( config.url, config.options as L.WMSOptions )

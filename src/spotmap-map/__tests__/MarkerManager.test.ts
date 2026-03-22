@@ -27,7 +27,9 @@ describe( 'MarkerManager.getPopupHtml', () => {
 	} );
 
 	it( 'shows altitude when above zero', () => {
-		const html = MarkerManager.getPopupHtml( makePoint( { altitude: 2500 } ) );
+		const html = MarkerManager.getPopupHtml(
+			makePoint( { altitude: 2500 } )
+		);
 		expect( html ).toContain( 'Altitude: 2500m' );
 	} );
 
@@ -46,7 +48,10 @@ describe( 'MarkerManager.getPopupHtml', () => {
 
 	it( 'shows image tag for MEDIA type', () => {
 		const html = MarkerManager.getPopupHtml(
-			makePoint( { type: 'MEDIA', message: 'https://example.com/photo.jpg' } )
+			makePoint( {
+				type: 'MEDIA',
+				message: 'https://example.com/photo.jpg',
+			} )
 		);
 		expect( html ).toContain( '<img' );
 		expect( html ).toContain( 'https://example.com/photo.jpg' );
