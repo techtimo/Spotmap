@@ -4,11 +4,13 @@ import type {
 	AjaxRequestBody,
 	AjaxResponse,
 	TableOptions,
+	SpotPoint,
 } from './types';
 import {
 	DEFAULT_CENTER,
 	DEFAULT_ZOOM,
 	AUTO_RELOAD_INTERVAL_MS,
+	MAX_RELOAD_BACKOFF_MS,
 	SINGLE_POINT_ZOOM,
 } from './constants';
 import { debug as debugLog, getColorDot } from './utils';
@@ -43,8 +45,9 @@ export class Spotmap {
 	private tableRenderer: TableRenderer | null = null;
 
 	private _destroyed = false;
-	private autoReloadIntervalId: ReturnType< typeof setInterval > | null =
-		null;
+	private autoReloadTimeoutId: ReturnType< typeof setTimeout > | null = null;
+	private latestUnixtimeByFeed: Map< string, number > = new Map();
+	private onVisibilityChange: ( () => void ) | null = null;
 
 	constructor( options: SpotmapOptions ) {
 		if ( ! options.maps ) {
@@ -190,6 +193,14 @@ export class Spotmap {
 			this.layerManager.addOverlays();
 
 			if ( this.options.autoReload && ! response.empty ) {
+				for ( const [ feedName, feed ] of Object.entries(
+					this.layers.feeds
+				) ) {
+					this.latestUnixtimeByFeed.set(
+						feedName,
+						feed.points.at( -1 )?.unixtime ?? 0
+					);
+				}
 				this.startAutoReload( body );
 			}
 		} catch ( err ) {
@@ -237,9 +248,17 @@ export class Spotmap {
 	destroy(): void {
 		this._destroyed = true;
 
-		if ( this.autoReloadIntervalId !== null ) {
-			clearInterval( this.autoReloadIntervalId );
-			this.autoReloadIntervalId = null;
+		if ( this.autoReloadTimeoutId !== null ) {
+			clearTimeout( this.autoReloadTimeoutId );
+			this.autoReloadTimeoutId = null;
+		}
+
+		if ( this.onVisibilityChange ) {
+			document.removeEventListener(
+				'visibilitychange',
+				this.onVisibilityChange
+			);
+			this.onVisibilityChange = null;
 		}
 
 		this.tableRenderer?.destroy();
@@ -359,45 +378,77 @@ export class Spotmap {
 			orderBy: 'time DESC',
 		};
 
-		this.autoReloadIntervalId = setInterval( async () => {
-			try {
-				const response = await this.dataFetcher.fetchPoints(
-					reloadBody,
-					this.options.filterPoints
-				);
-
-				if ( response.error || response.empty ) {
+		const poll = ( delay: number ): void => {
+			this.autoReloadTimeoutId = setTimeout( async () => {
+				if ( document.hidden ) {
 					return;
 				}
 
-				for ( const entry of response as import('./types').SpotPoint[] ) {
-					const feedName = entry.feed_name;
-					const feed = this.layers.feeds[ feedName ];
-					if ( ! feed ) {
-						continue;
-					}
+				try {
+					const response = await this.dataFetcher.fetchPoints(
+						reloadBody,
+						this.options.filterPoints
+					);
 
-					const lastPoint = feed.points.at( -1 );
-					if ( lastPoint && lastPoint.unixtime < entry.unixtime ) {
-						this.debug(
-							`Found a new point for Feed: ${ feedName }`
-						);
-						this.markerManager.addPoint( entry );
-						this.lineManager.addPointToLine( entry );
+					if ( ! response.error && ! response.empty ) {
+						for ( const entry of response as SpotPoint[] ) {
+							const feedName = entry.feed_name;
+							const feed = this.layers.feeds[ feedName ];
+							if ( ! feed ) {
+								continue;
+							}
 
-						if ( this.options.mapcenter === 'last' ) {
-							this.map.setView(
-								[ entry.latitude, entry.longitude ],
-								SINGLE_POINT_ZOOM
-							);
+							const lastUnixtime =
+								this.latestUnixtimeByFeed.get( feedName ) ?? 0;
+							if ( entry.unixtime > lastUnixtime ) {
+								this.latestUnixtimeByFeed.set(
+									feedName,
+									entry.unixtime
+								);
+								this.debug(
+									`Found a new point for Feed: ${ feedName }`
+								);
+								this.markerManager.addPoint( entry );
+								this.lineManager.addPointToLine( entry );
+
+								if ( this.options.mapcenter === 'last' ) {
+									this.map.setView(
+										[ entry.latitude, entry.longitude ],
+										SINGLE_POINT_ZOOM
+									);
+								}
+							}
 						}
 					}
+
+					poll( AUTO_RELOAD_INTERVAL_MS );
+				} catch ( err ) {
+					this.debug( 'Auto-reload error:', err );
+					poll(
+						Math.min( delay * 2, MAX_RELOAD_BACKOFF_MS )
+					);
 				}
-			} catch ( err ) {
-				this.debug( 'Auto-reload error:' );
-				this.debug( err );
+			}, delay );
+		};
+
+		if ( this.onVisibilityChange ) {
+			document.removeEventListener(
+				'visibilitychange',
+				this.onVisibilityChange
+			);
+		}
+		this.onVisibilityChange = () => {
+			if ( ! document.hidden ) {
+				if ( this.autoReloadTimeoutId !== null ) {
+					clearTimeout( this.autoReloadTimeoutId );
+					this.autoReloadTimeoutId = null;
+				}
+				poll( 0 );
 			}
-		}, AUTO_RELOAD_INTERVAL_MS );
+		};
+		document.addEventListener( 'visibilitychange', this.onVisibilityChange );
+
+		poll( AUTO_RELOAD_INTERVAL_MS );
 	}
 
 	private debug( ...args: unknown[] ): void {
