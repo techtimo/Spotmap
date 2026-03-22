@@ -74,7 +74,12 @@
 		},
 		"navigationButtons": {
 			"type": "object",
-			"default": { "enabled": true, "allPoints": true, "latestPoint": true, "gpxTracks": true }
+			"default": {
+				"enabled": true,
+				"allPoints": true,
+				"latestPoint": true,
+				"gpxTracks": true
+			}
 		}
 	},
 	"editorScript": "file:./index.js",

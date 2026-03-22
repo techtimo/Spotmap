@@ -35,10 +35,7 @@ export class MarkerManager {
 	 */
 	addPoint( point: SpotPoint ): void {
 		const feedName = point.feed_name;
-		const coordinates: L.LatLngTuple = [
-			point.latitude,
-			point.longitude,
-		];
+		const coordinates: L.LatLngTuple = [ point.latitude, point.longitude ];
 
 		const markerOptions = this.getMarkerOptions( point );
 		const popupHtml = MarkerManager.getPopupHtml( point );
@@ -53,21 +50,27 @@ export class MarkerManager {
 
 		// Bind click handlers for the corresponding table row (if it exists).
 		// Use an AbortController so all listeners can be removed on destroy().
-		const tableCell = document.getElementById(
-			`spotmap_${ point.id }`
-		);
+		const tableCell = document.getElementById( `spotmap_${ point.id }` );
 		if ( tableCell ) {
 			const controller = new AbortController();
 			this.tableCellControllers.push( controller );
 			const { signal } = controller;
-			tableCell.addEventListener( 'click', () => {
-				marker.togglePopup();
-				this.map.panTo( coordinates );
-			}, { signal } );
-			tableCell.addEventListener( 'dblclick', () => {
-				marker.togglePopup();
-				this.map.setView( coordinates, SINGLE_POINT_ZOOM );
-			}, { signal } );
+			tableCell.addEventListener(
+				'click',
+				() => {
+					marker.togglePopup();
+					this.map.panTo( coordinates );
+				},
+				{ signal }
+			);
+			tableCell.addEventListener(
+				'dblclick',
+				() => {
+					marker.togglePopup();
+					this.map.setView( coordinates, SINGLE_POINT_ZOOM );
+				},
+				{ signal }
+			);
 		}
 	}
 
@@ -77,19 +80,10 @@ export class MarkerManager {
 	private getMarkerOptions( point: SpotPoint ): L.MarkerOptions {
 		let zIndexOffset = Z_INDEX_TRACK;
 
-		if (
-			! TRACK_TYPES.includes( point.type )
-		) {
+		if ( ! TRACK_TYPES.includes( point.type ) ) {
 			zIndexOffset = Z_INDEX_STATUS;
 		}
-		if (
-			[ 'CUSTOM', 'OK' ].includes( point.type )
-		) {
-			// OK/CUSTOM get standard offset (already set above)
-		}
-		if (
-			[ 'HELP', 'HELP-CANCEL' ].includes( point.type )
-		) {
+		if ( [ 'HELP', 'HELP-CANCEL' ].includes( point.type ) ) {
 			zIndexOffset = Z_INDEX_HELP;
 		}
 
@@ -131,7 +125,10 @@ export class MarkerManager {
 				iconOptions.iconSize = CIRCLE_DOT_ICON_SIZE;
 				iconOptions.borderWith = CIRCLE_DOT_BORDER_WIDTH;
 			}
-		} else if ( pointType && TRACK_TYPES.includes( pointType as SpotPoint[ 'type' ] ) ) {
+		} else if (
+			pointType &&
+			TRACK_TYPES.includes( pointType as SpotPoint[ 'type' ] )
+		) {
 			// Track types fall back to the UNLIMITED-TRACK circle-dot shape
 			const trackMarker = spotmapjsobj.marker[ 'UNLIMITED-TRACK' ];
 			iconOptions.iconShape = trackMarker?.iconShape;
@@ -167,8 +164,7 @@ export class MarkerManager {
 		if (
 			entry.local_timezone &&
 			! (
-				entry.localdate === entry.date &&
-				entry.localtime === entry.time
+				entry.localdate === entry.date && entry.localtime === entry.time
 			)
 		) {
 			html += `Local Time: ${ entry.localtime }<br>Local Date: ${ entry.localdate }<br>`;

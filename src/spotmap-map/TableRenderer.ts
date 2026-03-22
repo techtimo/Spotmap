@@ -1,8 +1,4 @@
-import type {
-	AjaxRequestBody,
-	SpotPoint,
-	TableOptions,
-} from './types';
+import type { AjaxRequestBody, SpotPoint, TableOptions } from './types';
 import { TABLE_RELOAD_INTERVAL_MS } from './constants';
 import { DataFetcher } from './DataFetcher';
 import { debug as debugLog } from './utils';
@@ -39,34 +35,20 @@ export class TableRenderer {
 
 			if ( response.error ) {
 				this.renderTable( table, [], false );
-				this.appendRow( table, [
-					'',
-					'No data found',
-					'',
-				] );
+				this.appendRow( table, [ '', 'No data found', '' ] );
 				return;
 			}
 
 			const points = Array.isArray( response ) ? response : [];
-			const hasLocaltime = points.some(
-				( p ) => !! p.local_timezone
-			);
+			const hasLocaltime = points.some( ( p ) => !! p.local_timezone );
 
 			this.renderTable( table, points, hasLocaltime );
 
 			if ( this.options.autoReload ) {
-				this.startAutoReload(
-					elementId,
-					body,
-					points
-				);
+				this.startAutoReload( elementId, body, points );
 			}
 		} catch ( err ) {
-			debugLog(
-				!! this.options.debug,
-				'TableRenderer error:',
-				err
-			);
+			debugLog( !! this.options.debug, 'TableRenderer error:', err );
 		}
 	}
 
@@ -132,10 +114,7 @@ export class TableRenderer {
 		table.appendChild( row );
 	}
 
-	private appendRow(
-		table: HTMLElement,
-		cells: string[]
-	): void {
+	private appendRow( table: HTMLElement, cells: string[] ): void {
 		const row = document.createElement( 'tr' );
 		for ( const text of cells ) {
 			const td = document.createElement( 'td' );
@@ -166,31 +145,20 @@ export class TableRenderer {
 					return;
 				}
 
-				const points = Array.isArray( response )
-					? response
-					: [];
-				const newFirstUnixtime =
-					points[ 0 ]?.unixtime ?? 0;
+				const points = Array.isArray( response ) ? response : [];
+				const newFirstUnixtime = points[ 0 ]?.unixtime ?? 0;
 
 				if ( newFirstUnixtime > lastFirstUnixtime ) {
 					lastFirstUnixtime = newFirstUnixtime;
-					const table =
-						document.getElementById( elementId );
+					const table = document.getElementById( elementId );
 					if ( table ) {
 						const hasLocaltime = points.some(
 							( p ) => !! p.local_timezone
 						);
-						this.renderTable(
-							table,
-							points,
-							hasLocaltime
-						);
+						this.renderTable( table, points, hasLocaltime );
 					}
 				} else {
-					debugLog(
-						!! this.options.debug,
-						'same response!'
-					);
+					debugLog( !! this.options.debug, 'same response!' );
 				}
 			} catch ( err ) {
 				debugLog(

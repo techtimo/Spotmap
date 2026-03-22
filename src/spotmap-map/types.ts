@@ -82,18 +82,18 @@ export interface FeedStyle {
 	color: string;
 	splitLines?: number | false;
 	splitLinesEnabled?: boolean;
-	lineWidth?: number;    // 1–6px, default 2
-	lineOpacity?: number;  // 0.2–1.0, default 1.0
-	visible?: boolean;     // default true (unset = visible)
-	lastPoint?: boolean;   // highlight the latest point with a large circle marker
+	lineWidth?: number; // 1–6px, default 2
+	lineOpacity?: number; // 0.2–1.0, default 1.0
+	visible?: boolean; // default true (unset = visible)
+	lastPoint?: boolean; // highlight the latest point with a large circle marker
 }
 
 export interface GpxTrackConfig {
 	url: string;
 	title: string;
 	color?: string;
-	visible?: boolean;   // default true (unset = visible)
-	download?: boolean;  // default false — show download icon in layer control & popup
+	visible?: boolean; // default true (unset = visible)
+	download?: boolean; // default false — show download icon in layer control & popup
 	id?: number;
 }
 

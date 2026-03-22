@@ -1,0 +1,6 @@
+coverage/
+build/
+public/
+node_modules/
+vendor/
+includes/css/
