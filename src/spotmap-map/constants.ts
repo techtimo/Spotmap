@@ -17,7 +17,8 @@ export const DEFAULT_ZOOM = 13;
 
 /** Auto-reload intervals in milliseconds */
 export const AUTO_RELOAD_INTERVAL_MS = 30_000;
-export const TABLE_RELOAD_INTERVAL_MS = 10_000;
+export const TABLE_RELOAD_INTERVAL_MS = 30_000;
+export const MAX_RELOAD_BACKOFF_MS = 5 * 60_000;
 
 /** BeautifyIcon dimensions for circle-dot shaped markers */
 export const CIRCLE_DOT_ICON_SIZE: [ number, number ] = [ 8, 8 ];

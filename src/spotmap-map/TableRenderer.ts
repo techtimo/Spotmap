@@ -1,5 +1,5 @@
 import type { AjaxRequestBody, SpotPoint, TableOptions } from './types';
-import { TABLE_RELOAD_INTERVAL_MS } from './constants';
+import { TABLE_RELOAD_INTERVAL_MS, MAX_RELOAD_BACKOFF_MS } from './constants';
 import { DataFetcher } from './DataFetcher';
 import { debug as debugLog } from './utils';
 
@@ -9,7 +9,8 @@ import { debug as debugLog } from './utils';
 export class TableRenderer {
 	private readonly options: TableOptions;
 	private readonly dataFetcher: DataFetcher;
-	private intervalId: ReturnType< typeof setInterval > | null = null;
+	private timeoutId: ReturnType< typeof setTimeout > | null = null;
+	private onVisibilityChange: ( () => void ) | null = null;
 
 	constructor( options: TableOptions, dataFetcher: DataFetcher ) {
 		this.options = options;
@@ -134,40 +135,76 @@ export class TableRenderer {
 	): void {
 		let lastFirstUnixtime = initialPoints[ 0 ]?.unixtime ?? 0;
 
-		this.intervalId = setInterval( async () => {
-			try {
-				const response = await this.dataFetcher.fetchPoints(
-					body,
-					this.options.filterPoints
-				);
-
-				if ( response.error || response.empty ) {
+		const poll = ( delay: number ): void => {
+			this.timeoutId = setTimeout( async () => {
+				if ( document.hidden ) {
 					return;
 				}
 
-				const points = Array.isArray( response ) ? response : [];
-				const newFirstUnixtime = points[ 0 ]?.unixtime ?? 0;
+				try {
+					const response = await this.dataFetcher.fetchPoints(
+						body,
+						this.options.filterPoints
+					);
 
-				if ( newFirstUnixtime > lastFirstUnixtime ) {
-					lastFirstUnixtime = newFirstUnixtime;
-					const table = document.getElementById( elementId );
-					if ( table ) {
-						const hasLocaltime = points.some(
-							( p ) => !! p.local_timezone
-						);
-						this.renderTable( table, points, hasLocaltime );
+					if ( ! response.error && ! response.empty ) {
+						const points = Array.isArray( response )
+							? response
+							: [];
+						const newFirstUnixtime = points[ 0 ]?.unixtime ?? 0;
+
+						if ( newFirstUnixtime > lastFirstUnixtime ) {
+							lastFirstUnixtime = newFirstUnixtime;
+							const table = document.getElementById( elementId );
+							if ( table ) {
+								const scrollTop =
+									table.parentElement?.scrollTop ?? 0;
+								const hasLocaltime = points.some(
+									( p ) => !! p.local_timezone
+								);
+								this.renderTable( table, points, hasLocaltime );
+								if ( table.parentElement ) {
+									table.parentElement.scrollTop = scrollTop;
+								}
+							}
+						} else {
+							debugLog(
+								!! this.options.debug,
+								'same response!'
+							);
+						}
 					}
-				} else {
-					debugLog( !! this.options.debug, 'same response!' );
+
+					poll( TABLE_RELOAD_INTERVAL_MS );
+				} catch ( err ) {
+					debugLog(
+						!! this.options.debug,
+						'TableRenderer reload error:',
+						err
+					);
+					poll( Math.min( delay * 2, MAX_RELOAD_BACKOFF_MS ) );
 				}
-			} catch ( err ) {
-				debugLog(
-					!! this.options.debug,
-					'TableRenderer reload error:',
-					err
-				);
+			}, delay );
+		};
+
+		if ( this.onVisibilityChange ) {
+			document.removeEventListener(
+				'visibilitychange',
+				this.onVisibilityChange
+			);
+		}
+		this.onVisibilityChange = () => {
+			if ( ! document.hidden ) {
+				if ( this.timeoutId !== null ) {
+					clearTimeout( this.timeoutId );
+					this.timeoutId = null;
+				}
+				poll( 0 );
 			}
-		}, TABLE_RELOAD_INTERVAL_MS );
+		};
+		document.addEventListener( 'visibilitychange', this.onVisibilityChange );
+
+		poll( TABLE_RELOAD_INTERVAL_MS );
 	}
 
 	private buildRequestBody(): AjaxRequestBody {
@@ -191,9 +228,17 @@ export class TableRenderer {
 	 * Stop auto-reload polling.
 	 */
 	destroy(): void {
-		if ( this.intervalId !== null ) {
-			clearInterval( this.intervalId );
-			this.intervalId = null;
+		if ( this.timeoutId !== null ) {
+			clearTimeout( this.timeoutId );
+			this.timeoutId = null;
+		}
+
+		if ( this.onVisibilityChange ) {
+			document.removeEventListener(
+				'visibilitychange',
+				this.onVisibilityChange
+			);
+			this.onVisibilityChange = null;
 		}
 	}
 }
