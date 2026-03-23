@@ -5,7 +5,7 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		...defaultConfig.entry(),
-		'spotmap-map':   './src/spotmap-map/index.ts',
+		'spotmap-map': './src/spotmap-map/index.ts',
 		'spotmap-admin': './src/spotmap-admin/index.js',
 	},
 	module: {

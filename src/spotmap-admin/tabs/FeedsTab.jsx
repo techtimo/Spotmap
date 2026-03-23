@@ -11,7 +11,9 @@ export default function FeedsTab( { providers } ) {
 	useEffect( () => {
 		api.getFeeds()
 			.then( setFeeds )
-			.catch( ( err ) => setNotice( { status: 'error', text: err.message } ) );
+			.catch( ( err ) =>
+				setNotice( { status: 'error', text: err.message } )
+			);
 	}, [] );
 
 	const handleSave = async ( data, id ) => {
@@ -20,7 +22,9 @@ export default function FeedsTab( { providers } ) {
 			: await api.createFeed( data );
 
 		setFeeds( ( prev ) =>
-			id ? prev.map( ( f ) => ( f.id === id ? saved : f ) ) : [ ...prev, saved ]
+			id
+				? prev.map( ( f ) => ( f.id === id ? saved : f ) )
+				: [ ...prev, saved ]
 		);
 		setEditingFeed( null );
 		setNotice( { status: 'success', text: 'Feed saved.' } );
@@ -55,7 +59,10 @@ export default function FeedsTab( { providers } ) {
 			{ feeds.length === 0 ? (
 				<p>No feeds configured yet.</p>
 			) : (
-				<table className="wp-list-table widefat fixed striped" style={ { marginBottom: '1rem' } }>
+				<table
+					className="wp-list-table widefat fixed striped"
+					style={ { marginBottom: '1rem' } }
+				>
 					<thead>
 						<tr>
 							<th>Name</th>
@@ -68,7 +75,10 @@ export default function FeedsTab( { providers } ) {
 						{ feeds.map( ( feed ) => (
 							<tr key={ feed.id }>
 								<td>{ feed.name }</td>
-								<td>{ providers[ feed.type ]?.label ?? feed.type }</td>
+								<td>
+									{ providers[ feed.type ]?.label ??
+										feed.type }
+								</td>
 								<td>
 									<code>{ feed.feed_id }</code>
 								</td>
@@ -95,10 +105,7 @@ export default function FeedsTab( { providers } ) {
 				</table>
 			) }
 
-			<Button
-				variant="primary"
-				onClick={ () => setEditingFeed( {} ) }
-			>
+			<Button variant="primary" onClick={ () => setEditingFeed( {} ) }>
 				Add Feed
 			</Button>
 

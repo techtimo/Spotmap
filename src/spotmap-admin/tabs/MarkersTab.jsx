@@ -1,5 +1,11 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Notice, SelectControl, TextControl, Spinner } from '@wordpress/components';
+import {
+	Button,
+	Notice,
+	SelectControl,
+	TextControl,
+	Spinner,
+} from '@wordpress/components';
 import * as api from '../api';
 import IconPicker from '../components/IconPicker';
 
@@ -18,7 +24,9 @@ export default function MarkersTab() {
 	useEffect( () => {
 		api.getMarkers()
 			.then( setMarkers )
-			.catch( ( err ) => setNotice( { status: 'error', text: err.message } ) );
+			.catch( ( err ) =>
+				setNotice( { status: 'error', text: err.message } )
+			);
 	}, [] );
 
 	const update = ( type, key, value ) =>
@@ -73,16 +81,28 @@ export default function MarkersTab() {
 								<SelectControl
 									value={ config.iconShape }
 									options={ ICON_SHAPES }
-									onChange={ ( val ) => update( type, 'iconShape', val ) }
+									onChange={ ( val ) =>
+										update( type, 'iconShape', val )
+									}
 									__nextHasNoMarginBottom
 									__next40pxDefaultSize
 								/>
 							</td>
 							<td>
-								<div style={ { display: 'flex', alignItems: 'center', gap: '8px' } }>
+								<div
+									style={ {
+										display: 'flex',
+										alignItems: 'center',
+										gap: '8px',
+									} }
+								>
 									<i
 										className={ `fas fa-${ config.icon }` }
-										style={ { fontSize: '1.3em', width: '1.5em', textAlign: 'center' } }
+										style={ {
+											fontSize: '1.3em',
+											width: '1.5em',
+											textAlign: 'center',
+										} }
 									/>
 									<Button
 										variant="secondary"
@@ -96,7 +116,9 @@ export default function MarkersTab() {
 							<td>
 								<TextControl
 									value={ config.customMessage }
-									onChange={ ( val ) => update( type, 'customMessage', val ) }
+									onChange={ ( val ) =>
+										update( type, 'customMessage', val )
+									}
 									placeholder="Optional custom message…"
 									__nextHasNoMarginBottom
 									__next40pxDefaultSize

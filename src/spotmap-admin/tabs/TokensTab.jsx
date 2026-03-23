@@ -1,5 +1,13 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Notice, TextControl, BaseControl, Flex, FlexItem, Spinner } from '@wordpress/components';
+import {
+	Button,
+	Notice,
+	TextControl,
+	BaseControl,
+	Flex,
+	FlexItem,
+	Spinner,
+} from '@wordpress/components';
 import * as api from '../api';
 
 const { REDACTED } = api;
@@ -105,7 +113,9 @@ export default function TokensTab() {
 	useEffect( () => {
 		api.getTokens()
 			.then( setTokens )
-			.catch( ( err ) => setNotice( { status: 'error', text: err.message } ) );
+			.catch( ( err ) =>
+				setNotice( { status: 'error', text: err.message } )
+			);
 	}, [] );
 
 	const handleSave = async () => {
