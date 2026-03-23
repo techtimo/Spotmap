@@ -1,7 +1,8 @@
 import { useState, useEffect } from '@wordpress/element';
 import { Button, Notice, TextControl, BaseControl, Flex, FlexItem, Spinner } from '@wordpress/components';
 import * as api from '../api';
-import { REDACTED } from '../api';
+
+const { REDACTED } = api;
 
 const TOKEN_META = {
 	timezonedb: {

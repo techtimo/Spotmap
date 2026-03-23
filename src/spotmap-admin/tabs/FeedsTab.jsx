@@ -29,9 +29,13 @@ export default function FeedsTab( { providers } ) {
 	const handleDelete = async ( feed ) => {
 		// eslint-disable-next-line no-alert
 		if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) return;
-		await api.deleteFeed( feed.id );
-		setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
-		setNotice( { status: 'success', text: 'Feed deleted.' } );
+		try {
+			await api.deleteFeed( feed.id );
+			setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
+			setNotice( { status: 'success', text: 'Feed deleted.' } );
+		} catch ( err ) {
+			setNotice( { status: 'error', text: err.message } );
+		}
 	};
 
 	if ( ! feeds ) return <Spinner />;
