@@ -1,17 +1,42 @@
 <?php
 class Spotmap_Public{
 
+	private const SHORTCODE_TAGS = [ 'spotmap', 'Spotmap', 'spotmessages', 'Spotmessages' ];
+
 	public $db;
 	public $admin;
+	private ?bool $enqueue_cache = null;
 
-	function __construct() {
+	function __construct( $admin = null ) {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
-		$this->db = new Spotmap_Database();
-		$this->admin = new Spotmap_Admin();
+		$this->db    = new Spotmap_Database();
+		$this->admin = $admin ?? new Spotmap_Admin();
     }
 
+	private function should_enqueue(): bool {
+		if ( $this->enqueue_cache !== null ) {
+			return $this->enqueue_cache;
+		}
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) ) {
+			return $this->enqueue_cache = false;
+		}
+		if ( has_block( 'spotmap/spotmap', $post ) ) {
+			return $this->enqueue_cache = true;
+		}
+		foreach ( self::SHORTCODE_TAGS as $tag ) {
+			if ( has_shortcode( $post->post_content, $tag ) ) {
+				return $this->enqueue_cache = true;
+			}
+		}
+		return $this->enqueue_cache = false;
+	}
+
 	public function enqueue_styles() {
+		if ( ! $this->should_enqueue() ) {
+			return;
+		}
 		wp_enqueue_style( 'leaflet', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
         wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
@@ -33,6 +58,9 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_scripts(){
+		if ( ! $this->should_enqueue() ) {
+			return;
+		}
         // wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
 		$map_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap-map.asset.php';
 		$map_asset = file_exists( $map_asset_file ) ? include $map_asset_file : [ 'dependencies' => [], 'version' => false ];
@@ -72,10 +100,10 @@ class Spotmap_Public{
 	}
 
 	public function register_shortcodes(){
-		add_shortcode('spotmap', [$this,'show_spotmap'] );
-		add_shortcode('Spotmap', [$this,'show_spotmap'] );
-		add_shortcode('spotmessages', [$this,'show_point_overview'] );
-		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
+		add_shortcode( self::SHORTCODE_TAGS[0], [ $this, 'show_spotmap' ] );
+		add_shortcode( self::SHORTCODE_TAGS[1], [ $this, 'show_spotmap' ] );
+		add_shortcode( self::SHORTCODE_TAGS[2], [ $this, 'show_point_overview' ] );
+		add_shortcode( self::SHORTCODE_TAGS[3], [ $this, 'show_point_overview' ] );
 	}
 	function show_point_overview($atts){
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
@@ -299,7 +327,6 @@ class Spotmap_Public{
 			if(empty($points)){
 				$points = ['error'=> true,'empty'=>true,'title'=>'No points to show (yet)','message'=> ""];
 			}
-			error_log(wp_send_json($points));
 			wp_send_json($points);
 		}
 	}

@@ -10,8 +10,40 @@ class Spotmap_Admin {
 		$this->db = new Spotmap_Database();
 	}
 
-	public function enqueue_scripts() {
+	public function enqueue_scripts( $hook ) {
+		if ( $hook !== 'settings_page_spotmap' ) {
+			return;
+		}
+
 		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ) . 'includes/css/font-awesome-all.min.css' );
+
+		$asset_file = plugin_dir_path( __DIR__ ) . 'build/spotmap-admin/index.asset.php';
+		$asset      = file_exists( $asset_file )
+			? require $asset_file
+			: [ 'dependencies' => [], 'version' => '1.0.0' ];
+
+		wp_enqueue_script(
+			'spotmap-admin',
+			plugin_dir_url( __DIR__ ) . 'build/spotmap-admin.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_localize_script( 'spotmap-admin', 'spotmapAdminData', [
+			'restUrl'  => rest_url( 'spotmap/v1/' ),
+			'nonce'    => wp_create_nonce( 'wp_rest' ),
+			'REDACTED' => Spotmap_Rest_Api::REDACTED,
+		] );
+
+		if ( file_exists( plugin_dir_path( __DIR__ ) . 'build/spotmap-admin/index.css' ) ) {
+			wp_enqueue_style(
+				'spotmap-admin',
+				plugin_dir_url( __DIR__ ) . 'build/spotmap-admin/index.css',
+				[ 'wp-components' ],
+				$asset['version']
+			);
+		}
 	}
 
 	public function ensure_cron_scheduled() {
@@ -37,7 +69,7 @@ class Spotmap_Admin {
 	}
 
 	public function display_options_page() {
-		include_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/partials/spotmap-admin-display.php';
+		echo '<div id="spotmap-admin-root" class="wrap"></div>';
 	}
 
 	public function add_link_plugin_overview( $links ) {
