@@ -5,7 +5,8 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		...defaultConfig.entry(),
-		'spotmap-map': './src/spotmap-map/index.ts',
+		'spotmap-map':   './src/spotmap-map/index.ts',
+		'spotmap-admin': './src/spotmap-admin/index.js',
 	},
 	module: {
 		...defaultConfig.module,
@@ -14,7 +15,7 @@ module.exports = {
 			{
 				test: /\.tsx?$/,
 				use: 'ts-loader',
-				exclude: /node_modules/,
+				exclude: [ /node_modules/, /__tests__/ ],
 			},
 		],
 	},

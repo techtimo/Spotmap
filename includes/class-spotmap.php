@@ -3,6 +3,7 @@
 class Spotmap{
 
 	protected $loader;
+	protected $admin;
 
 	public function __construct() {
 		$this->load_dependencies();
@@ -70,17 +71,17 @@ class Spotmap{
 	 * @access   private
 	 */
 	private function define_admin_hooks() {
-		$spotmap_admin = new Spotmap_Admin();
-		$this->loader->add_action( 'admin_enqueue_scripts', $spotmap_admin, 'enqueue_scripts');
-		$this->loader->add_filter( 'cron_schedules', $spotmap_admin, 'add_cron_schedule');
-		$this->loader->add_filter( 'plugin_action_links_spotmap/spotmap.php', $spotmap_admin, 'add_link_plugin_overview');
-		$this->loader->add_action( 'admin_menu', $spotmap_admin, 'add_options_page');
-		$this->loader->add_action( 'admin_init', $spotmap_admin, 'ensure_cron_scheduled');
-		$this->loader->add_action( 'spotmap_api_crawler_hook', $spotmap_admin, 'get_feed_data');
-		$this->loader->add_action( 'spotmap_get_timezone_hook', $spotmap_admin, 'get_local_timezone');
-		$this->loader->add_action( 'upload_mimes', $spotmap_admin, 'allow_gpx_upload');
-		$this->loader->add_action( 'add_attachment', $spotmap_admin, 'add_images_to_map');
-		$this->loader->add_action( 'delete_attachment', $spotmap_admin, 'delete_images_from_map');
+		$this->admin = new Spotmap_Admin();
+		$this->loader->add_action( 'admin_enqueue_scripts', $this->admin, 'enqueue_scripts');
+		$this->loader->add_filter( 'cron_schedules', $this->admin, 'add_cron_schedule');
+		$this->loader->add_filter( 'plugin_action_links_spotmap/spotmap.php', $this->admin, 'add_link_plugin_overview');
+		$this->loader->add_action( 'admin_menu', $this->admin, 'add_options_page');
+		$this->loader->add_action( 'admin_init', $this->admin, 'ensure_cron_scheduled');
+		$this->loader->add_action( 'spotmap_api_crawler_hook', $this->admin, 'get_feed_data');
+		$this->loader->add_action( 'spotmap_get_timezone_hook', $this->admin, 'get_local_timezone');
+		$this->loader->add_action( 'upload_mimes', $this->admin, 'allow_gpx_upload');
+		$this->loader->add_action( 'add_attachment', $this->admin, 'add_images_to_map');
+		$this->loader->add_action( 'delete_attachment', $this->admin, 'delete_images_from_map');
 	}
 
 	/**
@@ -91,7 +92,7 @@ class Spotmap{
 	 * @access   private
 	 */
 	private function define_public_hooks() {
-		$spotmap_public = new Spotmap_Public();
+		$spotmap_public = new Spotmap_Public( $this->admin );
 		$this->loader->add_action( 'init', $spotmap_public, 'register_shortcodes');
 		$this->loader->add_action( 'init', $spotmap_public, 'register_block');
 		$this->loader->add_action( 'wp_enqueue_scripts', $spotmap_public, 'enqueue_styles');

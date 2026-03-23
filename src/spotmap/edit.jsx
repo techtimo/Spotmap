@@ -819,7 +819,13 @@ export default function Edit( { attributes, setAttributes } ) {
 				mapcenter: defaultMapcenter,
 			} );
 		}
-	}, [] );
+	}, [
+		attributes.feeds.length,
+		attributes.height,
+		attributes.mapcenter,
+		attributes.maps,
+		setAttributes,
+	] );
 
 	// Initialize / update the Leaflet map via the existing Spotmap class
 	useEffect( () => {
@@ -884,6 +890,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		attributes.fullscreenButton,
 		attributes.navigationButtons,
 		attributes.enablePanning,
+		attributes,
 	] );
 
 	const availableMaps = window.spotmapjsobj?.maps
@@ -1442,6 +1449,8 @@ export default function Edit( { attributes, setAttributes } ) {
 										} }
 									>
 										<UnitControl
+											__nextHasNoMarginBottom
+											__next40pxDefaultSize
 											label={ __( 'Hide nearby points' ) }
 											value={ `${ attributes.filterPoints }m` }
 											units={ [
