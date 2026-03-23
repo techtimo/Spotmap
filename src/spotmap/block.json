@@ -14,7 +14,7 @@
 	"attributes": {
 		"maps": {
 			"type": "array",
-			"default": [ "opentopomap", "openstreetmap" ]
+			"default": []
 		},
 		"feeds": {
 			"type": "array",
@@ -34,7 +34,7 @@
 		},
 		"filterPoints": {
 			"type": "number",
-			"default": 10
+			"default": 5
 		},
 		"autoReload": {
 			"type": "boolean",
