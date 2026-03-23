@@ -11,6 +11,7 @@ require_once dirname( __DIR__ ) . '/includes/class-spotmap-options.php';
 require_once dirname( __DIR__ ) . '/includes/class-spotmap-providers.php';
 require_once dirname( __DIR__ ) . '/includes/class-spotmap-migrator.php';
 require_once dirname( __DIR__ ) . '/includes/class-spotmap-database.php';
+require_once dirname( __DIR__ ) . '/includes/class-spotmap-rest-api.php';
 
 // Matches the constant defined in spotmap.php — needed by Spotmap_Migrator::run().
 define( 'SPOTMAP_VERSION', '1.0.0' );

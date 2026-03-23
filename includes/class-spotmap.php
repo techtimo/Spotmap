@@ -7,12 +7,17 @@ class Spotmap{
 	public function __construct() {
 		$this->load_dependencies();
 		$this->register_migrator();
+		$this->register_rest_api();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 	}
 
 	private function register_migrator() {
 		add_action( 'plugins_loaded', [ 'Spotmap_Migrator', 'run' ] );
+	}
+
+	private function register_rest_api() {
+		add_action( 'rest_api_init', [ 'Spotmap_Rest_Api', 'register_routes' ] );
 	}
 
 	private function load_dependencies() {
@@ -36,6 +41,11 @@ class Spotmap{
 		 * Handles data migrations between plugin versions.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-migrator.php';
+
+		/**
+		 * REST API endpoints for the admin UI.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-rest-api.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
