@@ -144,7 +144,7 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 		$this->assertSame( 201, $response->get_status() );
 	}
 
-	public function test_create_feed_preserves_password_with_special_chars(): void {
+	public function test_create_feed_with_password_returns_redacted_in_response(): void {
 		$response = $this->request( 'POST', '/feeds', [
 			'type'     => 'findmespot',
 			'name'     => 'Secure Feed',
@@ -152,7 +152,78 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 			'password' => 'p@$$w0rd&<more>',
 		] );
 		$this->assertSame( 201, $response->get_status() );
-		$this->assertSame( 'p@$$w0rd&<more>', $response->get_data()['password'] );
+		$this->assertSame( Spotmap_Rest_Api::REDACTED, $response->get_data()['password'] );
+	}
+
+	public function test_create_feed_stores_password_verbatim(): void {
+		$response = $this->request( 'POST', '/feeds', [
+			'type'     => 'findmespot',
+			'name'     => 'Secure Feed',
+			'feed_id'  => self::FEED_ID,
+			'password' => 'p@$$w0rd&<more>',
+		] );
+		self::$cache_prop->setValue( null, [] );
+		$id   = $response->get_data()['id'];
+		$feed = Spotmap_Options::get_feed( $id );
+		$this->assertSame( 'p@$$w0rd&<more>', $feed['password'] );
+	}
+
+	public function test_get_feeds_masks_non_empty_password(): void {
+		$this->request( 'POST', '/feeds', [
+			'type'     => 'findmespot',
+			'name'     => 'Secure Feed',
+			'feed_id'  => self::FEED_ID,
+			'password' => 'secret',
+		] );
+		self::$cache_prop->setValue( null, [] );
+		$response = $this->request( 'GET', '/feeds' );
+		$this->assertSame( Spotmap_Rest_Api::REDACTED, $response->get_data()[0]['password'] );
+	}
+
+	public function test_get_feeds_empty_password_not_masked(): void {
+		$this->request( 'POST', '/feeds', $this->valid_feed() ); // password = ''
+		self::$cache_prop->setValue( null, [] );
+		$response = $this->request( 'GET', '/feeds' );
+		$this->assertSame( '', $response->get_data()[0]['password'] );
+	}
+
+	public function test_update_feed_sentinel_preserves_stored_password(): void {
+		$create = $this->request( 'POST', '/feeds', [
+			'type'     => 'findmespot',
+			'name'     => 'Pwd Feed',
+			'feed_id'  => self::FEED_ID,
+			'password' => 'original_secret',
+		] );
+		$id = $create->get_data()['id'];
+
+		// Update name only — echo sentinel for the password.
+		$this->request( 'PUT', '/feeds/' . $id, [
+			'type'     => 'findmespot',
+			'name'     => 'Renamed',
+			'feed_id'  => self::FEED_ID,
+			'password' => Spotmap_Rest_Api::REDACTED,
+		] );
+		self::$cache_prop->setValue( null, [] );
+		$this->assertSame( 'original_secret', Spotmap_Options::get_feed( $id )['password'] );
+	}
+
+	public function test_update_feed_new_password_overwrites_stored(): void {
+		$create = $this->request( 'POST', '/feeds', [
+			'type'     => 'findmespot',
+			'name'     => 'Pwd Feed',
+			'feed_id'  => self::FEED_ID,
+			'password' => 'original_secret',
+		] );
+		$id = $create->get_data()['id'];
+
+		$this->request( 'PUT', '/feeds/' . $id, [
+			'type'     => 'findmespot',
+			'name'     => 'Pwd Feed',
+			'feed_id'  => self::FEED_ID,
+			'password' => 'new_secret',
+		] );
+		self::$cache_prop->setValue( null, [] );
+		$this->assertSame( 'new_secret', Spotmap_Options::get_feed( $id )['password'] );
 	}
 
 	// -------------------------------------------------------------------------
@@ -347,6 +418,35 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 		self::$cache_prop->setValue( null, [] );
 		$stored = get_option( Spotmap_Options::OPTION_API_TOKENS );
 		$this->assertFalse( isset( $stored['unknown_service'] ) );
+	}
+
+	public function test_get_tokens_masks_non_empty_value(): void {
+		$this->request( 'PUT', '/tokens', [ 'mapbox' => 'pk.realtoken' ] );
+		self::$cache_prop->setValue( null, [] );
+		$response = $this->request( 'GET', '/tokens' );
+		$this->assertSame( Spotmap_Rest_Api::REDACTED, $response->get_data()['mapbox'] );
+	}
+
+	public function test_get_tokens_empty_value_not_masked(): void {
+		$this->request( 'PUT', '/tokens', [ 'mapbox' => '' ] );
+		self::$cache_prop->setValue( null, [] );
+		$response = $this->request( 'GET', '/tokens' );
+		$this->assertSame( '', $response->get_data()['mapbox'] );
+	}
+
+	public function test_update_tokens_sentinel_preserves_stored_token(): void {
+		$this->request( 'PUT', '/tokens', [ 'mapbox' => 'pk.realtoken' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		// Echo sentinel back — should not overwrite.
+		$this->request( 'PUT', '/tokens', [ 'mapbox' => Spotmap_Rest_Api::REDACTED ] );
+		self::$cache_prop->setValue( null, [] );
+		$this->assertSame( 'pk.realtoken', Spotmap_Options::get_api_token( 'mapbox' ) );
+	}
+
+	public function test_update_tokens_persists_value_is_not_exposed_in_response(): void {
+		$response = $this->request( 'PUT', '/tokens', [ 'mapbox' => 'pk.test123' ] );
+		$this->assertSame( Spotmap_Rest_Api::REDACTED, $response->get_data()['mapbox'] );
 	}
 
 	// -------------------------------------------------------------------------
