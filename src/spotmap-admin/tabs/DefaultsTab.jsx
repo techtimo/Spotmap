@@ -1,5 +1,11 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Notice, TextControl, __experimentalNumberControl as NumberControl, Spinner } from '@wordpress/components';
+import {
+	Button,
+	Notice,
+	TextControl,
+	__experimentalNumberControl as NumberControl,
+	Spinner,
+} from '@wordpress/components';
 import * as api from '../api';
 
 const FIELDS = [
@@ -61,7 +67,9 @@ export default function DefaultsTab() {
 	useEffect( () => {
 		api.getDefaults()
 			.then( setDefaults )
-			.catch( ( err ) => setNotice( { status: 'error', text: err.message } ) );
+			.catch( ( err ) =>
+				setNotice( { status: 'error', text: err.message } )
+			);
 	}, [] );
 
 	const set = ( key, value ) =>
@@ -105,7 +113,10 @@ export default function DefaultsTab() {
 							value={ value === null ? '' : value }
 							min={ 0 }
 							onChange={ ( val ) =>
-								set( field.key, val === '' ? null : Number( val ) )
+								set(
+									field.key,
+									val === '' ? null : Number( val )
+								)
 							}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
@@ -118,7 +129,9 @@ export default function DefaultsTab() {
 						label={ field.label }
 						help={ field.help }
 						value={ value === null ? '' : String( value ) }
-						onChange={ ( val ) => set( field.key, val === '' ? null : val ) }
+						onChange={ ( val ) =>
+							set( field.key, val === '' ? null : val )
+						}
 						__nextHasNoMarginBottom
 						__next40pxDefaultSize
 					/>

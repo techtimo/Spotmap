@@ -1,5 +1,11 @@
 import { useState } from '@wordpress/element';
-import { Modal, Button, TextControl, SelectControl, Notice } from '@wordpress/components';
+import {
+	Modal,
+	Button,
+	TextControl,
+	SelectControl,
+	Notice,
+} from '@wordpress/components';
 import { REDACTED } from '../api';
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
@@ -102,7 +108,11 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 			} ) }
 
 			<div style={ { display: 'flex', gap: '8px', marginTop: '16px' } }>
-				<Button variant="primary" isBusy={ saving } onClick={ handleSave }>
+				<Button
+					variant="primary"
+					isBusy={ saving }
+					onClick={ handleSave }
+				>
 					Save
 				</Button>
 				<Button variant="secondary" onClick={ onClose }>

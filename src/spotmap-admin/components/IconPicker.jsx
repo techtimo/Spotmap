@@ -7,7 +7,8 @@ export default function IconPicker( { current, onSelect, onClose } ) {
 
 	const query = search.trim().toLowerCase();
 	const filtered = useMemo(
-		() => ( query ? ICONS.filter( ( icon ) => icon.includes( query ) ) : ICONS ),
+		() =>
+			query ? ICONS.filter( ( icon ) => icon.includes( query ) ) : ICONS,
 		[ query ]
 	);
 
