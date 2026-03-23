@@ -30,6 +30,12 @@ class Spotmap_Rest_Api {
 
 	const NAMESPACE = 'spotmap/v1';
 
+	/**
+	 * Sentinel value returned in place of stored credentials in GET responses.
+	 * On PUT, if a client echoes this value back the server preserves the stored credential.
+	 */
+	const REDACTED = '__REDACTED__';
+
 	public static function register_routes() {
 		// --- Feeds ---
 		register_rest_route(
@@ -147,7 +153,7 @@ class Spotmap_Rest_Api {
 	// -------------------------------------------------------------------------
 
 	public static function get_feeds( WP_REST_Request $request ) {
-		return rest_ensure_response( Spotmap_Options::get_feeds() );
+		return rest_ensure_response( self::mask_feeds( Spotmap_Options::get_feeds() ) );
 	}
 
 	public static function create_feed( WP_REST_Request $request ) {
@@ -159,7 +165,7 @@ class Spotmap_Rest_Api {
 		}
 
 		$feed = Spotmap_Options::add_feed( $data );
-		return new WP_REST_Response( $feed, 201 );
+		return new WP_REST_Response( self::mask_feed( $feed ), 201 );
 	}
 
 	public static function update_feed( WP_REST_Request $request ) {
@@ -171,12 +177,25 @@ class Spotmap_Rest_Api {
 			return $validation;
 		}
 
+		// Preserve stored credentials if the client echoed the sentinel back.
+		// $stored is lazy-initialized: the DB read is skipped entirely when no sentinel is present.
+		$provider = Spotmap_Providers::get( $data['type'] ?? '' );
+		if ( $provider ) {
+			$stored = null;
+			foreach ( $provider['fields'] as $field ) {
+				if ( $field['type'] === 'password' && ( $data[ $field['key'] ] ?? '' ) === self::REDACTED ) {
+					$stored ??= Spotmap_Options::get_feed( $id ) ?? [];
+					$data[ $field['key'] ] = $stored[ $field['key'] ] ?? '';
+				}
+			}
+		}
+
 		$data['id'] = $id;
 		if ( ! Spotmap_Options::update_feed( $id, $data ) ) {
 			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
 		}
 
-		return rest_ensure_response( $data );
+		return rest_ensure_response( self::mask_feed( $data ) );
 	}
 
 	public static function delete_feed( WP_REST_Request $request ) {
@@ -237,7 +256,7 @@ class Spotmap_Rest_Api {
 	// -------------------------------------------------------------------------
 
 	public static function get_tokens( WP_REST_Request $request ) {
-		return rest_ensure_response( Spotmap_Options::get_api_tokens() );
+		return rest_ensure_response( self::mask_tokens( Spotmap_Options::get_api_tokens() ) );
 	}
 
 	public static function update_tokens( WP_REST_Request $request ) {
@@ -247,14 +266,17 @@ class Spotmap_Rest_Api {
 		}
 
 		$known    = array_keys( Spotmap_Options::get_api_token_defaults() );
+		$stored   = Spotmap_Options::get_api_tokens();
 		$sanitized = [];
 
 		foreach ( $known as $key ) {
-			$sanitized[ $key ] = isset( $body[ $key ] ) ? sanitize_text_field( $body[ $key ] ) : '';
+			$value = isset( $body[ $key ] ) ? sanitize_text_field( $body[ $key ] ) : '';
+			// If the client echoed the sentinel back, preserve the stored token.
+			$sanitized[ $key ] = ( $value === self::REDACTED ) ? ( $stored[ $key ] ?? '' ) : $value;
 		}
 
 		Spotmap_Options::save_api_tokens( $sanitized );
-		return rest_ensure_response( Spotmap_Options::get_api_tokens() );
+		return rest_ensure_response( self::mask_tokens( Spotmap_Options::get_api_tokens() ) );
 	}
 
 	// -------------------------------------------------------------------------
@@ -367,5 +389,47 @@ class Spotmap_Rest_Api {
 			return new WP_Error( 'invalid_body', 'Expected a JSON object.', [ 'status' => 400 ] );
 		}
 		return $body;
+	}
+
+	/**
+	 * Replaces non-empty password fields in a single feed with the REDACTED sentinel.
+	 *
+	 * @param array<string, mixed> $feed
+	 * @return array<string, mixed>
+	 */
+	private static function mask_feed( array $feed ): array {
+		$provider = Spotmap_Providers::get( $feed['type'] ?? '' );
+		if ( ! $provider ) {
+			return $feed;
+		}
+		foreach ( $provider['fields'] as $field ) {
+			if ( $field['type'] === 'password' && ! empty( $feed[ $field['key'] ] ) ) {
+				$feed[ $field['key'] ] = self::REDACTED;
+			}
+		}
+		return $feed;
+	}
+
+	/**
+	 * Applies mask_feed() to every feed in the array.
+	 *
+	 * @param list<array<string, mixed>> $feeds
+	 * @return list<array<string, mixed>>
+	 */
+	private static function mask_feeds( array $feeds ): array {
+		return array_map( [ __CLASS__, 'mask_feed' ], $feeds );
+	}
+
+	/**
+	 * Replaces non-empty token values with the REDACTED sentinel.
+	 *
+	 * @param array<string, string> $tokens
+	 * @return array<string, string>
+	 */
+	private static function mask_tokens( array $tokens ): array {
+		return array_map(
+			fn( $v ) => ( is_string( $v ) && $v !== '' ) ? self::REDACTED : $v,
+			$tokens
+		);
 	}
 }
