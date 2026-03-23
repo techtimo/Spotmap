@@ -1,16 +1,24 @@
 <?php
-// runs automatically when the users deletes the plugin.
-// if uninstall.php is not called by WordPress, die
-if (!defined('WP_UNINSTALL_PLUGIN')) {
-    die;
+// Runs automatically when the user deletes the plugin.
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	die;
 }
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/class-spotmap-options.php';
 
-foreach (Spotmap_Options::get_dynamic_provider_option_names() as $option_name) {
-    delete_option($option_name);
-}
-delete_option("spotmap_api_providers");
+// Remove all plugin options.
+delete_option( Spotmap_Options::OPTION_FEEDS );
+delete_option( Spotmap_Options::OPTION_MARKER );
+delete_option( Spotmap_Options::OPTION_API_TOKENS );
+delete_option( Spotmap_Options::OPTION_DEFAULT_VALUES );
+delete_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES );
+delete_option( 'spotmap_version' );
+
+// Remove legacy 0.x.y options in case the plugin is deleted before migrating.
+delete_option( 'spotmap_api_providers' );
+delete_option( 'spotmap_findmespot_name' );
+delete_option( 'spotmap_findmespot_id' );
+delete_option( 'spotmap_findmespot_password' );
 
 global $wpdb;
-$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}spotmap_points");
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}spotmap_points" );

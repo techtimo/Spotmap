@@ -19,8 +19,9 @@ class Spotmap_Activator {
 			wp_schedule_single_event( time(),'spotmap_get_timezone_hook' );
 		}
 		
-		// Ensure all plugin options exist and include expected keys.
-		Spotmap_Options::ensure_defaults();
+		// Seed baseline option values for a fresh installation.
+		// Updates are handled by Spotmap_Migrator via plugins_loaded, not here.
+		Spotmap_Options::seed_defaults();
 		
 		$args = array(
 			'post_type' => 'attachment',

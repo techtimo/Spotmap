@@ -6,7 +6,10 @@ $( document ).ready( function () {
 			const table = $( '#findmespot-feeds' ).next().children();
 			if ( table.length ) {
 				const index = table.children().length / 3;
-				const clone = table.children().slice( 0, 3 ).clone( true, true );
+				const clone = table
+					.children()
+					.slice( 0, 3 )
+					.clone( true, true );
 				clone.children().find( 'input' ).attr( 'value', '' );
 				const inputs = clone.children().next();
 

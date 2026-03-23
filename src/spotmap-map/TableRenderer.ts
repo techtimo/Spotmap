@@ -168,10 +168,7 @@ export class TableRenderer {
 								}
 							}
 						} else {
-							debugLog(
-								!! this.options.debug,
-								'same response!'
-							);
+							debugLog( !! this.options.debug, 'same response!' );
 						}
 					}
 
@@ -202,7 +199,10 @@ export class TableRenderer {
 				poll( 0 );
 			}
 		};
-		document.addEventListener( 'visibilitychange', this.onVisibilityChange );
+		document.addEventListener(
+			'visibilitychange',
+			this.onVisibilityChange
+		);
 
 		poll( TABLE_RELOAD_INTERVAL_MS );
 	}

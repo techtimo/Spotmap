@@ -424,9 +424,7 @@ export class Spotmap {
 					poll( AUTO_RELOAD_INTERVAL_MS );
 				} catch ( err ) {
 					this.debug( 'Auto-reload error:', err );
-					poll(
-						Math.min( delay * 2, MAX_RELOAD_BACKOFF_MS )
-					);
+					poll( Math.min( delay * 2, MAX_RELOAD_BACKOFF_MS ) );
 				}
 			}, delay );
 		};
@@ -446,7 +444,10 @@ export class Spotmap {
 				poll( 0 );
 			}
 		};
-		document.addEventListener( 'visibilitychange', this.onVisibilityChange );
+		document.addEventListener(
+			'visibilitychange',
+			this.onVisibilityChange
+		);
 
 		poll( AUTO_RELOAD_INTERVAL_MS );
 	}
