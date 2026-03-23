@@ -1,7 +1,10 @@
 <?php
 class Spotmap_Public{
 
-	private const SHORTCODE_TAGS = [ 'spotmap', 'Spotmap', 'spotmessages', 'Spotmessages' ];
+	private const SHORTCODE_TAGS = [
+		'show_spotmap'        => [ 'spotmap', 'Spotmap' ],
+		'show_point_overview' => [ 'spotmessages', 'Spotmessages' ],
+	];
 
 	public $db;
 	public $admin;
@@ -25,9 +28,11 @@ class Spotmap_Public{
 		if ( has_block( 'spotmap/spotmap', $post ) ) {
 			return $this->enqueue_cache = true;
 		}
-		foreach ( self::SHORTCODE_TAGS as $tag ) {
-			if ( has_shortcode( $post->post_content, $tag ) ) {
-				return $this->enqueue_cache = true;
+		foreach ( self::SHORTCODE_TAGS as $tags ) {
+			foreach ( $tags as $tag ) {
+				if ( has_shortcode( $post->post_content, $tag ) ) {
+					return $this->enqueue_cache = true;
+				}
 			}
 		}
 		return $this->enqueue_cache = false;
@@ -100,10 +105,11 @@ class Spotmap_Public{
 	}
 
 	public function register_shortcodes(){
-		add_shortcode( self::SHORTCODE_TAGS[0], [ $this, 'show_spotmap' ] );
-		add_shortcode( self::SHORTCODE_TAGS[1], [ $this, 'show_spotmap' ] );
-		add_shortcode( self::SHORTCODE_TAGS[2], [ $this, 'show_point_overview' ] );
-		add_shortcode( self::SHORTCODE_TAGS[3], [ $this, 'show_point_overview' ] );
+		foreach ( self::SHORTCODE_TAGS as $method => $tags ) {
+			foreach ( $tags as $tag ) {
+				add_shortcode( $tag, [ $this, $method ] );
+			}
+		}
 	}
 	function show_point_overview($atts){
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));

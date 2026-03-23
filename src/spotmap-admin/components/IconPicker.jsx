@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useState, useMemo } from '@wordpress/element';
 import { Modal, TextControl } from '@wordpress/components';
 import { ICONS } from '../icons';
 
@@ -6,9 +6,10 @@ export default function IconPicker( { current, onSelect, onClose } ) {
 	const [ search, setSearch ] = useState( '' );
 
 	const query = search.trim().toLowerCase();
-	const filtered = query
-		? ICONS.filter( ( icon ) => icon.includes( query ) )
-		: ICONS;
+	const filtered = useMemo(
+		() => ( query ? ICONS.filter( ( icon ) => icon.includes( query ) ) : ICONS ),
+		[ query ]
+	);
 
 	return (
 		<Modal title="Pick an Icon" size="large" onRequestClose={ onClose }>
