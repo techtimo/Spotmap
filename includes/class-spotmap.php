@@ -6,8 +6,13 @@ class Spotmap{
 
 	public function __construct() {
 		$this->load_dependencies();
+		$this->register_migrator();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+	}
+
+	private function register_migrator() {
+		add_action( 'plugins_loaded', [ 'Spotmap_Migrator', 'run' ] );
 	}
 
 	private function load_dependencies() {
@@ -18,9 +23,19 @@ class Spotmap{
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-loader.php';
 
 		/**
-		 * Centralized options access and defaults handling.
+		 * Centralized options access layer.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
+
+		/**
+		 * Hardcoded registry of supported tracking device/service provider types.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-providers.php';
+
+		/**
+		 * Handles data migrations between plugin versions.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-migrator.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
@@ -50,7 +65,6 @@ class Spotmap{
 		$this->loader->add_filter( 'cron_schedules', $spotmap_admin, 'add_cron_schedule');
 		$this->loader->add_filter( 'plugin_action_links_spotmap/spotmap.php', $spotmap_admin, 'add_link_plugin_overview');
 		$this->loader->add_action( 'admin_menu', $spotmap_admin, 'add_options_page');
-		$this->loader->add_action( 'admin_init', $spotmap_admin, 'register_settings');
 		$this->loader->add_action( 'admin_init', $spotmap_admin, 'ensure_cron_scheduled');
 		$this->loader->add_action( 'spotmap_api_crawler_hook', $spotmap_admin, 'get_feed_data');
 		$this->loader->add_action( 'spotmap_get_timezone_hook', $spotmap_admin, 'get_local_timezone');

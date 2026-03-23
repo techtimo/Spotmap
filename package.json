@@ -1,6 +1,6 @@
 {
 	"name": "spotmap",
-	"version": "0.11.2",
+	"version": "1.0.0",
 	"description": "[![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)",
 	"author": "Timo Giese",
 	"license": "GPL-2.0-or-later",
@@ -49,7 +49,7 @@
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"lint:md:docs": "wp-scripts lint-md-docs",
 		"test:js": "wp-scripts test-unit-js",
-		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/Spotmap  sh -- -c 'XDEBUG_MODE=off composer run test'",
+		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c \"XDEBUG_MODE=off composer run test\"",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "npm run build && npm run composer -- install --no-dev && wp-scripts plugin-zip",
 		"composer": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap composer"

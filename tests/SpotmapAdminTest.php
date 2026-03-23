@@ -109,40 +109,4 @@ class SpotmapAdminTest extends WP_UnitTestCase {
 		}
 	}
 
-	// --- validate_feed_name ---
-
-	public function test_validate_feed_name_returns_sanitized_names(): void {
-		$result = self::$admin->validate_feed_name( [ '<script>alert(1)</script>' ] );
-		$this->assertStringNotContainsString( '<script>', $result[0] );
-	}
-
-	public function test_validate_feed_name_skips_empty_entries(): void {
-		$result = self::$admin->validate_feed_name( [ '' ] );
-		$this->assertSame( '', $result[0] );
-	}
-
-	public function test_validate_feed_name_renames_feed_in_db_when_changed(): void {
-		// Insert a point under the old feed name.
-		self::$admin->db->insert_point( [
-			'feedName'       => 'trail-2024',
-			'feedId'         => 'fid-001',
-			'messageType'    => 'OK',
-			'unixTime'       => 1700001000,
-			'latitude'       => 47.0,
-			'longitude'      => 8.0,
-			'modelId'        => 'SPOT-X',
-			'messengerName'  => 'Device',
-			'messageContent' => '',
-		] );
-
-		// Store the existing feed name as if it were saved in WP options.
-		update_option( 'spotmap_findmespot_name', [ 0 => 'trail-2024' ] );
-		update_option( 'spotmap_findmespot_id',   [ 0 => 'fid-001' ] );
-
-		self::$admin->validate_feed_name( [ 0 => 'trail-2025' ] );
-
-		$feednames = self::$admin->db->get_all_feednames();
-		$this->assertContains( 'trail-2025', $feednames );
-		$this->assertNotContains( 'trail-2024', $feednames );
-	}
 }

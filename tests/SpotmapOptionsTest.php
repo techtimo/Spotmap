@@ -6,15 +6,19 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 
 	public static function setUpBeforeClass(): void {
 		parent::setUpBeforeClass();
-		$reflection        = new ReflectionClass( Spotmap_Options::class );
-		self::$cache_prop  = $reflection->getProperty( 'cache' );
+		$reflection       = new ReflectionClass( Spotmap_Options::class );
+		self::$cache_prop = $reflection->getProperty( 'cache' );
 	}
 
 	protected function setUp(): void {
 		parent::setUp();
-		// WP_UnitTestCase rolls back DB changes per test; only PHP-level static cache needs manual reset.
+		// WP_UnitTestCase rolls back DB changes per test; reset PHP-level static cache too.
 		self::$cache_prop->setValue( null, [] );
 	}
+
+	// -------------------------------------------------------------------------
+	// Marker defaults
+	// -------------------------------------------------------------------------
 
 	public function test_marker_defaults_contain_expected_types(): void {
 		$defaults = Spotmap_Options::get_marker_defaults();
@@ -31,6 +35,10 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		}
 	}
 
+	// -------------------------------------------------------------------------
+	// Settings defaults
+	// -------------------------------------------------------------------------
+
 	public function test_settings_defaults_has_expected_keys(): void {
 		$defaults = Spotmap_Options::get_settings_defaults();
 
@@ -39,12 +47,200 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$this->assertSame( 500, $defaults['height'] );
 	}
 
-	public function test_get_provider_option_name(): void {
-		$this->assertSame(
-			'spotmap_findmespot_id',
-			Spotmap_Options::get_provider_option_name( 'findmespot', 'id' )
-		);
+	// -------------------------------------------------------------------------
+	// seed_defaults
+	// -------------------------------------------------------------------------
+
+	public function test_seed_defaults_creates_all_options_on_fresh_install(): void {
+		Spotmap_Options::seed_defaults();
+
+		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_FEEDS ) );
+		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_MARKER ) );
+		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_DEFAULT_VALUES ) );
+		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES ) );
+		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_API_TOKENS ) );
 	}
+
+	public function test_seed_defaults_feeds_option_is_empty_array(): void {
+		Spotmap_Options::seed_defaults();
+
+		$this->assertSame( [], get_option( Spotmap_Options::OPTION_FEEDS ) );
+	}
+
+	public function test_seed_defaults_does_not_overwrite_existing_options(): void {
+		// Simulate an existing install where the user already has a custom marker.
+		update_option( Spotmap_Options::OPTION_MARKER, [
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => 'On the way!' ],
+		] );
+
+		Spotmap_Options::seed_defaults();
+		self::$cache_prop->setValue( null, [] );
+
+		$marker = get_option( Spotmap_Options::OPTION_MARKER );
+		// add_option() is a no-op when the option already exists.
+		$this->assertArrayHasKey( 'OK', $marker );
+		$this->assertSame( 'star', $marker['OK']['icon'], 'Existing value must not be overwritten by seed_defaults' );
+	}
+
+	// -------------------------------------------------------------------------
+	// Feeds CRUD
+	// -------------------------------------------------------------------------
+
+	public function test_get_feeds_returns_empty_array_when_no_feeds(): void {
+		$this->assertSame( [], Spotmap_Options::get_feeds() );
+	}
+
+	public function test_add_feed_returns_feed_with_generated_id(): void {
+		$feed = Spotmap_Options::add_feed( [
+			'type'     => 'findmespot',
+			'name'     => 'Alps 2024',
+			'feed_id'  => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq',
+			'password' => '',
+		] );
+
+		$this->assertArrayHasKey( 'id', $feed );
+		$this->assertNotEmpty( $feed['id'] );
+	}
+
+	public function test_add_feed_persists_to_options(): void {
+		Spotmap_Options::add_feed( [
+			'type'     => 'findmespot',
+			'name'     => 'Alps 2024',
+			'feed_id'  => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq',
+			'password' => '',
+		] );
+		self::$cache_prop->setValue( null, [] );
+
+		$feeds = Spotmap_Options::get_feeds();
+		$this->assertCount( 1, $feeds );
+		$this->assertSame( 'Alps 2024', $feeds[0]['name'] );
+		$this->assertSame( '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', $feeds[0]['feed_id'] );
+	}
+
+	public function test_add_multiple_feeds_all_get_unique_ids(): void {
+		$a = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Feed A', 'feed_id' => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', 'password' => '' ] );
+		$b = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Feed B', 'feed_id' => '1abcDefgHiJkLmNoPqRsTuVwXyZ123456', 'password' => '' ] );
+
+		$this->assertNotSame( $a['id'], $b['id'] );
+	}
+
+	public function test_get_feed_returns_correct_feed_by_id(): void {
+		$added = Spotmap_Options::add_feed( [
+			'type'     => 'findmespot',
+			'name'     => 'Summer Hike',
+			'feed_id'  => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq',
+			'password' => '',
+		] );
+		self::$cache_prop->setValue( null, [] );
+
+		$found = Spotmap_Options::get_feed( $added['id'] );
+		$this->assertNotNull( $found );
+		$this->assertSame( 'Summer Hike', $found['name'] );
+	}
+
+	public function test_get_feed_returns_null_for_unknown_id(): void {
+		$this->assertNull( Spotmap_Options::get_feed( 'nonexistent_id' ) );
+	}
+
+	public function test_update_feed_persists_changes(): void {
+		$added = Spotmap_Options::add_feed( [
+			'type'     => 'findmespot',
+			'name'     => 'Old Name',
+			'feed_id'  => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq',
+			'password' => '',
+		] );
+		self::$cache_prop->setValue( null, [] );
+
+		$result = Spotmap_Options::update_feed( $added['id'], [
+			'type'     => 'findmespot',
+			'name'     => 'New Name',
+			'feed_id'  => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq',
+			'password' => '',
+		] );
+		self::$cache_prop->setValue( null, [] );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'New Name', Spotmap_Options::get_feed( $added['id'] )['name'] );
+	}
+
+	public function test_update_feed_preserves_id(): void {
+		$added = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Trip', 'feed_id' => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', 'password' => '' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		Spotmap_Options::update_feed( $added['id'], [ 'type' => 'findmespot', 'name' => 'Trip v2', 'feed_id' => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', 'password' => '' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		$feed = Spotmap_Options::get_feed( $added['id'] );
+		$this->assertSame( $added['id'], $feed['id'], 'ID must not change on update' );
+	}
+
+	public function test_update_feed_returns_false_for_unknown_id(): void {
+		$result = Spotmap_Options::update_feed( 'no_such_id', [ 'name' => 'Ghost' ] );
+		$this->assertFalse( $result );
+	}
+
+	public function test_delete_feed_removes_it(): void {
+		$added = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Temp', 'feed_id' => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', 'password' => '' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		$result = Spotmap_Options::delete_feed( $added['id'] );
+		self::$cache_prop->setValue( null, [] );
+
+		$this->assertTrue( $result );
+		$this->assertNull( Spotmap_Options::get_feed( $added['id'] ) );
+		$this->assertCount( 0, Spotmap_Options::get_feeds() );
+	}
+
+	public function test_delete_feed_returns_false_for_unknown_id(): void {
+		$result = Spotmap_Options::delete_feed( 'no_such_id' );
+		$this->assertFalse( $result );
+	}
+
+	public function test_delete_feed_leaves_other_feeds_intact(): void {
+		$a = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Keep Me', 'feed_id' => '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq', 'password' => '' ] );
+		$b = Spotmap_Options::add_feed( [ 'type' => 'findmespot', 'name' => 'Delete Me', 'feed_id' => '1abcDefgHiJkLmNoPqRsTuVwXyZ123456', 'password' => '' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		Spotmap_Options::delete_feed( $b['id'] );
+		self::$cache_prop->setValue( null, [] );
+
+		$feeds = Spotmap_Options::get_feeds();
+		$this->assertCount( 1, $feeds );
+		$this->assertSame( $a['id'], $feeds[0]['id'] );
+	}
+
+	// -------------------------------------------------------------------------
+	// save_* write methods
+	// -------------------------------------------------------------------------
+
+	public function test_save_marker_options_persists(): void {
+		$custom = [
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+		];
+		Spotmap_Options::save_marker_options( $custom );
+		self::$cache_prop->setValue( null, [] );
+
+		$stored = get_option( Spotmap_Options::OPTION_MARKER );
+		$this->assertSame( 'star', $stored['OK']['icon'] );
+	}
+
+	public function test_save_settings_persists(): void {
+		Spotmap_Options::save_settings( [ 'height' => 800 ] );
+		self::$cache_prop->setValue( null, [] );
+
+		$this->assertSame( 800, Spotmap_Options::get_setting( 'height' ) );
+	}
+
+	public function test_save_api_tokens_persists(): void {
+		Spotmap_Options::save_api_tokens( [ 'mapbox' => 'pk.newtoken' ] );
+		self::$cache_prop->setValue( null, [] );
+
+		$this->assertSame( 'pk.newtoken', Spotmap_Options::get_api_token( 'mapbox' ) );
+	}
+
+	// -------------------------------------------------------------------------
+	// Marker read methods
+	// -------------------------------------------------------------------------
 
 	public function test_get_marker_options_merges_with_defaults(): void {
 		update_option( Spotmap_Options::OPTION_MARKER, [
@@ -54,134 +250,9 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$options = Spotmap_Options::get_marker_options();
 
 		$this->assertSame( 'circle', $options['OK']['iconShape'] );
-		// Non-overridden types still get their defaults.
+		// Non-overridden types still return defaults.
 		$this->assertSame( 'marker', $options['HELP']['iconShape'] );
 	}
-
-	public function test_get_setting_returns_default_when_unset(): void {
-		$this->assertSame( 500, Spotmap_Options::get_setting( 'height' ) );
-	}
-
-	public function test_get_setting_returns_fallback_for_unknown_key(): void {
-		$this->assertNull( Spotmap_Options::get_setting( 'nonexistent_key' ) );
-	}
-
-	public function test_get_api_token_returns_empty_string_by_default(): void {
-		$this->assertSame( '', Spotmap_Options::get_api_token( 'mapbox' ) );
-	}
-
-	public function test_get_api_token_returns_stored_value(): void {
-		update_option( Spotmap_Options::OPTION_API_TOKENS, [ 'mapbox' => 'tok_123' ] );
-
-		$this->assertSame( 'tok_123', Spotmap_Options::get_api_token( 'mapbox' ) );
-	}
-
-	// --- Migration tests ---
-
-	public function test_ensure_defaults_creates_all_options_on_fresh_install(): void {
-		// No options exist — fresh install.
-		Spotmap_Options::ensure_defaults();
-
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_MARKER ) );
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_DEFAULT_VALUES ) );
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES ) );
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_API_PROVIDERS ) );
-	}
-
-	public function test_ensure_defaults_preserves_existing_marker_settings(): void {
-		// Simulate an older install that already has a custom OK marker.
-		update_option( Spotmap_Options::OPTION_MARKER, [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => 'On the way!' ],
-		] );
-
-		Spotmap_Options::ensure_defaults();
-		self::$cache_prop->setValue( null, [] );
-
-		$marker = get_option( Spotmap_Options::OPTION_MARKER );
-		$this->assertSame( 'circle', $marker['OK']['iconShape'], 'Existing iconShape must be preserved' );
-		$this->assertSame( 'star', $marker['OK']['icon'], 'Existing icon must be preserved' );
-		$this->assertSame( 'On the way!', $marker['OK']['customMessage'], 'Existing customMessage must be preserved' );
-	}
-
-	public function test_ensure_defaults_adds_missing_marker_types_from_old_install(): void {
-		// Simulate an older install that only stored the OK type and is missing others.
-		update_option( Spotmap_Options::OPTION_MARKER, [
-			'OK' => [ 'iconShape' => 'marker', 'icon' => 'thumbs-up', 'customMessage' => '' ],
-		] );
-
-		Spotmap_Options::ensure_defaults();
-		self::$cache_prop->setValue( null, [] );
-
-		$marker = get_option( Spotmap_Options::OPTION_MARKER );
-		$this->assertArrayHasKey( 'HELP', $marker, 'Missing HELP type must be added by ensure_defaults' );
-		$this->assertArrayHasKey( 'MEDIA', $marker, 'Missing MEDIA type must be added by ensure_defaults' );
-	}
-
-	public function test_ensure_defaults_preserves_custom_height_setting(): void {
-		// Simulate an older install with a custom height.
-		update_option( Spotmap_Options::OPTION_DEFAULT_VALUES, [ 'height' => 800 ] );
-
-		Spotmap_Options::ensure_defaults();
-		self::$cache_prop->setValue( null, [] );
-
-		$this->assertSame( 800, Spotmap_Options::get_setting( 'height' ), 'Custom height must survive ensure_defaults' );
-	}
-
-	public function test_ensure_defaults_adds_missing_settings_keys_from_old_install(): void {
-		// Simulate an older install with some settings but a missing key (e.g. mapcenter).
-		$partial = Spotmap_Options::get_settings_defaults();
-		unset( $partial['mapcenter'] );
-		update_option( Spotmap_Options::OPTION_DEFAULT_VALUES, $partial );
-
-		Spotmap_Options::ensure_defaults();
-		self::$cache_prop->setValue( null, [] );
-
-		$this->assertSame( 'all', Spotmap_Options::get_setting( 'mapcenter' ), 'Missing mapcenter must be restored to default' );
-	}
-
-	// --- get_api_token_defaults ---
-
-	public function test_get_api_token_defaults_has_all_expected_keys(): void {
-		$defaults = Spotmap_Options::get_api_token_defaults();
-
-		foreach ( [ 'timezonedb', 'mapbox', 'thunderforest', 'linz.govt.nz', 'geoservices.ign.fr', 'osdatahub.os.uk' ] as $key ) {
-			$this->assertArrayHasKey( $key, $defaults, "Missing API token key: $key" );
-			$this->assertSame( '', $defaults[ $key ], "Default for $key must be empty string" );
-		}
-	}
-
-	// --- get_api_providers ---
-
-	public function test_get_api_providers_returns_findmespot_by_default(): void {
-		$providers = Spotmap_Options::get_api_providers();
-		$this->assertArrayHasKey( 'findmespot', $providers );
-	}
-
-	public function test_get_api_providers_returns_stored_value(): void {
-		update_option( Spotmap_Options::OPTION_API_PROVIDERS, [ 'custom-provider' => 'Custom Feed' ] );
-
-		$providers = Spotmap_Options::get_api_providers();
-
-		$this->assertArrayHasKey( 'custom-provider', $providers );
-	}
-
-	// --- get_settings ---
-
-	public function test_get_settings_returns_all_default_keys(): void {
-		$settings = Spotmap_Options::get_settings();
-
-		foreach ( array_keys( Spotmap_Options::get_settings_defaults() ) as $key ) {
-			$this->assertArrayHasKey( $key, $settings, "Missing settings key: $key" );
-		}
-	}
-
-	public function test_get_settings_stored_value_overrides_default(): void {
-		update_option( Spotmap_Options::OPTION_DEFAULT_VALUES, [ 'height' => 800 ] );
-
-		$this->assertSame( 800, Spotmap_Options::get_settings()['height'] );
-	}
-
-	// --- get_marker_setting ---
 
 	public function test_get_marker_setting_returns_default_value(): void {
 		$this->assertSame( 'marker', Spotmap_Options::get_marker_setting( 'OK', 'iconShape' ) );
@@ -199,13 +270,55 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$this->assertSame( 'fallback', Spotmap_Options::get_marker_setting( 'UNKNOWN_TYPE', 'iconShape', 'fallback' ) );
 	}
 
-	// --- get_api_tokens ---
+	// -------------------------------------------------------------------------
+	// Settings read methods
+	// -------------------------------------------------------------------------
+
+	public function test_get_setting_returns_default_when_unset(): void {
+		$this->assertSame( 500, Spotmap_Options::get_setting( 'height' ) );
+	}
+
+	public function test_get_setting_returns_fallback_for_unknown_key(): void {
+		$this->assertNull( Spotmap_Options::get_setting( 'nonexistent_key' ) );
+	}
+
+	public function test_get_settings_returns_all_default_keys(): void {
+		foreach ( array_keys( Spotmap_Options::get_settings_defaults() ) as $key ) {
+			$this->assertArrayHasKey( $key, Spotmap_Options::get_settings(), "Missing settings key: $key" );
+		}
+	}
+
+	public function test_get_settings_stored_value_overrides_default(): void {
+		update_option( Spotmap_Options::OPTION_DEFAULT_VALUES, [ 'height' => 800 ] );
+
+		$this->assertSame( 800, Spotmap_Options::get_settings()['height'] );
+	}
+
+	// -------------------------------------------------------------------------
+	// API tokens
+	// -------------------------------------------------------------------------
+
+	public function test_get_api_token_defaults_has_all_expected_keys(): void {
+		foreach ( [ 'timezonedb', 'mapbox', 'thunderforest', 'linz.govt.nz', 'geoservices.ign.fr', 'osdatahub.os.uk' ] as $key ) {
+			$defaults = Spotmap_Options::get_api_token_defaults();
+			$this->assertArrayHasKey( $key, $defaults, "Missing API token key: $key" );
+			$this->assertSame( '', $defaults[ $key ] );
+		}
+	}
+
+	public function test_get_api_token_returns_empty_string_by_default(): void {
+		$this->assertSame( '', Spotmap_Options::get_api_token( 'mapbox' ) );
+	}
+
+	public function test_get_api_token_returns_stored_value(): void {
+		update_option( Spotmap_Options::OPTION_API_TOKENS, [ 'mapbox' => 'tok_123' ] );
+
+		$this->assertSame( 'tok_123', Spotmap_Options::get_api_token( 'mapbox' ) );
+	}
 
 	public function test_get_api_tokens_returns_all_known_keys(): void {
-		$tokens = Spotmap_Options::get_api_tokens();
-
 		foreach ( array_keys( Spotmap_Options::get_api_token_defaults() ) as $key ) {
-			$this->assertArrayHasKey( $key, $tokens );
+			$this->assertArrayHasKey( $key, Spotmap_Options::get_api_tokens() );
 		}
 	}
 
@@ -215,7 +328,9 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$this->assertSame( 'pk.abc123', Spotmap_Options::get_api_tokens()['mapbox'] );
 	}
 
-	// --- get_custom_messages / get_custom_message ---
+	// -------------------------------------------------------------------------
+	// Custom messages
+	// -------------------------------------------------------------------------
 
 	public function test_get_custom_messages_returns_empty_array_by_default(): void {
 		$this->assertSame( [], Spotmap_Options::get_custom_messages() );
@@ -235,15 +350,5 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		update_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES, [ 'HELP' => 'SOS triggered!' ] );
 
 		$this->assertSame( 'SOS triggered!', Spotmap_Options::get_custom_message( 'HELP' ) );
-	}
-
-	// --- get_dynamic_provider_option_names ---
-
-	public function test_get_dynamic_provider_option_names_contains_findmespot_keys(): void {
-		$names = Spotmap_Options::get_dynamic_provider_option_names();
-
-		$this->assertContains( 'spotmap_findmespot_name', $names );
-		$this->assertContains( 'spotmap_findmespot_id', $names );
-		$this->assertContains( 'spotmap_findmespot_password', $names );
 	}
 }
