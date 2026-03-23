@@ -2,6 +2,42 @@
 
 class Spotmap_Database {
 
+	private const ALLOWED_COLUMNS = [
+		'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
+		'battery_status', 'message', 'custom_message', 'feed_name',
+		'feed_id', 'model', 'device_name', 'local_timezone',
+	];
+
+	private static function sanitize_select( string $select ): string {
+		if ( $select === '*' ) {
+			return '*';
+		}
+		$safe = array_filter(
+			array_map( 'trim', explode( ',', $select ) ),
+			fn( $col ) => in_array( $col, self::ALLOWED_COLUMNS, true )
+		);
+		return $safe ? implode( ', ', $safe ) : '*';
+	}
+
+	private static function sanitize_identifier( string $value ): ?string {
+		$value = trim( $value );
+		return in_array( $value, self::ALLOWED_COLUMNS, true ) ? $value : null;
+	}
+
+	private static function sanitize_order( string $order_by ): string {
+		$safe = [];
+		foreach ( array_map( 'trim', explode( ',', $order_by ) ) as $part ) {
+			$tokens = preg_split( '/\s+/', $part, 2 );
+			$col    = self::sanitize_identifier( $tokens[0] );
+			if ( $col === null ) {
+				continue;
+			}
+			$dir    = strtoupper( $tokens[1] ?? '' );
+			$safe[] = $col . ( $dir === 'DESC' ? ' DESC' : ( $dir === 'ASC' ? ' ASC' : '' ) );
+		}
+		return $safe ? 'ORDER BY ' . implode( ', ', $safe ) : '';
+	}
+
 	/**
 	 * Loads option helper dependencies used by the database layer.
 	 *
@@ -61,10 +97,10 @@ class Spotmap_Database {
 	public function get_points($filter){
 		// error_log(print_r($filter,true));
 
-		$select = empty($filter['select']) ? "*": $filter['select'];
-		$group_by = empty($filter['groupBy']) ? NULL: $filter['groupBy'];
-		$order = empty($filter['orderBy']) ? NULL: "ORDER BY " . $filter['orderBy'];
-		$limit = empty($filter['limit']) ? NULL: "LIMIT " . $filter['limit'];
+		$select   = self::sanitize_select( $filter['select'] ?? '*' );
+		$group_by = empty( $filter['groupBy'] ) ? null : self::sanitize_identifier( $filter['groupBy'] );
+		$order    = empty( $filter['orderBy'] ) ? '' : self::sanitize_order( $filter['orderBy'] );
+		$limit    = empty( $filter['limit'] )   ? '' : 'LIMIT ' . absint( $filter['limit'] );
 		global $wpdb;
 		$where = '';
 		if(!empty($filter['feeds'])){
@@ -74,7 +110,9 @@ class Spotmap_Database {
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
 				}
 			}
-			$where .= "AND feed_name IN ('".implode("','", $filter['feeds']). "') ";
+			$placeholders = implode( ', ', array_fill( 0, count( $filter['feeds'] ), '%s' ) );
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$where .= $wpdb->prepare( "AND feed_name IN ($placeholders) ", ...$filter['feeds'] );
 		}
 		if(!empty($filter['type'])){
 			$types_on_db = $this->get_all_types();
@@ -84,7 +122,9 @@ class Spotmap_Database {
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
 				}
 			}
-			$where .= "AND type IN ('".implode("','", $filter['type']). "') ";
+			$placeholders = implode( ', ', array_fill( 0, count( $filter['type'] ), '%s' ) );
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$where .= $wpdb->prepare( "AND type IN ($placeholders) ", ...$filter['type'] );
 		}
 
 		// either have a day or a range
@@ -121,8 +161,8 @@ class Spotmap_Database {
 				}
 			} 
 		}
-		if(!empty($group_by)){
-			$where.= " and id in (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY ".$group_by." )";
+		if ( ! empty( $group_by ) ) {
+			$where .= " AND id IN (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY " . $group_by . " )";
 		}
 		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
 		// error_log("Query: " .$query);

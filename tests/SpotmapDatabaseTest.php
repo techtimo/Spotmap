@@ -175,6 +175,146 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 		$this->assertSame( 1, count( array_keys( $types, 'CUSTOM' ) ) );
 	}
 
+	// --- sanitize helpers (private static, accessed via reflection) ---
+
+	private function sanitize( string $method, mixed ...$args ): mixed {
+		$ref = new ReflectionMethod( Spotmap_Database::class, $method );
+		$ref->setAccessible( true );
+		return $ref->invoke( null, ...$args );
+	}
+
+	// sanitize_select
+
+	public function test_sanitize_select_passes_star(): void {
+		$this->assertSame( '*', $this->sanitize( 'sanitize_select', '*' ) );
+	}
+
+	public function test_sanitize_select_allows_valid_column(): void {
+		$this->assertSame( 'latitude', $this->sanitize( 'sanitize_select', 'latitude' ) );
+	}
+
+	public function test_sanitize_select_allows_multiple_valid_columns(): void {
+		$this->assertSame( 'latitude, longitude', $this->sanitize( 'sanitize_select', 'latitude, longitude' ) );
+	}
+
+	public function test_sanitize_select_drops_unknown_column(): void {
+		$this->assertSame( 'latitude', $this->sanitize( 'sanitize_select', 'latitude, evil_col' ) );
+	}
+
+	public function test_sanitize_select_falls_back_to_star_when_all_invalid(): void {
+		$this->assertSame( '*', $this->sanitize( 'sanitize_select', '1 UNION SELECT user_pass FROM wp_users' ) );
+	}
+
+	// sanitize_identifier
+
+	public function test_sanitize_identifier_returns_valid_column(): void {
+		$this->assertSame( 'feed_name', $this->sanitize( 'sanitize_identifier', 'feed_name' ) );
+	}
+
+	public function test_sanitize_identifier_trims_whitespace(): void {
+		$this->assertSame( 'time', $this->sanitize( 'sanitize_identifier', '  time  ' ) );
+	}
+
+	public function test_sanitize_identifier_returns_null_for_unknown(): void {
+		$this->assertNull( $this->sanitize( 'sanitize_identifier', 'wp_users' ) );
+	}
+
+	public function test_sanitize_identifier_returns_null_for_injection_attempt(): void {
+		$this->assertNull( $this->sanitize( 'sanitize_identifier', "feed_name; DROP TABLE wp_spotmap_points" ) );
+	}
+
+	public function test_sanitize_identifier_returns_null_for_empty_string(): void {
+		$this->assertNull( $this->sanitize( 'sanitize_identifier', '' ) );
+	}
+
+	// sanitize_order
+
+	public function test_sanitize_order_single_column_no_direction(): void {
+		$this->assertSame( 'ORDER BY time', $this->sanitize( 'sanitize_order', 'time' ) );
+	}
+
+	public function test_sanitize_order_single_column_desc(): void {
+		$this->assertSame( 'ORDER BY time DESC', $this->sanitize( 'sanitize_order', 'time DESC' ) );
+	}
+
+	public function test_sanitize_order_single_column_asc(): void {
+		$this->assertSame( 'ORDER BY time ASC', $this->sanitize( 'sanitize_order', 'time ASC' ) );
+	}
+
+	public function test_sanitize_order_multiple_columns(): void {
+		$this->assertSame( 'ORDER BY feed_name, time', $this->sanitize( 'sanitize_order', 'feed_name, time' ) );
+	}
+
+	public function test_sanitize_order_multiple_columns_with_directions(): void {
+		$this->assertSame( 'ORDER BY feed_name ASC, time DESC', $this->sanitize( 'sanitize_order', 'feed_name ASC, time DESC' ) );
+	}
+
+	public function test_sanitize_order_drops_unknown_column(): void {
+		$this->assertSame( 'ORDER BY time DESC', $this->sanitize( 'sanitize_order', 'time DESC, evil_col ASC' ) );
+	}
+
+	public function test_sanitize_order_returns_empty_string_for_injection(): void {
+		$this->assertSame( '', $this->sanitize( 'sanitize_order', "1; DROP TABLE wp_users" ) );
+	}
+
+	public function test_sanitize_order_returns_empty_string_when_all_invalid(): void {
+		$this->assertSame( '', $this->sanitize( 'sanitize_order', 'not_a_col, also_bad' ) );
+	}
+
+	// get_points: injection resistance (integration)
+
+	public function test_get_points_select_injection_is_sanitized_and_query_succeeds(): void {
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'sanitize-test', 'unixTime' => 1700900001 ] ) );
+
+		$points = self::$db->get_points( [
+			'feeds'  => [ 'sanitize-test' ],
+			'select' => '1 UNION SELECT user_pass,2,3 FROM wp_users-- ',
+		] );
+
+		// Injection stripped → falls back to SELECT * → returns normal point objects
+		$this->assertIsArray( $points );
+		$this->assertArrayNotHasKey( 'error', $points );
+		$this->assertSame( 'sanitize-test', $points[0]->feed_name );
+	}
+
+	public function test_get_points_limit_injection_is_treated_as_integer(): void {
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900010 ] ) );
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900011 ] ) );
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900012 ] ) );
+
+		$points = self::$db->get_points( [
+			'feeds' => [ 'limit-test' ],
+			'limit' => '2; DROP TABLE wp_spotmap_points',
+		] );
+
+		// absint('2; DROP...') === 2
+		$this->assertCount( 2, $points );
+	}
+
+	public function test_get_points_orderby_injection_is_ignored(): void {
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'order-test', 'unixTime' => 1700900020 ] ) );
+
+		$points = self::$db->get_points( [
+			'feeds'   => [ 'order-test' ],
+			'orderBy' => "id; DROP TABLE wp_spotmap_points-- ",
+		] );
+
+		$this->assertIsArray( $points );
+		$this->assertArrayNotHasKey( 'error', $points );
+	}
+
+	public function test_get_points_groupby_injection_is_ignored(): void {
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'group-test', 'unixTime' => 1700900030 ] ) );
+
+		$points = self::$db->get_points( [
+			'feeds'   => [ 'group-test' ],
+			'groupBy' => "feed_name; DROP TABLE wp_spotmap_points",
+		] );
+
+		$this->assertIsArray( $points );
+		$this->assertArrayNotHasKey( 'error', $points );
+	}
+
 	// --- does_media_exist / delete_media_point ---
 
 	public function test_does_media_exist_returns_true_after_insert(): void {
