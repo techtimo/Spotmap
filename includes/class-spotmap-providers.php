@@ -24,48 +24,52 @@ class Spotmap_Providers {
 	 * @return array<string, array{label: string, fields: list<array<string, mixed>>}>
 	 */
 	public static function all() {
-		return [
-			'findmespot' => [
-				'label'  => 'SPOT Feed',
-				'fields' => [
-					[
-						'key'         => 'name',
-						'type'        => 'text',
-						'label'       => 'Feed Name',
-						'required'    => true,
-						'description' => 'A unique name used to identify this feed in the map block.',
-					],
-					[
-						'key'         => 'feed_id',
-						'type'        => 'text',
-						'label'       => 'Feed ID',
-						'required'    => true,
-						'description' => 'The SPOT XML Feed ID. See the <a href="https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support">SPOT API support page</a> for details.',
-					],
-					[
-						'key'         => 'password',
-						'type'        => 'password',
-						'label'       => 'Feed Password',
-						'required'    => false,
-						'description' => 'Leave empty if the feed is public.',
+		static $providers = null;
+		if ( $providers === null ) {
+			$providers = [
+				'findmespot' => [
+					'label'  => 'SPOT Feed',
+					'fields' => [
+						[
+							'key'         => 'name',
+							'type'        => 'text',
+							'label'       => 'Feed Name',
+							'required'    => true,
+							'description' => 'A unique name used to identify this feed in the map block.',
+						],
+						[
+							'key'         => 'feed_id',
+							'type'        => 'text',
+							'label'       => 'Feed ID',
+							'required'    => true,
+							'description' => 'The SPOT XML Feed ID. See the <a href="https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support">SPOT API support page</a> for details.',
+						],
+						[
+							'key'         => 'password',
+							'type'        => 'password',
+							'label'       => 'Feed Password',
+							'required'    => false,
+							'description' => 'Leave empty if the feed is public.',
+						],
 					],
 				],
-			],
 
-			// Future providers — add crawler implementation alongside each entry.
-			// 'osmand' => [
-			//     'label'  => 'OsmAnd',
-			//     'fields' => [ ... ],
-			// ],
-			// 'teltonika' => [
-			//     'label'  => 'Teltonika',
-			//     'fields' => [ ... ],
-			// ],
-			// 'garmin' => [
-			//     'label'  => 'Garmin inReach',
-			//     'fields' => [ ... ],
-			// ],
-		];
+				// Future providers — add crawler implementation alongside each entry.
+				// 'osmand' => [
+				//     'label'  => 'OsmAnd',
+				//     'fields' => [ ... ],
+				// ],
+				// 'teltonika' => [
+				//     'label'  => 'Teltonika',
+				//     'fields' => [ ... ],
+				// ],
+				// 'garmin' => [
+				//     'label'  => 'Garmin inReach',
+				//     'fields' => [ ... ],
+				// ],
+			];
+		}
+		return $providers;
 	}
 
 	/**
@@ -86,6 +90,6 @@ class Spotmap_Providers {
 	 * @return bool
 	 */
 	public static function exists( $type ) {
-		return isset( self::all()[ $type ] );
+		return self::get( $type ) !== null;
 	}
 }

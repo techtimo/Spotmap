@@ -11,11 +11,12 @@
  */
 class Spotmap_Options {
 
-	const OPTION_FEEDS          = 'spotmap_feeds';
+	const OPTION_FEEDS           = 'spotmap_feeds';
 	const OPTION_CUSTOM_MESSAGES = 'spotmap_custom_messages';
-	const OPTION_MARKER         = 'spotmap_marker';
-	const OPTION_DEFAULT_VALUES = 'spotmap_default_values';
-	const OPTION_API_TOKENS     = 'spotmap_api_tokens';
+	const OPTION_MARKER          = 'spotmap_marker';
+	const OPTION_DEFAULT_VALUES  = 'spotmap_default_values';
+	const OPTION_API_TOKENS      = 'spotmap_api_tokens';
+	const OPTION_VERSION         = 'spotmap_version';
 
 	private static $cache = [];
 
