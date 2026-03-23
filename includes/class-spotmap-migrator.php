@@ -16,8 +16,6 @@
  */
 class Spotmap_Migrator {
 
-	const VERSION_OPTION = 'spotmap_version';
-
 	/**
 	 * Ordered map of target version => method name.
 	 * Add new entries here as the plugin evolves.
@@ -35,7 +33,7 @@ class Spotmap_Migrator {
 	 * @return void
 	 */
 	public static function run() {
-		$stored = get_option( self::VERSION_OPTION, '0.0.0' );
+		$stored = get_option( Spotmap_Options::OPTION_VERSION, '0.0.0' );
 
 		if ( version_compare( $stored, SPOTMAP_VERSION, '>=' ) ) {
 			return;
@@ -47,7 +45,7 @@ class Spotmap_Migrator {
 			}
 		}
 
-		update_option( self::VERSION_OPTION, SPOTMAP_VERSION );
+		update_option( Spotmap_Options::OPTION_VERSION, SPOTMAP_VERSION );
 	}
 
 	// -------------------------------------------------------------------------
@@ -98,13 +96,7 @@ class Spotmap_Migrator {
 			];
 		}
 
-		// Write the new unified option (preserves existing spotmap_feeds if the
-		// migration somehow ran before, e.g. a partial update).
-		if ( false === get_option( 'spotmap_feeds' ) ) {
-			add_option( 'spotmap_feeds', $feeds );
-		} else {
-			update_option( 'spotmap_feeds', $feeds );
-		}
+		Spotmap_Options::save_feeds( $feeds );
 
 		// Remove legacy options.
 		delete_option( 'spotmap_findmespot_name' );

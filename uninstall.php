@@ -12,7 +12,7 @@ delete_option( Spotmap_Options::OPTION_MARKER );
 delete_option( Spotmap_Options::OPTION_API_TOKENS );
 delete_option( Spotmap_Options::OPTION_DEFAULT_VALUES );
 delete_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES );
-delete_option( 'spotmap_version' );
+delete_option( Spotmap_Options::OPTION_VERSION );
 
 // Remove legacy 0.x.y options in case the plugin is deleted before migrating.
 delete_option( 'spotmap_api_providers' );

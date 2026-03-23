@@ -55,15 +55,18 @@ class Spotmap_Admin {
 	function get_feed_data() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
 
-		$feeds = Spotmap_Options::get_feeds();
+		$feeds           = Spotmap_Options::get_feeds();
+		$findmespot_crawler = null;
 		foreach ( $feeds as $feed ) {
-			$type = isset( $feed['type'] ) ? $feed['type'] : '';
+			$type = $feed['type'] ?? '';
 			if ( $type === 'findmespot' ) {
-				$crawler = new Spotmap_Api_Crawler( 'findmespot' );
-				$crawler->get_data(
-					isset( $feed['name'] )     ? $feed['name']     : '',
-					isset( $feed['feed_id'] )  ? $feed['feed_id']  : '',
-					isset( $feed['password'] ) ? $feed['password'] : ''
+				if ( $findmespot_crawler === null ) {
+					$findmespot_crawler = new Spotmap_Api_Crawler( 'findmespot' );
+				}
+				$findmespot_crawler->get_data(
+					$feed['name']     ?? '',
+					$feed['feed_id']  ?? '',
+					$feed['password'] ?? ''
 				);
 			}
 			// Future provider types handled here as they are implemented.
@@ -155,7 +158,7 @@ class Spotmap_Admin {
 			'latitude'       => $latitude,
 			'longitude'      => $longitude,
 			'unixTime'       => $timestamp,
-			'timestamp'      => $longitude,
+			'timestamp'      => $timestamp,
 			'feedName'       => 'media',
 			'feedId'         => 'media',
 			'messengerName'  => 'media',
