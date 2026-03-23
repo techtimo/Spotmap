@@ -8,19 +8,50 @@
  * @return string  Rendered HTML.
  */
 
+require_once plugin_dir_path( __FILE__ ) . '../includes/class-spotmap-options.php';
+require_once plugin_dir_path( __FILE__ ) . '../includes/class-spotmap-database.php';
+
 $map_id = 'spotmap-container-' . wp_rand();
 
+// Fall back to admin defaults when the block attribute was never explicitly set.
+$feeds = ! empty( $attributes['feeds'] )
+	? $attributes['feeds']
+	: ( new Spotmap_Database() )->get_all_feednames();
+
+$default_maps = array_values( array_filter( array_map( 'trim', explode( ',', Spotmap_Options::get_setting( 'maps', 'openstreetmap' ) ) ) ) );
+$maps         = ! empty( $attributes['maps'] ) ? $attributes['maps'] : $default_maps;
+
+// Build per-feed styles from admin defaults when not explicitly set (mirrors shortcode behaviour).
+if ( ! empty( $attributes['styles'] ) ) {
+	$styles = $attributes['styles'];
+} else {
+	$defaults   = Spotmap_Options::get_settings();
+	$colors     = array_values( array_filter( array_map( 'trim', explode( ',', $defaults['color'] ) ) ) );
+	$splitlines = array_values( array_filter( array_map( 'trim', explode( ',', (string) $defaults['splitlines'] ) ) ) );
+	$num_colors = max( 1, count( $colors ) );
+	$styles     = array();
+	foreach ( array_values( $feeds ) as $i => $feed_name ) {
+		$styles[ $feed_name ] = array(
+			'color'      => $colors[ $i % $num_colors ] ?? 'blue',
+			'splitLines' => $splitlines[0] ?? '12',
+		);
+	}
+}
+
 $options = wp_json_encode( array(
-	'feeds'        => ! empty( $attributes['feeds'] ) ? $attributes['feeds'] : array(),
-	'maps'         => ! empty( $attributes['maps'] ) ? $attributes['maps'] : array( 'openstreetmap' ),
+	'feeds'        => $feeds,
+	'maps'         => $maps,
 	'mapOverlays'  => ! empty( $attributes['mapOverlays'] ) ? $attributes['mapOverlays'] : null,
-	'styles'       => ! empty( $attributes['styles'] ) ? $attributes['styles'] : new stdClass(),
+	'styles'       => $styles,
 	'height'       => ! empty( $attributes['height'] ) ? $attributes['height'] : 500,
 	'mapcenter'    => ! empty( $attributes['mapcenter'] ) ? $attributes['mapcenter'] : 'all',
-	'filterPoints' => isset( $attributes['filterPoints'] ) ? $attributes['filterPoints'] : 10,
+	'filterPoints' => isset( $attributes['filterPoints'] ) ? $attributes['filterPoints'] : (int) Spotmap_Options::get_setting( 'filter-points', 5 ),
 	'autoReload'   => ! empty( $attributes['autoReload'] ),
 	'debug'        => ! empty( $attributes['debug'] ),
-	'dateRange'    => ! empty( $attributes['dateRange'] ) ? $attributes['dateRange'] : array( 'from' => '', 'to' => '' ),
+	'dateRange'    => array(
+		'from' => ! empty( $attributes['dateRange']['from'] ) ? $attributes['dateRange']['from'] : null,
+		'to'   => ! empty( $attributes['dateRange']['to'] )   ? $attributes['dateRange']['to']   : null,
+	),
 	'gpx'             => ! empty( $attributes['gpx'] ) ? $attributes['gpx'] : array(),
 	'enablePanning'     => isset( $attributes['enablePanning'] ) ? (bool) $attributes['enablePanning'] : true,
 	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : false,

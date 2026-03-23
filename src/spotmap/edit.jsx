@@ -787,9 +787,12 @@ export default function Edit( { attributes, setAttributes } ) {
 		return () => links.forEach( ( l ) => l.remove() );
 	}, [] );
 
-	// On first insert, populate feeds and apply admin-configured defaults.
+	// On first insert (or when maps/feeds are empty), populate from admin-configured defaults.
 	useEffect( () => {
-		if ( attributes.feeds.length === 0 && window.spotmapjsobj?.feeds ) {
+		if (
+			( attributes.feeds.length === 0 || attributes.maps.length === 0 ) &&
+			window.spotmapjsobj?.feeds
+		) {
 			const feedNames = Array.isArray( window.spotmapjsobj.feeds )
 				? window.spotmapjsobj.feeds
 				: Object.keys( window.spotmapjsobj.feeds );
@@ -810,6 +813,9 @@ export default function Edit( { attributes, setAttributes } ) {
 				? parseInt( dv.height, 10 )
 				: attributes.height;
 			const defaultMapcenter = dv.mapcenter || attributes.mapcenter;
+			const defaultFilterPoints = dv[ 'filter-points' ]
+				? parseInt( dv[ 'filter-points' ], 10 )
+				: attributes.filterPoints;
 
 			setAttributes( {
 				feeds: feedNames,
@@ -817,10 +823,12 @@ export default function Edit( { attributes, setAttributes } ) {
 				maps: defaultMaps,
 				height: defaultHeight,
 				mapcenter: defaultMapcenter,
+				filterPoints: defaultFilterPoints,
 			} );
 		}
 	}, [
 		attributes.feeds.length,
+		attributes.filterPoints,
 		attributes.height,
 		attributes.mapcenter,
 		attributes.maps,

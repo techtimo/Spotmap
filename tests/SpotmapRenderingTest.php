@@ -137,6 +137,68 @@ class SpotmapRenderingTest extends WP_UnitTestCase {
 		$this->assertSame( 400, $block['height'] );
 	}
 
+	/**
+	 * Provides two DB states: empty and populated.
+	 * Both should produce identical defaults for every shared option key.
+	 */
+	public static function db_state_provider(): array {
+		return [
+			'empty DB'     => [ false ],
+			'DB has feeds' => [ true ],
+		];
+	}
+
+	/**
+	 * All option keys that both renderers share must produce the same default
+	 * value regardless of whether the DB is empty or has data.
+	 *
+	 * Currently FAILS on 'feeds' when the DB has feeds: the shortcode defaults
+	 * to all feed names from the DB, the block defaults to [].
+	 * May also reveal divergences in other keys (maps, mapcenter, filterPoints…)
+	 * if their hardcoded block defaults drift from the WP option defaults.
+	 *
+	 * @dataProvider db_state_provider
+	 */
+	public function test_all_shared_defaults_match( bool $with_feeds ): void {
+		if ( $with_feeds ) {
+			( new Spotmap_Database() )->insert_point( [
+				'feedName'       => 'rendering-test-feed',
+				'feedId'         => 'fid-rendering',
+				'messageType'    => 'OK',
+				'unixTime'       => 1700003000,
+				'latitude'       => 47.0,
+				'longitude'      => 8.0,
+				'modelId'        => 'SPOT-X',
+				'messengerName'  => 'Device',
+				'messageContent' => '',
+			] );
+		}
+
+		$sc    = $this->extract_options( do_shortcode( '[spotmap]' ) );
+		$block = $this->extract_options( $this->render_block( [] ) );
+
+		$shared_keys = [
+			'feeds',
+			'maps',
+			'mapOverlays',
+			'mapcenter',
+			'filterPoints',
+			'autoReload',
+			'debug',
+			'dateRange',
+			'gpx',
+			'styles',
+		];
+
+		foreach ( $shared_keys as $key ) {
+			$this->assertSame(
+				$sc[ $key ] ?? null,
+				$block[ $key ] ?? null,
+				"Default for '$key' differs between shortcode and block"
+			);
+		}
+	}
+
 	public function test_html_contains_map_div_and_init_script(): void {
 		$sc    = do_shortcode( '[spotmap feeds="f1"]' );
 		$block = $this->render_block( [ 'feeds' => [] ] );
