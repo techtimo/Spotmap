@@ -1,47 +1,28 @@
-=== Spotmap ===
+# Spotmap
 Contributors: techtimo
 Donate link: paypal.me/ebaytimo
 Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeacon, liveposition, gpx, gps tracking, gps tracker, spottrace, spotwalla
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 5.3
-Tested up to: 5.8
+Tested up to: 6.9
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
 
 ## Description
 
 Spot does not offer the storage of points free of charge for long term. That's where Spotmap comes into the game:
-Your Wordpress Site will store all positions ever sent. It checks for new positions every 2.5 minutes.
+Your Wordpress Blog will store all positions ever sent. It checks for new positions every 2.5 minutes.
 It supports different devices (They can even belong to different accounts).
 
-The map can fetch new points autmatically without relaoding the entire Post.
-
-
-
-🆕 Support of Gutenberg block editor. Just type `/spotmap` and open the settings on the right.
-
-Currently only the GPX colors cannot be cahnged individually inside the block settings.
-
-With a shortcode you can add an embedded map to your post or page. By default it will show all positions ever sent.
-If needed the map can show a subset of the data. i.e. the last weekend getaway.
 
 Next planned features (Not necessarily in right order): 
 
 - grouping of points (partially implemented)
-
 - support of other tracking devices (Garmin InReach, ...)
-
 - Translatable version of the plugin
-
-- Full support of the Spotmap block for Gutenberg
-
 - delete/move points from the Dashboard
-
 - export to gpx files 
-
-👉 If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
-
 
 ## Installation
 
@@ -49,52 +30,13 @@ After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. 
 
 Now you can enter your XML Feed Id, a name for the feed and a password if you have one.  Press "Save". A few minutes later Wordpress will download the points that are present in the XML Feed.
 
-In the mean time you can create an empty map with the Shortcode: 
-`[spotmap]`
+In the mean time you can create an empty map in the editor with `/spotmap`
 
-If you use the block editor Gutenberg, you can search for a block named 'Spotmap'.
+🎉 Congrats! You just created your first Spotmap.
 
-🎉 Congrats! You just created your first Spotmap. 🎉
 
-If you use the Block editor make sure to select the map and click on the settings icon in the top right corner, in order to see all settings related to the map.
-
-If you use the shortcode,check the Additional attributes section.
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
-### Additional attributes
 
-If you add new maps, check the FAQ
-
-To fine tune the map, there are some attributes we can pass with the shortcode:
-
-_Note:_ all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
-
-#### Map
-
-- `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`.
-  If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `mb-outdoors,mb-streets,mb-satelite` 
-  Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
-
-- `map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
-
-- `height=600` can define the height of the map in pixels. 
-
-- `width=full` if you add this the map will appear in full width. Default is `normal`.
-
-- `mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
-
-### Feeds
-
-- `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
-
-- `date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
-
-- `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
-
-- `auto-reload` will auto update the map without the need to reload the page. (This hasn't been tested much...)
-
-- `last-point` will show the last sent point as big marker, to be easily found. Can also be used with a limited range of colors (yellow,red,green,black,gray,blue) like `last-point=red`
-
-- `feeds` can be set, if multiple feeds get used. (See example below, if you have only one spot this is not needed)
 
 #### GPX
 **The following attributes can be used to show GPX tracks:**
@@ -154,48 +96,33 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
-= 0.12.0 =
+
+### 0.12.0
 - support for media uploads shown in the map
 - images you upload to wordpress will be added to the wordpress spotmap table using the feed 'media' if GPS location are part of the EXIF data.
 - with date-range filter described above you can show only images taken in a specific range.
-- If you upgrade from a previous version you have to mnaully run this command if you like to use the media feature: "ALTER TABLE `wordpress_local`.`wp_spotmap_points` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT ;"
+- If you upgrade from a previous version you have to manully run this command if you like to use the media feature: "ALTER TABLE `wordpress_local`.`wp_spotmap_points` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT ;"
 
-= 0.11.2 =
+### 0.11.2
 - new marker styles and options how to configure them. Changeable icons
 - maps with many points will load faster
 - tested with WP 5.8
 - Thirdparty API options page includes many comments to better understand what each service is for.
 - new initial map state added: 'last-trip'. Zooms to the last line on the map (In the feed settings splitlines must be activated to work)
 
-= 0.10.3 =
+### 0.10.3
 - added UK  Ordnance Survey
 - added US Geological Survey maps
 - possability to hide nearby points of the same type
 
-= 0.10.2 =
+### 0.10.2
 - tested Wordpress 5.7 
 - add last-point option to show the latest position as a big marker. (Requested by Elia)
 - fix reload issue of the map inside Gutenberg if no changes were made
 
-= 0.10.1 =
-Full Gutenberg Block support
-added NZtopomap
-added France IGN Topo map token
-
-= 0.9 =
-- new shortcode to show table of messages
-- add gpx overlays
-- new maps available (mapbox, thunderforest, swisstopo)
-
-= 0.7 =
-- added support for multiple feeds
-- filter for certain date ranges
-- added a Gutenberg Block (still experimental!)
-
-
 ## Upgrade Notice
  
-= 0.9 =
+### 1.0
 If you upgrade to this version from a previous, please uninstall the plugin first.
 If you have data in the db you don't want to loose, please create a post in the support forum.
 

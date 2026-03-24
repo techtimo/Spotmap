@@ -16,11 +16,11 @@ import {
 	DateTimePicker,
 	ToolbarGroup,
 	ToolbarButton,
-	Dropdown,
 	CheckboxControl,
 	Modal,
 	Popover,
 	__experimentalUnitControl as UnitControl,
+	ExternalLink,
 } from '@wordpress/components';
 import { brush, calendar, settings, upload, trash } from '@wordpress/icons';
 import { uploadMedia } from '@wordpress/media-utils';
@@ -59,58 +59,36 @@ const DATE_PRESETS_TO = [
 // Inline SVG for the Maps toolbar button
 const MAP_ICON = (
 	<svg
-		xmlns="http://www.w3.org/2000/svg"
+		width="800px"
+		height="800px"
 		viewBox="0 0 24 24"
-		width="24"
-		height="24"
 		fill="none"
-		stroke="currentColor"
-		strokeWidth="1.5"
+		xmlns="http://www.w3.org/2000/svg"
 	>
-		<path d="M9 3L3 6v15l6-3 6 3 6-3V3l-6 3-6-3z" />
-		<path d="M9 3v15M15 6v15" />
-	</svg>
+		<path
+			d="M9 20L3 17V4L9 7M9 20L15 17M9 20V7M15 17L21 20V7L15 4M15 17V4M9 7L15 4"
+			stroke="#000000"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		/>
+</svg>
 );
 
 // Satellite icon (inline SVG)
 const SATELLITE_ICON = (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
+		viewBox="0 0 203.556 203.556"
 		width="20"
 		height="20"
 		fill="currentColor"
 	>
-		<g transform="rotate(45 12 12)">
-			{ /* Left solar panel */ }
-			<rect x="1.5" y="10.5" width="5" height="3" rx="0.4" />
-			{ /* Right solar panel */ }
-			<rect x="17.5" y="10.5" width="5" height="3" rx="0.4" />
-			{ /* Body */ }
-			<rect x="8" y="9" width="8" height="6" rx="1" />
+		<g>
+			<path d="M201.359,137.3l-43.831-43.831l11.453-11.452c1.407-1.407,2.197-3.314,2.197-5.304c0-1.989-0.79-3.896-2.197-5.304l-36.835-36.834c-2.929-2.928-7.677-2.928-10.606,0l-11.452,11.452L66.253,2.196c-2.93-2.928-7.678-2.928-10.606,0L18.813,39.03c-2.929,2.93-2.929,7.678,0,10.607l43.831,43.831l-11.453,11.452c-1.407,1.407-2.197,3.314-2.197,5.304s0.79,3.896,2.197,5.304l36.837,36.836c1.464,1.464,3.384,2.196,5.303,2.196c1.919,0,3.839-0.732,5.303-2.196l11.453-11.453l43.83,43.83c1.465,1.464,3.384,2.196,5.303,2.196c1.919,0,3.839-0.732,5.303-2.196l36.835-36.834c1.407-1.407,2.197-3.314,2.197-5.304C203.556,140.614,202.766,138.707,201.359,137.3z M34.723,44.334L60.95,18.107l38.53,38.526L82.314,73.799l-9.063,9.063L34.723,44.334z M93.331,136.454l-26.23-26.229l11.448-11.447c0.002-0.002,0.003-0.003,0.005-0.005l12.443-12.443l35.845-35.844l26.229,26.228l-11.446,11.446c-0.003,0.003-0.005,0.005-0.007,0.007l-18.417,18.418L93.331,136.454z M159.221,168.831l-38.527-38.526l26.229-26.229l38.527,38.527L159.221,168.831z" />
+			<path d="M72.344,188.555c-15.317,0.001-29.717-5.964-40.548-16.795C20.965,160.929,15,146.528,15,131.211c0-4.143-3.358-7.5-7.5-7.5c-4.143,0-7.5,3.358-7.5,7.5c0,19.324,7.526,37.491,21.189,51.155c13.663,13.664,31.829,21.189,51.152,21.189c0.001,0,0.002,0,0.004,0c4.142,0,7.499-3.358,7.499-7.5C79.845,191.912,76.486,188.555,72.344,188.555z" />
+			<path d="M69.346,174.133c4.142,0,7.5-3.357,7.5-7.5c0-4.143-3.358-7.5-7.5-7.5c-6.658,0-12.916-2.593-17.624-7.3c-4.707-4.707-7.299-10.965-7.299-17.622c0-4.142-3.357-7.5-7.5-7.5h0c-4.142,0-7.5,3.358-7.5,7.5c-0.001,10.663,4.152,20.688,11.693,28.229C48.656,169.981,58.682,174.133,69.346,174.133z" />
 		</g>
-		{ /* Signal arcs, bottom-left */ }
-		<path
-			d="M5 19 Q2.5 16.5 5 14"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-		/>
-		<path
-			d="M3.5 20.5 Q-0.5 16.5 3.5 12.5"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-		/>
-		<path
-			d="M7 17.5 Q5.5 16 7 14.5"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="1.5"
-			strokeLinecap="round"
-		/>
 	</svg>
 );
 
@@ -749,12 +727,18 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ feedStyleModal, setFeedStyleModal ] = useState( null );
 	// GPX manager modal
 	const [ gpxManagerOpen, setGpxManagerOpen ] = useState( false );
-	// Time filter popover
+	// Toolbar popovers — only one open at a time
+	const feedsAnchorRef = useRef( null );
+	const mapsAnchorRef = useRef( null );
 	const timeFilterAnchorRef = useRef( null );
-	const [ timeFilterOpen, setTimeFilterOpen ] = useState( false );
-	// Map settings popover
 	const mapSettingsAnchorRef = useRef( null );
-	const [ mapSettingsOpen, setMapSettingsOpen ] = useState( false );
+	const [ openPanel, setOpenPanel ] = useState( null ); // 'feeds'|'maps'|'time'|'settings'|null
+	const togglePanel = ( name ) =>
+		setOpenPanel( ( cur ) => ( cur === name ? null : name ) );
+	const feedsOpen = openPanel === 'feeds';
+	const mapsOpen = openPanel === 'maps';
+	const timeFilterOpen = openPanel === 'time';
+	const mapSettingsOpen = openPanel === 'settings';
 
 	// Inject Leaflet CSS into the editor document (handles iframe rendering)
 	useEffect( () => {
@@ -787,10 +771,11 @@ export default function Edit( { attributes, setAttributes } ) {
 		return () => links.forEach( ( l ) => l.remove() );
 	}, [] );
 
-	// On first insert (or when maps/feeds are empty), populate from admin-configured defaults.
+	// On first insert (when styles is empty, meaning never initialized), populate from admin-configured defaults.
+	// We intentionally do NOT re-trigger when feeds is empty, so the user can choose to show no feeds.
 	useEffect( () => {
 		if (
-			( attributes.feeds.length === 0 || attributes.maps.length === 0 ) &&
+			( Object.keys( attributes.styles ).length === 0 || attributes.maps.length === 0 ) &&
 			window.spotmapjsobj?.feeds
 		) {
 			const feedNames = Array.isArray( window.spotmapjsobj.feeds )
@@ -826,12 +811,12 @@ export default function Edit( { attributes, setAttributes } ) {
 				filterPoints: defaultFilterPoints,
 			} );
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
-		attributes.feeds.length,
+		attributes.maps.length,
 		attributes.filterPoints,
 		attributes.height,
 		attributes.mapcenter,
-		attributes.maps,
 		setAttributes,
 	] );
 
@@ -900,6 +885,19 @@ export default function Edit( { attributes, setAttributes } ) {
 		attributes.enablePanning,
 		attributes,
 	] );
+
+	// Close all toolbar popovers when the user clicks/taps on the map.
+	// The map renders inside the editor iframe so its clicks don't reach the
+	// main-document outside-click handlers that Popover/Dropdown rely on.
+	useEffect( () => {
+		const el = mapRef.current;
+		if ( ! el ) {
+			return;
+		}
+		const closeAll = () => setOpenPanel( null );
+		el.addEventListener( 'mousedown', closeAll );
+		return () => el.removeEventListener( 'mousedown', closeAll );
+	}, [] );
 
 	const availableMaps = window.spotmapjsobj?.maps
 		? Object.keys( window.spotmapjsobj.maps )
@@ -1023,23 +1021,39 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			{ /* Block toolbar */ }
 			<BlockControls>
-				{ /* Feeds dropdown */ }
+				{ /* Feeds popover */ }
 				<ToolbarGroup>
-					<Dropdown
-						renderToggle={ ( { isOpen, onToggle } ) => (
-							<ToolbarButton
-								label={ __( 'Feeds' ) }
-								onClick={ onToggle }
-								aria-expanded={ isOpen }
-								icon="rss"
-							>
-								{ __( 'Feeds' ) }
-							</ToolbarButton>
-						) }
-						renderContent={ ( { onClose: closeDropdown } ) => (
+					<div
+						ref={ feedsAnchorRef }
+						style={ { display: 'inline-flex' } }
+					>
+						<ToolbarButton
+							label={ __( 'Feeds' ) }
+							onClick={ () => togglePanel( 'feeds' ) }
+							aria-expanded={ feedsOpen }
+							icon="rss"
+						>
+							{ __( 'Feeds' ) }
+						</ToolbarButton>
+					</div>
+					{ feedsOpen && (
+						<Popover
+							anchor={ feedsAnchorRef.current }
+							onClose={ () => setOpenPanel( null ) }
+							placement="bottom-start"
+						>
 							<div style={ dropdownContentStyle }>
 								{ availableFeeds.length === 0 && (
-									<p>{ __( 'No feeds configured.' ) }</p>
+									<p>
+										{ __(
+											'No feeds yet — your map is feeling lonely! '
+										) }
+										<ExternalLink
+											href="options-general.php?page=spotmap#add-feed"
+										>
+											{ __( 'Add a feed' ) }
+										</ExternalLink>
+									</p>
 								) }
 								<div style={ checklistStyle }>
 									{ availableFeeds.map( ( feed ) => (
@@ -1074,7 +1088,7 @@ export default function Edit( { attributes, setAttributes } ) {
 												size="small"
 												variant="tertiary"
 												onClick={ () => {
-													closeDropdown();
+													setOpenPanel( null );
 													setFeedStyleModal( feed );
 												} }
 												style={ {
@@ -1099,24 +1113,31 @@ export default function Edit( { attributes, setAttributes } ) {
 									) ) }
 								</div>
 							</div>
-						) }
-					/>
+						</Popover>
+					) }
 				</ToolbarGroup>
 
-				{ /* Maps dropdown */ }
+				{ /* Maps popover */ }
 				<ToolbarGroup>
-					<Dropdown
-						renderToggle={ ( { isOpen, onToggle } ) => (
-							<ToolbarButton
-								label={ __( 'Maps' ) }
-								onClick={ onToggle }
-								aria-expanded={ isOpen }
-								icon={ MAP_ICON }
-							>
-								{ __( 'Maps' ) }
-							</ToolbarButton>
-						) }
-						renderContent={ () => (
+					<div
+						ref={ mapsAnchorRef }
+						style={ { display: 'inline-flex' } }
+					>
+						<ToolbarButton
+							label={ __( 'Maps' ) }
+							onClick={ () => togglePanel( 'maps' ) }
+							aria-expanded={ mapsOpen }
+							icon={ MAP_ICON }
+						>
+							{ __( 'Maps' ) }
+						</ToolbarButton>
+					</div>
+					{ mapsOpen && (
+						<Popover
+							anchor={ mapsAnchorRef.current }
+							onClose={ () => setOpenPanel( null ) }
+							placement="bottom-start"
+						>
 							<div style={ dropdownContentStyle }>
 								{ availableMaps.length === 0 && (
 									<p>{ __( 'No maps available.' ) }</p>
@@ -1188,15 +1209,18 @@ export default function Edit( { attributes, setAttributes } ) {
 									</>
 								) }
 							</div>
-						) }
-					/>
+						</Popover>
+					) }
 				</ToolbarGroup>
 
 				{ /* GPX — opens manager modal */ }
 				<ToolbarGroup>
 					<ToolbarButton
 						label={ __( 'GPX tracks' ) }
-						onClick={ () => setGpxManagerOpen( true ) }
+						onClick={ () => {
+							setOpenPanel( null );
+							setGpxManagerOpen( true );
+						} }
 						icon={ SATELLITE_ICON }
 					>
 						{ __( 'GPX' ) }
@@ -1226,7 +1250,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						<ToolbarButton
 							label={ __( 'Time filter' ) }
-							onClick={ () => setTimeFilterOpen( ( v ) => ! v ) }
+							onClick={ () => togglePanel( 'time' ) }
 							icon={ calendar }
 						>
 							{ __( 'Time' ) }
@@ -1235,7 +1259,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					{ timeFilterOpen && (
 						<Popover
 							anchor={ timeFilterAnchorRef.current }
-							onClose={ () => setTimeFilterOpen( false ) }
+							onClose={ () => setOpenPanel( null ) }
 							placement="bottom-start"
 						>
 							<div
@@ -1331,7 +1355,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					>
 						<ToolbarButton
 							label={ __( 'Map settings' ) }
-							onClick={ () => setMapSettingsOpen( ( v ) => ! v ) }
+							onClick={ () => togglePanel( 'settings' ) }
 							icon={ settings }
 						>
 							{ __( 'Settings' ) }
@@ -1340,7 +1364,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					{ mapSettingsOpen && (
 						<Popover
 							anchor={ mapSettingsAnchorRef.current }
-							onClose={ () => setMapSettingsOpen( false ) }
+							onClose={ () => setOpenPanel( null ) }
 							placement="bottom-start"
 						>
 							<div
