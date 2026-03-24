@@ -157,7 +157,6 @@ class Spotmap_Public{
 				'from' => $a['date-range-from'],
 				'to' => $a['date-range-to']
 			],
-			'date' => $a['date'],
 			'orderBy' => "time DESC",
 			'limit' => $a['count'],
 			'groupBy' => $a['group'],
@@ -203,6 +202,9 @@ class Spotmap_Public{
 				'map-overlays' => $defaults['map-overlays'],
 				'filter-points' => $defaults['filter-points'],
 				'debug'=> FALSE,
+				'locate-button' => FALSE,
+				'fullscreen-button' => TRUE,
+				'navigation-buttons' => TRUE,
 			], $atts ),
 			$atts);
 		if (array_key_exists('feeds',$atts)){
@@ -264,6 +266,15 @@ class Spotmap_Public{
 			}
 		}
 
+		// If last-point is set, mark it on every feed style so the engine highlights
+		// the latest point — matching the per-feed lastPoint toggle in the block editor.
+		if ( ! empty( $a['last-point'] ) ) {
+			foreach ( $styles as &$style ) {
+				$style['lastPoint'] = true;
+			}
+			unset( $style );
+		}
+
 		// valid inputs for gpx tracks?
 		$gpx = [];
 		if(!empty($a['gpx-url'])){
@@ -291,6 +302,16 @@ class Spotmap_Public{
 				];
 			}
 		}
+		// If a single date is given, expand it to a full-day dateRange so the engine
+		// receives only dateRange (matching the block renderer).
+		if ( ! empty( $a['date'] ) && empty( $a['date-range-from'] ) && empty( $a['date-range-to'] ) ) {
+			$parsed = date_create( $a['date'] );
+			if ( $parsed !== null ) {
+				$day = date_format( $parsed, 'Y-m-d' );
+				$a['date-range-from'] = $day . ' 00:00:00';
+				$a['date-range-to']   = $day . ' 23:59:59';
+			}
+		}
 		$map_id = "spotmap-container-".mt_rand();
 		// generate the option object for init the map
 		$options = wp_json_encode([
@@ -298,7 +319,6 @@ class Spotmap_Public{
 			'filterPoints' => $a['filter-points'],
 			'styles' => $styles,
 			'gpx' => $gpx,
-			'date' => $a['date'],
 			'dateRange' => [
 				'from' => $a['date-range-from'],
 				'to' => $a['date-range-to']
@@ -307,8 +327,10 @@ class Spotmap_Public{
 			'maps' => $a['maps'],
 			'mapOverlays' => $a['map-overlays'],
 			'autoReload' => $a['auto-reload'],
-			'lastPoint' => $a['last-point'],
 			'debug' => $a['debug'],
+			'locateButton' => (bool) $a['locate-button'],
+			'fullscreenButton' => (bool) $a['fullscreen-button'],
+			'navigationButtons' => $a['navigation-buttons'] ? [ 'enabled' => true, 'allPoints' => true, 'latestPoint' => true, 'gpxTracks' => true ] : [ 'enabled' => false ],
 			'mapId' => $map_id
 		]);
 		// error_log($options);

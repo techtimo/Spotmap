@@ -57,7 +57,9 @@ $options = wp_json_encode( array(
 	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : false,
 	'locateButton'      => isset( $attributes['locateButton'] ) ? (bool) $attributes['locateButton'] : false,
 	'fullscreenButton'  => isset( $attributes['fullscreenButton'] ) ? (bool) $attributes['fullscreenButton'] : true,
-	'navigationButtons' => isset( $attributes['navigationButtons'] ) ? $attributes['navigationButtons'] : true,
+	'navigationButtons' => isset( $attributes['navigationButtons'] ) && is_array( $attributes['navigationButtons'] )
+		? $attributes['navigationButtons']
+		: array( 'enabled' => true, 'allPoints' => true, 'latestPoint' => true, 'gpxTracks' => true ),
 	'mapId'             => $map_id,
 ) );
 

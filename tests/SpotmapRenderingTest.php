@@ -15,6 +15,10 @@ class SpotmapRenderingTest extends WP_UnitTestCase {
 		require_once dirname( __DIR__ ) . '/includes/class-spotmap-database.php';
 
 		// Register the block type so get_block_wrapper_attributes() works.
+		// We register by name only (not from the build directory) to avoid
+		// dependency on a stale built block.json. render-block.php provides
+		// its own hardcoded fallbacks for all attribute defaults.
+		unregister_block_type( 'spotmap/spotmap' );
 		register_block_type( 'spotmap/spotmap', [
 			'render_callback' => function ( $attributes ) {
 				ob_start();
@@ -26,6 +30,9 @@ class SpotmapRenderingTest extends WP_UnitTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
+		// Reset admin settings to built-in defaults so the shortcode reads the
+		// same filter-points value (5) as the block.json default.
+		Spotmap_Options::save_settings( Spotmap_Options::get_settings_defaults() );
 		$public = new Spotmap_Public();
 		$public->register_shortcodes();
 	}
@@ -149,13 +156,12 @@ class SpotmapRenderingTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * All option keys that both renderers share must produce the same default
-	 * value regardless of whether the DB is empty or has data.
+	 * All option keys that both renderers emit must match in value.
+	 * Keys present in only one renderer must be listed in the appropriate
+	 * exclusion set below — forcing intentional differences to be documented.
 	 *
-	 * Currently FAILS on 'feeds' when the DB has feeds: the shortcode defaults
-	 * to all feed names from the DB, the block defaults to [].
-	 * May also reveal divergences in other keys (maps, mapcenter, filterPoints…)
-	 * if their hardcoded block defaults drift from the WP option defaults.
+	 * When a new option is added to either renderer this test fails unless the
+	 * option is also added to the other renderer OR explicitly excluded here.
 	 *
 	 * @dataProvider db_state_provider
 	 */
@@ -177,25 +183,40 @@ class SpotmapRenderingTest extends WP_UnitTestCase {
 		$sc    = $this->extract_options( do_shortcode( '[spotmap]' ) );
 		$block = $this->extract_options( $this->render_block( [] ) );
 
-		$shared_keys = [
-			'feeds',
-			'maps',
-			'mapOverlays',
-			'mapcenter',
-			'filterPoints',
-			'autoReload',
-			'debug',
-			'dateRange',
-			'gpx',
-			'styles',
-		];
+		// Keys intentionally present only in the block (no shortcode equivalent).
+		$block_only = [ 'height', 'enablePanning', 'scrollWheelZoom' ];
 
-		foreach ( $shared_keys as $key ) {
-			$this->assertSame(
-				$sc[ $key ] ?? null,
-				$block[ $key ] ?? null,
-				"Default for '$key' differs between shortcode and block"
-			);
+		// Keys intentionally present only in the shortcode (no block equivalent).
+		// NOTE: shortcode 'last-point' is a convenience flag that PHP expands into
+		//       styles[feed].lastPoint for every feed — no top-level key reaches the engine.
+		// NOTE: 'date' was shortcode-only but is now converted in PHP to a full-day
+		//       dateRange (00:00:00–23:59:59) before building options, so both
+		//       renderers pass only 'dateRange' to the engine.
+		$shortcode_only = [];
+
+		// Keys that differ by design (random per-render, etc.).
+		$ignored = [ 'mapId' ];
+
+		$all_keys = array_unique( array_merge( array_keys( $sc ), array_keys( $block ) ) );
+
+		foreach ( $all_keys as $key ) {
+			if ( in_array( $key, $ignored, true ) ) {
+				continue;
+			}
+
+			if ( in_array( $key, $block_only, true ) ) {
+				$this->assertArrayNotHasKey( $key, $sc, "'$key' is block-only but appeared in shortcode output" );
+				continue;
+			}
+
+			if ( in_array( $key, $shortcode_only, true ) ) {
+				$this->assertArrayNotHasKey( $key, $block, "'$key' is shortcode-only but appeared in block output" );
+				continue;
+			}
+
+			$this->assertArrayHasKey( $key, $sc,    "'$key' present in block but missing from shortcode" );
+			$this->assertArrayHasKey( $key, $block, "'$key' present in shortcode but missing from block" );
+			$this->assertSame( $sc[ $key ], $block[ $key ], "Default for '$key' differs between shortcode and block" );
 		}
 	}
 
