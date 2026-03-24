@@ -36,7 +36,16 @@ module.exports = {
 			},
 		},
 		{
-			files: [ '**/@(test|__tests__)/**/*.ts', '**/?(*.)test.ts' ],
+			files: [
+				'**/__tests__/**/*.js',
+				'**/__tests__/**/*.jsx',
+				'**/__tests__/**/*.ts',
+				'**/__tests__/**/*.tsx',
+				'**/*.test.js',
+				'**/*.test.jsx',
+				'**/*.test.ts',
+				'**/*.test.tsx',
+			],
 			extends: [ 'plugin:@wordpress/eslint-plugin/test-unit' ],
 		},
 	],

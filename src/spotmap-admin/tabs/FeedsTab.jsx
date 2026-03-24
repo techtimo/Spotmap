@@ -5,15 +5,32 @@ import FeedModal from '../components/FeedModal';
 
 export default function FeedsTab( { providers } ) {
 	const [ feeds, setFeeds ] = useState( null );
+	const [ loading, setLoading ] = useState( true );
 	const [ editingFeed, setEditingFeed ] = useState( null ); // null=closed, {}=new, feed=edit
 	const [ notice, setNotice ] = useState( null );
 
 	useEffect( () => {
+		let cancelled = false;
 		api.getFeeds()
-			.then( setFeeds )
-			.catch( ( err ) =>
-				setNotice( { status: 'error', text: err.message } )
-			);
+			.then( ( data ) => {
+				if ( ! cancelled ) {
+					setFeeds( data );
+				}
+			} )
+			.catch( ( err ) => {
+				if ( ! cancelled ) {
+					setFeeds( [] );
+					setNotice( { status: 'error', text: err.message } );
+				}
+			} )
+			.finally( () => {
+				if ( ! cancelled ) {
+					setLoading( false );
+				}
+			} );
+		return () => {
+			cancelled = true;
+		};
 	}, [] );
 
 	const handleSave = async ( data, id ) => {
@@ -32,7 +49,9 @@ export default function FeedsTab( { providers } ) {
 
 	const handleDelete = async ( feed ) => {
 		// eslint-disable-next-line no-alert
-		if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) return;
+		if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) {
+			return;
+		}
 		try {
 			await api.deleteFeed( feed.id );
 			setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
@@ -42,7 +61,9 @@ export default function FeedsTab( { providers } ) {
 		}
 	};
 
-	if ( ! feeds ) return <Spinner />;
+	if ( loading ) {
+		return <Spinner />;
+	}
 
 	return (
 		<div style={ { marginTop: '1rem' } }>
