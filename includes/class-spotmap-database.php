@@ -78,7 +78,10 @@ class Spotmap_Database {
 
 	public function get_all_feednames(){
 		global $wpdb;
-		return $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points");
+		$from_db = $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL");
+		$configured = Spotmap_Options::get_feeds();
+		$from_options = array_column( $configured, 'name' );
+		return array_values( array_unique( array_merge( $from_options, $from_db ) ) );
 	}
 	public function get_all_types(){
 		global $wpdb;
