@@ -74,6 +74,8 @@ class Spotmap_Migrator {
 	 * @return void
 	 */
 	private static function migrate_to_1_0_0() {
+		self::migrate_table_to_1_0_0();
+
 		$names     = get_option( 'spotmap_findmespot_name', [] );
 		$ids       = get_option( 'spotmap_findmespot_id', [] );
 		$passwords = get_option( 'spotmap_findmespot_password', [] );
@@ -104,4 +106,23 @@ class Spotmap_Migrator {
 		delete_option( 'spotmap_findmespot_password' );
 		delete_option( 'spotmap_api_providers' );
 	}
+
+	/**
+	 * 0.11.2 created `id` without AUTO_INCREMENT. Add it if missing.
+	 * Safe to run on installs that already have AUTO_INCREMENT — MySQL no-ops it.
+	 *
+	 * @return void
+	 */
+	private static function migrate_table_to_1_0_0(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'spotmap_points';
+
+		if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) {
+			return; // Fresh install; create_table() will handle it.
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE `{$table}` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT" );
+	}
+
 }

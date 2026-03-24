@@ -90,7 +90,7 @@ Key deps: `leaflet`, `leaflet-fullscreen`, `leaflet-gpx`, `leaflet-easybutton`, 
 ### Database Schema
 
 Table `wp_spotmap_points`:
-`id, type, time, lat, lon, altitude, battery, message, device, timezone, hidden, sequence, altitude_m, msgContent`
+`id, type, time, latitude, longitude, altitude, battery_status, message, custom_message, feed_name, feed_id, model, device_name, local_timezone`
 
 ### Tile Layer Config
 
