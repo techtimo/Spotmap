@@ -6,6 +6,7 @@
  *          npm run copy-deps:prod     (production – strips sourceMappingURL)
  */
 
+/* eslint-disable no-console */
 const fs = require( 'fs' );
 const path = require( 'path' );
 
@@ -44,6 +45,8 @@ function copyFile( src, dest ) {
 /**
  * Copy a JS file. In dev mode, also copies the .map file if it exists.
  * In production mode (--strip-maps), strips the sourceMappingURL comment.
+ * @param {string} src
+ * @param {string} dest
  */
 function copyJsFile( src, dest ) {
 	copyFile( src, dest );

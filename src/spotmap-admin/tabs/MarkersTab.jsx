@@ -48,7 +48,9 @@ export default function MarkersTab() {
 		}
 	};
 
-	if ( ! markers ) return <Spinner />;
+	if ( ! markers ) {
+		return <Spinner />;
+	}
 
 	return (
 		<div style={ { marginTop: '1rem' } }>
