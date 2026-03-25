@@ -48,6 +48,7 @@ export class Spotmap {
 	private autoReloadTimeoutId: ReturnType< typeof setTimeout > | null = null;
 	private latestUnixtimeByFeed: Map< string, number > = new Map();
 	private onVisibilityChange: ( () => void ) | null = null;
+	private reloadBody: AjaxRequestBody | null = null;
 
 	constructor( options: SpotmapOptions ) {
 		if ( ! options.maps ) {
@@ -56,6 +57,82 @@ export class Spotmap {
 		this.options = options;
 		this.debug( 'Spotmap obj created.' );
 		this.debug( this.options );
+	}
+
+	/**
+	 * Swap the base tile layers without rebuilding the map or re-fetching data.
+	 */
+	updateMaps( maps: string[], activeMap?: string ): void {
+		if ( ! this.layerManager ) {
+			return;
+		}
+		this.layerManager.updateBaseLayers( maps, activeMap );
+	}
+
+	updateOverlays( overlays: string[] ): void {
+		if ( ! this.layerManager ) {
+			return;
+		}
+		this.layerManager.updateOverlays( overlays );
+	}
+
+	updateHeight( height: number ): void {
+		const el = this.map?.getContainer();
+		if ( ! el ) {
+			return;
+		}
+		el.style.height = `${ height }px`;
+		this.map.invalidateSize();
+	}
+
+	updateButtons(
+		locateButton: boolean | undefined,
+		navigationButtons: import( './types' ).NavigationButtonsConfig | undefined
+	): void {
+		if ( ! this.buttonManager ) {
+			return;
+		}
+		this.buttonManager.updateButtons( locateButton, navigationButtons );
+	}
+
+	updateAutoReload( enabled: boolean ): void {
+		if ( enabled ) {
+			if ( this.autoReloadTimeoutId !== null || ! this.reloadBody ) {
+				return;
+			}
+			for ( const [ feedName, feed ] of Object.entries(
+				this.layers.feeds
+			) ) {
+				this.latestUnixtimeByFeed.set(
+					feedName,
+					feed.points.at( -1 )?.unixtime ?? 0
+				);
+			}
+			this.startAutoReload( this.reloadBody );
+		} else {
+			if ( this.autoReloadTimeoutId !== null ) {
+				clearTimeout( this.autoReloadTimeoutId );
+				this.autoReloadTimeoutId = null;
+			}
+			if ( this.onVisibilityChange ) {
+				document.removeEventListener(
+					'visibilitychange',
+					this.onVisibilityChange
+				);
+				this.onVisibilityChange = null;
+			}
+		}
+	}
+
+	updateScrollWheelZoom( enabled: boolean ): void {
+		if ( ! this.map ) {
+			return;
+		}
+		if ( enabled ) {
+			this.map.scrollWheelZoom.enable();
+		} else {
+			this.map.scrollWheelZoom.disable();
+		}
 	}
 
 	/**
@@ -118,10 +195,12 @@ export class Spotmap {
 			L.control.scale().addTo( this.map );
 		}
 
-		// Enable scroll wheel zoom on focus
-		this.map.once( 'focus', () => {
-			this.map.scrollWheelZoom.enable();
-		} );
+		// Enable scroll wheel zoom on focus, but only if the option allows it
+		if ( this.options.scrollWheelZoom ) {
+			this.map.once( 'focus', () => {
+				this.map.scrollWheelZoom.enable();
+			} );
+		}
 
 		// Initialize sub-managers
 		this.dataFetcher = new DataFetcher( spotmapjsobj.ajaxUrl );
@@ -158,6 +237,7 @@ export class Spotmap {
 			orderBy: 'feed_name, time',
 			groupBy: '',
 		};
+		this.reloadBody = body;
 
 		try {
 			const response = await this.dataFetcher.fetchPoints(

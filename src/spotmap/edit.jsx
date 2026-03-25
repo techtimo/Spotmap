@@ -869,23 +869,96 @@ export default function Edit( { attributes, setAttributes } ) {
 		};
 	}, [
 		mapId,
-		attributes.maps,
 		attributes.feeds,
 		attributes.styles,
-		attributes.height,
 		attributes.mapcenter,
 		attributes.filterPoints,
 		attributes.dateRange,
 		attributes.gpx,
-		attributes.mapOverlays,
 		attributes.debug,
-		attributes.scrollWheelZoom,
-		attributes.locateButton,
 		attributes.fullscreenButton,
-		attributes.navigationButtons,
-		attributes.enablePanning,
-		attributes,
 	] );
+
+	// When only the map tile layer selection changes, swap layers in-place
+	// instead of rebuilding the entire map and re-fetching data.
+	const mapsEffectMounted = useRef( false );
+	const prevMapsRef = useRef( attributes.maps );
+	useEffect( () => {
+		if ( ! mapsEffectMounted.current ) {
+			mapsEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			const prevMaps = prevMapsRef.current;
+			const newlyAdded = attributes.maps.find(
+				( m ) => ! prevMaps.includes( m )
+			);
+			prevMapsRef.current = attributes.maps;
+			spotmapRef.current.updateMaps( attributes.maps, newlyAdded );
+		}
+	}, [ attributes.maps ] );
+
+	const autoReloadEffectMounted = useRef( false );
+	useEffect( () => {
+		if ( ! autoReloadEffectMounted.current ) {
+			autoReloadEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			spotmapRef.current.updateAutoReload(
+				attributes.autoReload ?? false
+			);
+		}
+	}, [ attributes.autoReload ] );
+
+	const buttonsEffectMounted = useRef( false );
+	useEffect( () => {
+		if ( ! buttonsEffectMounted.current ) {
+			buttonsEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			spotmapRef.current.updateButtons(
+				attributes.locateButton,
+				attributes.navigationButtons
+			);
+		}
+	}, [ attributes.locateButton, attributes.navigationButtons ] );
+
+	const overlaysEffectMounted = useRef( false );
+	useEffect( () => {
+		if ( ! overlaysEffectMounted.current ) {
+			overlaysEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			spotmapRef.current.updateOverlays( attributes.mapOverlays ?? [] );
+		}
+	}, [ attributes.mapOverlays ] );
+
+	const heightEffectMounted = useRef( false );
+	useEffect( () => {
+		if ( ! heightEffectMounted.current ) {
+			heightEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			spotmapRef.current.updateHeight( attributes.height );
+		}
+	}, [ attributes.height ] );
+
+	const scrollWheelZoomEffectMounted = useRef( false );
+	useEffect( () => {
+		if ( ! scrollWheelZoomEffectMounted.current ) {
+			scrollWheelZoomEffectMounted.current = true;
+			return;
+		}
+		if ( spotmapRef.current ) {
+			spotmapRef.current.updateScrollWheelZoom(
+				attributes.scrollWheelZoom ?? false
+			);
+		}
+	}, [ attributes.scrollWheelZoom ] );
 
 	// Close all toolbar popovers when the user clicks/taps on the map.
 	// The map renders inside the editor iframe so its clicks don't reach the

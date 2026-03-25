@@ -15,6 +15,8 @@ export class LayerManager {
 	private readonly options: SpotmapOptions;
 	private readonly layers: SpotmapLayers;
 	readonly layerControl: L.Control.Layers;
+	private baseLayers: Array< L.TileLayer | L.TileLayer.WMS > = [];
+	private overlayLayers: Array< L.TileLayer | L.TileLayer.WMS > = [];
 
 	constructor( map: L.Map, options: SpotmapOptions, layers: SpotmapLayers ) {
 		this.map = map;
@@ -45,11 +47,49 @@ export class LayerManager {
 
 			const layer = this.createTileLayer( config );
 			this.layerControl.addBaseLayer( layer, config.label );
+			this.baseLayers.push( layer );
 
 			if ( ! firstAdded ) {
 				layer.addTo( this.map );
 				firstAdded = true;
 			}
+		}
+	}
+
+	/**
+	 * Swap base tile layers in-place without rebuilding the map.
+	 */
+	updateBaseLayers( newMaps: string[], activeMap?: string ): void {
+		for ( const layer of this.baseLayers ) {
+			this.layerControl.removeLayer( layer );
+			this.map.removeLayer( layer );
+		}
+		this.baseLayers = [];
+
+		let activated = false;
+
+		for ( const mapName of newMaps ) {
+			const config = spotmapjsobj.maps[ mapName ];
+			if ( ! config ) {
+				continue;
+			}
+
+			const layer = this.createTileLayer( config );
+			this.layerControl.addBaseLayer( layer, config.label );
+			this.baseLayers.push( layer );
+
+			const shouldActivate = activeMap
+				? mapName === activeMap
+				: ! activated;
+			if ( shouldActivate ) {
+				layer.addTo( this.map );
+				activated = true;
+			}
+		}
+
+		// Fallback: activate first if activeMap wasn't found in the list
+		if ( ! activated && this.baseLayers.length > 0 ) {
+			this.baseLayers[ 0 ].addTo( this.map );
 		}
 	}
 
@@ -70,6 +110,30 @@ export class LayerManager {
 			const layer = this.createTileLayer( config );
 			layer.addTo( this.map );
 			this.layerControl.addOverlay( layer, config.label );
+			this.overlayLayers.push( layer );
+		}
+	}
+
+	/**
+	 * Swap overlay tile layers in-place without rebuilding the map.
+	 */
+	updateOverlays( newOverlays: string[] ): void {
+		for ( const layer of this.overlayLayers ) {
+			this.layerControl.removeLayer( layer );
+			this.map.removeLayer( layer );
+		}
+		this.overlayLayers = [];
+
+		for ( const overlayName of newOverlays ) {
+			const config = spotmapjsobj.overlays[ overlayName ];
+			if ( ! config ) {
+				continue;
+			}
+
+			const layer = this.createTileLayer( config );
+			layer.addTo( this.map );
+			this.layerControl.addOverlay( layer, config.label );
+			this.overlayLayers.push( layer );
 		}
 	}
 
