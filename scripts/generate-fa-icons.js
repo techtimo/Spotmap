@@ -20,7 +20,7 @@ const out = [
 	' */',
 	'export const ICONS = [',
 	...solid.reduce( ( rows, _, i ) => {
-		if ( i % 8 === 0 )
+		if ( i % 8 === 0 ) {
 			rows.push(
 				'\t' +
 					solid
@@ -29,6 +29,7 @@ const out = [
 						.join( ', ' ) +
 					','
 			);
+		}
 		return rows;
 	}, [] ),
 	'];',

@@ -46,7 +46,9 @@ function TokenField( { tokenKey, value, onChange } ) {
 
 	// If the parent resets the value (e.g. after save), sync editing state.
 	useEffect( () => {
-		if ( value === REDACTED ) setEditing( false );
+		if ( value === REDACTED ) {
+			setEditing( false );
+		}
 	}, [ value ] );
 
 	if ( isStored && ! editing ) {
@@ -131,7 +133,9 @@ export default function TokensTab() {
 		}
 	};
 
-	if ( ! tokens ) return <Spinner />;
+	if ( ! tokens ) {
+		return <Spinner />;
+	}
 
 	return (
 		<div style={ { maxWidth: '600px', marginTop: '1rem' } }>

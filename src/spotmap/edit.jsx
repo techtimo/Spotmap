@@ -68,11 +68,11 @@ const MAP_ICON = (
 		<path
 			d="M9 20L3 17V4L9 7M9 20L15 17M9 20V7M15 17L21 20V7L15 4M15 17V4M9 7L15 4"
 			stroke="#000000"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
 		/>
-</svg>
+	</svg>
 );
 
 // Satellite icon (inline SVG)
@@ -775,7 +775,8 @@ export default function Edit( { attributes, setAttributes } ) {
 	// We intentionally do NOT re-trigger when feeds is empty, so the user can choose to show no feeds.
 	useEffect( () => {
 		if (
-			( Object.keys( attributes.styles ).length === 0 || attributes.maps.length === 0 ) &&
+			( Object.keys( attributes.styles ).length === 0 ||
+				attributes.maps.length === 0 ) &&
 			window.spotmapjsobj?.feeds
 		) {
 			const feedNames = Array.isArray( window.spotmapjsobj.feeds )
@@ -1048,9 +1049,7 @@ export default function Edit( { attributes, setAttributes } ) {
 										{ __(
 											'No feeds yet — your map is feeling lonely! '
 										) }
-										<ExternalLink
-											href="options-general.php?page=spotmap#add-feed"
-										>
+										<ExternalLink href="options-general.php?page=spotmap#add-feed">
 											{ __( 'Add a feed' ) }
 										</ExternalLink>
 									</p>

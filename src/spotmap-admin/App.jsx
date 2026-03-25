@@ -17,7 +17,9 @@ const TAB_NAMES = TABS.map( ( t ) => t.name );
 
 function getTabFromHash() {
 	const hash = window.location.hash.slice( 1 );
-	if ( hash === 'add-feed' ) return 'feeds';
+	if ( hash === 'add-feed' ) {
+		return 'feeds';
+	}
 	return TAB_NAMES.includes( hash ) ? hash : TAB_NAMES[ 0 ];
 }
 
@@ -60,10 +62,19 @@ export default function App() {
 	return (
 		<div className="wrap">
 			<h1>Spotmap Settings</h1>
-			<TabPanel tabs={ TABS } initialTabName={ initialTab } onSelect={ handleTabSelect }>
+			<TabPanel
+				tabs={ TABS }
+				initialTabName={ initialTab }
+				onSelect={ handleTabSelect }
+			>
 				{ ( tab ) =>
 					( {
-						feeds: <FeedsTab providers={ providers } openAddModal={ openAddFeed } />,
+						feeds: (
+							<FeedsTab
+								providers={ providers }
+								openAddModal={ openAddFeed }
+							/>
+						),
 						markers: <MarkersTab />,
 						tokens: <TokensTab />,
 						defaults: <DefaultsTab />,

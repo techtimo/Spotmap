@@ -6,7 +6,9 @@ import FeedModal from '../components/FeedModal';
 export default function FeedsTab( { providers, openAddModal } ) {
 	const [ feeds, setFeeds ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
-	const [ editingFeed, setEditingFeed ] = useState( openAddModal ? {} : null ); // null=closed, {}=new, feed=edit
+	const [ editingFeed, setEditingFeed ] = useState(
+		openAddModal ? {} : null
+	); // null=closed, {}=new, feed=edit
 	const [ notice, setNotice ] = useState( null );
 
 	useEffect( () => {

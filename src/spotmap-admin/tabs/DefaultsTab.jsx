@@ -88,7 +88,9 @@ export default function DefaultsTab() {
 		}
 	};
 
-	if ( ! defaults ) return <Spinner />;
+	if ( ! defaults ) {
+		return <Spinner />;
+	}
 
 	return (
 		<div style={ { maxWidth: '600px', marginTop: '1rem' } }>

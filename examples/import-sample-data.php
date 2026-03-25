@@ -19,7 +19,7 @@ if ( ! $table_exists ) {
 }
 
 $json_files = array(
-	__DIR__ . '/sentiero_italia.json',
+	__DIR__ . '/sentiero_italia-transformed.json',
 	__DIR__ . '/te_araroa-trail.json',
 );
 
@@ -47,14 +47,10 @@ foreach ( $json_files as $json_file ) {
 	$batch_placeholders = array();
 
 	foreach ( $data as $point ) {
-		// sentiero_italia.json has a separate 'unixtime' field;
-		// te_araroa-trail.json stores the unix timestamp directly in 'time'.
-		$unixtime = isset( $point['unixtime'] ) ? intval( $point['unixtime'] ) : intval( $point['time'] );
-
 		$row = array(
 			intval( $point['id'] ),
 			$point['type'],
-			$unixtime,
+			intval( $point['time'] ),
 			floatval( $point['latitude'] ),
 			floatval( $point['longitude'] ),
 			isset( $point['altitude'] ) ? intval( $point['altitude'] ) : null,

@@ -62,6 +62,9 @@ export class BoundsManager {
 		for ( const [ feedName, feed ] of Object.entries(
 			this.layers.feeds
 		) ) {
+			if ( ! this.map.hasLayer( feed.featureGroup ) ) {
+				continue;
+			}
 			const lastPoint = feed.points.at( -1 );
 			if ( lastPoint && lastPoint.unixtime > latestUnixtime ) {
 				latestUnixtime = lastPoint.unixtime;
@@ -89,6 +92,9 @@ export class BoundsManager {
 	private getFeedBounds(): L.LatLngBounds {
 		const bounds = L.latLngBounds( [] );
 		for ( const feed of Object.values( this.layers.feeds ) ) {
+			if ( ! this.map.hasLayer( feed.featureGroup ) ) {
+				continue;
+			}
 			const layerBounds = feed.featureGroup.getBounds();
 			if ( layerBounds.isValid() ) {
 				bounds.extend( layerBounds );
