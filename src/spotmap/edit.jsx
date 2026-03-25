@@ -1047,7 +1047,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								{ availableFeeds.length === 0 && (
 									<p>
 										{ __(
-											'No feeds yet — your map is feeling lonely! '
+											'No feeds yet — your map is feeling lonely!'
 										) }
 										<ExternalLink href="options-general.php?page=spotmap#add-feed">
 											{ __( 'Add a feed' ) }

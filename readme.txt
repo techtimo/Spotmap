@@ -1,4 +1,5 @@
 # Spotmap
+
 Contributors: techtimo
 Donate link: paypal.me/ebaytimo
 Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeacon, liveposition, gpx, gps tracking, gps tracker, spottrace, spotwalla
@@ -15,8 +16,7 @@ Spot does not offer the storage of points free of charge for long term. That's w
 Your Wordpress Blog will store all positions ever sent. It checks for new positions every 2.5 minutes.
 It supports different devices (They can even belong to different accounts).
 
-
-Next planned features (Not necessarily in right order): 
+Next planned features (Not necessarily in right order):
 
 - grouping of points (partially implemented)
 - support of other tracking devices (Garmin InReach, ...)
@@ -38,7 +38,8 @@ In the mean time you can create an empty map in the editor with `/spotmap`
 👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
 
 
-#### GPX
+### GPX
+
 **The following attributes can be used to show GPX tracks:**
 
 - `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
@@ -58,7 +59,6 @@ This will show a map where we zoom into the last known position, and we only sho
 
 `[spotmap mapcenter=last feeds="My Spot" colors=red date-range-from="2020-05-01"]`
 
-
 We can also show multiple feeds in different colors on a same day (from 0:00:00 to 23:59:59):
 
 `[spotmap mapcenter=last feeds="My first spot,My other Device" colors="gray,green" date="2020-06-01"]` 
@@ -67,13 +67,16 @@ We can also show multiple feeds in different colors on a same day (from 0:00:00 
 ## Frequently Asked Questions
 
 ### How do I get my Feed ID?
-You need to create an XML Feed in your spot account. ([See here](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) for more details)
+
+You need to create an XML Feed in your spot account. ([See here](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) for more details)
 Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently. 
 Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
 ### Which 3rd Party Services are getting used?
+
 The plugin uses the following thrid party services:
-1.  From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) to get the points.
+
+1. From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) to get the points.
 2. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
 3. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
 4. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
@@ -83,27 +86,34 @@ The plugin uses the following thrid party services:
 
 
 ### Can I use/add other maps?
+
 Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles. See the question 'Which 3rd Party Services are getting used?' for details
 If you still search for another map: Start a search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
 If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
 
-### I have a question, an idea, found a bug... 
+### I have a question, an idea, found a bug, etc
+
 Head over to the wordpress.org [support forum](https://wordpress.org/support/plugin/spotmap/), and ask your question there. I'm happy to assist you! 😊
 
 ## Screenshots
- 
+
 1. This screenshot was taken after using the plugin for 3 months.
 2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
 
 ## Changelog
 
-### 0.12.0
-- support for media uploads shown in the map
-- images you upload to wordpress will be added to the wordpress spotmap table using the feed 'media' if GPS location are part of the EXIF data.
-- with date-range filter described above you can show only images taken in a specific range.
-- If you upgrade from a previous version you have to manully run this command if you like to use the media feature: "ALTER TABLE `wordpress_local`.`wp_spotmap_points` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT ;"
+### 1.0
+
+- Gutenberg block — add a Spotmap map directly from the block editor with live preview
+- Rewritten map engine in TypeScript for better reliability and maintainability
+- 
+- Support for media uploads shown in the map: images uploaded to WordPress with GPS EXIF data appear as map points under the feed name `media`
+- Security: all database queries use prepared statements to prevent SQL injection
+- `id` column gains `AUTO_INCREMENT` (was missing in 0.11.2); migration runs automatically on first load after update
+- tested with WP 6.9
 
 ### 0.11.2
+
 - new marker styles and options how to configure them. Changeable icons
 - maps with many points will load faster
 - tested with WP 5.8
@@ -111,21 +121,20 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 - new initial map state added: 'last-trip'. Zooms to the last line on the map (In the feed settings splitlines must be activated to work)
 
 ### 0.10.3
+
 - added UK  Ordnance Survey
 - added US Geological Survey maps
 - possability to hide nearby points of the same type
 
 ### 0.10.2
-- tested Wordpress 5.7 
+
+- tested Wordpress 5.7
 - add last-point option to show the latest position as a big marker. (Requested by Elia)
 - fix reload issue of the map inside Gutenberg if no changes were made
 
 ## Upgrade Notice
- 
-### 1.0
-If you upgrade to this version from a previous, please uninstall the plugin first.
-If you have data in the db you don't want to loose, please create a post in the support forum.
 
-Adding Gpx support to show a planned route. Adding different maps.
-Adding a table to quickly see the last sent messages. ([spotmessages])
+### 1.0
+
+The database table is migrated automatically when the plugin loads after the update — no manual SQL required. Your existing GPS data is preserved.
 
