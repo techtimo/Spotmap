@@ -9,6 +9,7 @@ export class ButtonManager {
 	private readonly map: L.Map;
 	private readonly options: SpotmapOptions;
 	private readonly boundsManager: BoundsManager;
+	private easyBar: L.Control | null = null;
 
 	constructor(
 		map: L.Map,
@@ -25,23 +26,50 @@ export class ButtonManager {
 	 * Respects the `navigationButtons` and `locateButton` options.
 	 */
 	addButtons(): void {
+		const buttons = this.buildButtons(
+			this.options.locateButton,
+			this.options.navigationButtons
+		);
+		if ( buttons.length > 0 ) {
+			this.easyBar = L.easyBar( buttons ).addTo( this.map );
+		}
+	}
+
+	/**
+	 * Replace the button bar in-place without rebuilding the map.
+	 */
+	updateButtons(
+		locateButton: boolean | undefined,
+		navigationButtons: NavigationButtonsConfig | undefined
+	): void {
+		if ( this.easyBar ) {
+			this.map.removeControl( this.easyBar );
+			this.easyBar = null;
+		}
+		const buttons = this.buildButtons( locateButton, navigationButtons );
+		if ( buttons.length > 0 ) {
+			this.easyBar = L.easyBar( buttons ).addTo( this.map );
+		}
+	}
+
+	private buildButtons(
+		locateButton: boolean | undefined,
+		navigationButtons: NavigationButtonsConfig | undefined
+	): L.Control[] {
 		const buttons: L.Control[] = [];
 
-		const navOpts = this.options.navigationButtons;
-		if ( navOpts?.enabled ) {
-			const button = this.createNavigationButton( navOpts );
+		if ( navigationButtons?.enabled ) {
+			const button = this.createNavigationButton( navigationButtons );
 			if ( button ) {
 				buttons.push( button );
 			}
 		}
 
-		if ( this.options.locateButton !== false ) {
+		if ( locateButton !== false ) {
 			buttons.push( this.createLocateButton() );
 		}
 
-		if ( buttons.length > 0 ) {
-			L.easyBar( buttons ).addTo( this.map );
-		}
+		return buttons;
 	}
 
 	private createNavigationButton(
