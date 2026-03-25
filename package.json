@@ -25,6 +25,7 @@
 		"leaflet.fullscreen": "^5.3.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.52.0",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.2",
 		"@testing-library/user-event": "^14.6.1",
@@ -35,6 +36,7 @@
 		"@wordpress/i18n": "^6.15.0",
 		"@wordpress/icons": "^11.8.0",
 		"@wordpress/scripts": "^31.6.0",
+		"dotenv": "^16.5.0",
 		"ts-loader": "^9.5.4",
 		"typescript": "^5.9.3"
 	},
@@ -57,6 +59,7 @@
 		"lint:md:docs": "wp-scripts lint-md-docs",
 		"test:js": "wp-scripts test-unit-js",
 		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c \"XDEBUG_MODE=off composer run test\"",
+		"test:e2e": "playwright test",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "npm run build && npm run composer -- install --no-dev && wp-scripts plugin-zip",
 		"composer": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap composer"

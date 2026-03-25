@@ -14,3 +14,9 @@ includes/webfonts/
 # Test artifacts
 .phpunit.result.cache
 coverage/
+
+# E2E — private tokens, temp files, and Playwright output
+.env
+tests/e2e/.inject.php
+playwright-report/
+test-results/

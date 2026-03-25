@@ -18,10 +18,7 @@ if ( ! $table_exists ) {
 	return;
 }
 
-$json_files = array(
-	__DIR__ . '/sentiero_italia-transformed.json',
-	__DIR__ . '/te_araroa-trail.json',
-);
+$json_files = glob( __DIR__ . '/*.json' );
 
 $columns = array(
 	'id', 'type', 'time', 'latitude', 'longitude', 'altitude',

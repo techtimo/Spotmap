@@ -97,12 +97,12 @@ baseLayers:
 
     france-ign-topo:
         label: France IGN Topo
-        url: 'https://wxs.ign.fr/{geoportailToken}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
+        url: 'https://data.geopf.fr/private/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&FORMAT={format}&LAYER={layer}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&apikey={geoportailToken}'
         options:
             geoportailToken: ''
             format: image/jpeg
             transparent: false
-            maxZoom: 16
+            maxZoom: 18
             attribution: "© <a target='_blank' href='https://www.geoportail.gouv.fr/'>Geoportail France</a>"
             layer: GEOGRAPHICALGRIDSYSTEMS.MAPS
 
