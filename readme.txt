@@ -63,18 +63,38 @@ We can also show multiple feeds in different colors on a same day (from 0:00:00 
 
 `[spotmap mapcenter=last feeds="My first spot,My other Device" colors="gray,green" date="2020-06-01"]` 
 
+## Security
+
+### Message content and phone numbers
+
+SPOT devices can include a phone number or personal message in their transmission data. This information is stored in the database and may appear in marker popups on your map.
+To overwrite this content, use the **Marker** section in `Settings > Spotmap`.
+Setting a feed password in your SPOT account (and entering it in the plugin settings) ensures that the message content is not stored in the Wordpress database and thus not accessible by the public.
+
+### Live location privacy
+
+The plugin offers a cosmetic filter to hide points newer than a configurable threshold (e.g. 30 minutes, 2 hours, or 1 day).
+This prevents the most recent positions from appearing on the public map.
+**Important:** this filter is display-only. The REST API endpoint exposed by the plugin can return all points stored in the database, regardless of the block filter setting.
+There is currently no way to fully hide the latest positions from a technically capable visitor. If hiding live locations from the API is a requirement, you should restrict access to the REST API endpoint at the server or WordPress level.
+
+### Map Tokens
+
+API tokens for tile layer providers (Mapbox, Thunderforest, LINZ, IGN France, OS UK, etc.) are stored in WordPress settings and embedded in the page HTML at render time. This means any visitor who views the page source can read your token.
+
+To reduce the risk of token abuse, **restrict each token to your domain using the provider's referrer/HTTP origin restrictions** (e.g. `https://yoursite.com/*`). Requests from other origins will be rejected.
 
 ## Frequently Asked Questions
 
 ### How do I get my Feed ID?
 
 You need to create an XML Feed in your spot account. ([See here](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) for more details)
-Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently. 
+Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently.
 Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
 ### Which 3rd Party Services are getting used?
 
-The plugin uses the following thrid party services:
+The plugin uses the following third party services:
 
 1. From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) to get the points.
 2. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
@@ -83,7 +103,6 @@ The plugin uses the following thrid party services:
 5. (optionally) [Land Information New Zealand (LINZ)](https://www.linz.govt.nz) To get the official Topo Maps of NZ create an account [here](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key). Paste the key in the settings page.
 6. (optionally) [Géoportail France](https://geoservices.ign.fr/) To get the official Topo Maps of IGN France. Create an account [here](https://geoservices.ign.fr/user/register) (french only). Paste the key in the settings page.
 7. (optionally) [UK Ordnance Survey](https://osdatahub.os.uk) To get the official UK OS maps. Create a free plan [here](https://osdatahub.os.uk/plans). And follow this guide on how to [create a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
-
 
 ### Can I use/add other maps?
 
@@ -98,7 +117,7 @@ Head over to the wordpress.org [support forum](https://wordpress.org/support/plu
 ## Screenshots
 
 1. This screenshot was taken after using the plugin for 3 months.
-2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
+2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear by default as small dots.
 
 ## Changelog
 
