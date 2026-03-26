@@ -6,6 +6,7 @@ class Spotmap_Database {
 		'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
 		'battery_status', 'message', 'custom_message', 'feed_name',
 		'feed_id', 'model', 'device_name', 'local_timezone',
+		'hdop', 'speed', 'bearing',
 	];
 
 	private static function sanitize_select( string $select ): string {
@@ -68,6 +69,9 @@ class Spotmap_Database {
 		    `model` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 		    `device_name` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 		    `local_timezone` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+		    `hdop` float DEFAULT NULL,
+		    `speed` float DEFAULT NULL,
+		    `bearing` float DEFAULT NULL,
 		    PRIMARY KEY (`id`),
 		    UNIQUE KEY `id_UNIQUE` (`id`)
 		    ) $charset_collate";
@@ -192,50 +196,70 @@ class Spotmap_Database {
 		return $points;
 	}
 
+	/**
+	 * Low-level insert: accepts DB column names directly.
+	 *
+	 * Required keys: feed_name, type, time, latitude, longitude.
+	 * All other columns are optional.
+	 *
+	 * Coordinate bounds are validated; if invalid, the last known point's
+	 * coordinates for the same feed_id are used as a fallback.
+	 *
+	 * @param array<string, mixed> $data           Column → value pairs (DB column names).
+	 * @param bool                 $schedule_tz     Whether to schedule the timezone lookup event.
+	 * @return int|false Number of rows inserted, or false on error.
+	 */
+	public function insert_row( array $data, bool $schedule_tz = true ) {
+		$last_point = $this->get_last_point( $data['feed_id'] ?? null );
+
+		if ( ( $data['latitude'] ?? 0 ) > 90 || ( $data['latitude'] ?? 0 ) < -90 ) {
+			$data['latitude'] = $last_point->latitude ?? 0;
+		}
+		if ( ( $data['longitude'] ?? 0 ) > 180 || ( $data['longitude'] ?? 0 ) < -180 ) {
+			$data['longitude'] = $last_point->longitude ?? 0;
+		}
+
+		global $wpdb;
+		$result = $wpdb->insert( $wpdb->prefix . 'spotmap_points', $data );
+
+		if ( $result && $schedule_tz ) {
+			wp_schedule_single_event( time(), 'spotmap_get_timezone_hook' );
+		}
+
+		return $result;
+	}
+
 	public function insert_point($point,$multiple = false){
 		// error_log(print_r($point,true));
 		if($point['unixTime'] == 1){
 			return 0;
 		}
-		$last_point = $this->get_last_point($point['feedId']);
-		
-		if($point['latitude'] > 90 || $point['latitude']< -90){
-			$point['latitude'] = $last_point->latitude;
-		}
-		if ($point['longitude'] > 180 || $point['longitude']< -180){
-			$point['longitude'] = $last_point->longitude;
-		}
 		$custom_message = Spotmap_Options::get_custom_message($point['messageType']);
 		$data = [
-			'feed_name' => $point['feedName'],
-			'type' => $point['messageType'],
-			'time' => $point['unixTime'],
-			'latitude' => $point['latitude'],
-			'longitude' => $point['longitude'],
-			'model' => $point['modelId'],
-			'device_name' => $point['messengerName'],
-			'message' => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
+			'feed_name'    => $point['feedName'],
+			'type'         => $point['messageType'],
+			'time'         => $point['unixTime'],
+			'latitude'     => $point['latitude'],
+			'longitude'    => $point['longitude'],
+			'model'        => $point['modelId'],
+			'device_name'  => $point['messengerName'],
+			'message'      => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
 			'custom_message' => !empty($custom_message) ? $custom_message : NULL,
-			'feed_id' => $point['feedId']
+			'feed_id'      => $point['feedId'],
 		];
 		if (array_key_exists('id', $point)){
-			$data['id']= $point['id'];
+			$data['id'] = $point['id'];
 		}
 		if (array_key_exists('battery_status', $point)){
-			$data['battery_status']= $point['batteryState'];
+			$data['battery_status'] = $point['batteryState'];
 		}
 		if (array_key_exists('altitude', $point)){
-			$data['altitude']= $point['altitude'];
+			$data['altitude'] = $point['altitude'];
 		}
 		if (array_key_exists('local_timezone', $point)){
-			$data['local_timezone']= $point['local_timezone'];
+			$data['local_timezone'] = $point['local_timezone'];
 		}
-		global $wpdb;
-		$result = $wpdb->insert($wpdb->prefix."spotmap_points",	$data);
-		
-		// schedule event to calc local timezone 
-		wp_schedule_single_event( time(), 'spotmap_get_timezone_hook' );
-		return $result;
+		return $this->insert_row( $data );
 	}
 	/**
 	 * This function checks if a point is preseent in the db

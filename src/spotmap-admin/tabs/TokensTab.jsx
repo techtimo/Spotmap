@@ -1,7 +1,6 @@
 import { useState, useEffect } from '@wordpress/element';
 import {
 	Button,
-	Notice,
 	TextControl,
 	BaseControl,
 	Flex,
@@ -127,16 +126,15 @@ function TokenField( { tokenKey, value, onChange } ) {
 	);
 }
 
-export default function TokensTab() {
+export default function TokensTab( { onNoticeChange } ) {
 	const [ tokens, setTokens ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
 
 	useEffect( () => {
 		api.getTokens()
 			.then( setTokens )
 			.catch( ( err ) =>
-				setNotice( { status: 'error', text: err.message } )
+				onNoticeChange( { status: 'error', text: err.message } )
 			);
 	}, [] );
 
@@ -145,9 +143,9 @@ export default function TokensTab() {
 		try {
 			const saved = await api.updateTokens( tokens );
 			setTokens( saved );
-			setNotice( { status: 'success', text: 'API tokens saved.' } );
+			onNoticeChange( { status: 'success', text: 'API tokens saved.' } );
 		} catch ( err ) {
-			setNotice( { status: 'error', text: err.message } );
+			onNoticeChange( { status: 'error', text: err.message } );
 		} finally {
 			setSaving( false );
 		}
@@ -159,16 +157,6 @@ export default function TokensTab() {
 
 	return (
 		<div style={ { maxWidth: '600px', marginTop: '1rem' } }>
-			{ notice && (
-				<Notice
-					status={ notice.status }
-					onRemove={ () => setNotice( null ) }
-					isDismissible
-				>
-					{ notice.text }
-				</Notice>
-			) }
-
 			{ Object.keys( tokens ).map( ( key ) => (
 				<TokenField
 					key={ key }

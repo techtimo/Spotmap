@@ -1,15 +1,14 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Notice, Spinner } from '@wordpress/components';
+import { Button, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
 
-export default function FeedsTab( { providers, openAddModal } ) {
+export default function FeedsTab( { providers, openAddModal, onNoticeChange } ) {
 	const [ feeds, setFeeds ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ editingFeed, setEditingFeed ] = useState(
 		openAddModal ? {} : null
 	); // null=closed, {}=new, feed=edit
-	const [ notice, setNotice ] = useState( null );
 
 	useEffect( () => {
 		let cancelled = false;
@@ -22,7 +21,7 @@ export default function FeedsTab( { providers, openAddModal } ) {
 			.catch( ( err ) => {
 				if ( ! cancelled ) {
 					setFeeds( [] );
-					setNotice( { status: 'error', text: err.message } );
+					onNoticeChange( { status: 'error', text: err.message } );
 				}
 			} )
 			.finally( () => {
@@ -45,8 +44,9 @@ export default function FeedsTab( { providers, openAddModal } ) {
 				? prev.map( ( f ) => ( f.id === id ? saved : f ) )
 				: [ ...prev, saved ]
 		);
+
 		setEditingFeed( null );
-		setNotice( { status: 'success', text: 'Feed saved.' } );
+		onNoticeChange( { status: 'success', text: 'Feed saved.' } );
 	};
 
 	const handleDelete = async ( feed ) => {
@@ -57,9 +57,9 @@ export default function FeedsTab( { providers, openAddModal } ) {
 		try {
 			await api.deleteFeed( feed.id );
 			setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
-			setNotice( { status: 'success', text: 'Feed deleted.' } );
+			onNoticeChange( { status: 'success', text: 'Feed deleted.' } );
 		} catch ( err ) {
-			setNotice( { status: 'error', text: err.message } );
+			onNoticeChange( { status: 'error', text: err.message } );
 		}
 	};
 
@@ -69,16 +69,6 @@ export default function FeedsTab( { providers, openAddModal } ) {
 
 	return (
 		<div style={ { marginTop: '1rem' } }>
-			{ notice && (
-				<Notice
-					status={ notice.status }
-					onRemove={ () => setNotice( null ) }
-					isDismissible
-				>
-					{ notice.text }
-				</Notice>
-			) }
-
 			{ feeds.length === 0 ? (
 				<p>No feeds configured yet.</p>
 			) : (
@@ -103,7 +93,10 @@ export default function FeedsTab( { providers, openAddModal } ) {
 										feed.type }
 								</td>
 								<td>
-									<code>{ feed.feed_id }</code>
+									{ feed.type === 'osmand'
+										? <em style={ { color: '#888' } }>push feed</em>
+										: <code>{ feed.feed_id }</code>
+									}
 								</td>
 								<td>
 									<Button

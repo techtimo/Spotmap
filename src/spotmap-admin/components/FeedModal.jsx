@@ -3,10 +3,63 @@ import {
 	Modal,
 	Button,
 	TextControl,
-	SelectControl,
 	Notice,
 } from '@wordpress/components';
 import { REDACTED } from '../api';
+import ProviderSelector from './ProviderSelector';
+
+function OsmAndTrackingUrl( { url } ) {
+	const [ copied, setCopied ] = useState( false );
+	const copy = () => {
+		navigator.clipboard.writeText( url ).then( () => {
+			setCopied( true );
+			setTimeout( () => setCopied( false ), 2000 );
+		} );
+	};
+	return (
+		<div style={ { margin: '16px 0', padding: '12px', background: '#f0f6fc', border: '1px solid #c3d9ef', borderRadius: '4px' } }>
+			<p style={ { margin: '0 0 6px', fontWeight: 600 } }>OsmAnd Tracking URL</p>
+			<p style={ { margin: '0 0 10px', fontSize: '0.85em' } }>
+				Enter this URL in OsmAnd:{ ' ' }
+				<em>Plugins → Trip Recording → Online tracking → Web address</em>.
+				Set Tracking interval to 10 s or more.{ ' ' }
+				<a
+					href="https://osmand.net/docs/user/plugins/trip-recording/#required-setup-parameters"
+					target="_blank"
+					rel="noreferrer"
+				>
+					OsmAnd docs ↗
+				</a>
+			</p>
+			<div style={ { display: 'flex', alignItems: 'center', gap: '8px' } }>
+				<code style={ { flex: 1, wordBreak: 'break-all', background: '#fff', padding: '6px 8px', border: '1px solid #ddd', borderRadius: '3px', fontSize: '0.75em' } }>
+					{ url }
+				</code>
+				<Button variant="secondary" size="small" onClick={ copy }>
+					{ copied ? '✓ Copied' : 'Copy' }
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+function generateOsmAndKey() {
+	const bytes = new Uint8Array( 16 );
+	crypto.getRandomValues( bytes );
+	return Array.from( bytes )
+		.map( ( b ) => b.toString( 16 ).padStart( 2, '0' ) )
+		.join( '' );
+}
+
+function buildOsmAndUrl( key ) {
+	const base = window.spotmapAdminData.restUrl.replace( /\/$/, '' );
+	return (
+		base +
+		'/ingest/osmand?key=' +
+		encodeURIComponent( key ) +
+		'&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}'
+	);
+}
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
 	const isEdit = !! feed;
@@ -14,11 +67,16 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 
 	const [ type, setType ] = useState( feed?.type ?? providerKeys[ 0 ] ?? '' );
 	const [ fields, setFields ] = useState( () => {
-		const provider = providers[ feed?.type ?? providerKeys[ 0 ] ];
+		const initialType = feed?.type ?? providerKeys[ 0 ] ?? '';
+		const provider = providers[ initialType ];
 		const initial = {};
 		provider?.fields.forEach( ( f ) => {
 			initial[ f.key ] = feed?.[ f.key ] ?? '';
 		} );
+		// For new OsmAnd feeds, generate the key upfront so the URL is visible immediately.
+		if ( ! feed && initialType === 'osmand' ) {
+			initial.key = generateOsmAndKey();
+		}
 		return initial;
 	} );
 	const [ saving, setSaving ] = useState( false );
@@ -36,8 +94,18 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 		newProvider?.fields.forEach( ( f ) => {
 			reset[ f.key ] = '';
 		} );
+		if ( newType === 'osmand' ) {
+			reset.key = generateOsmAndKey();
+		}
 		setFields( reset );
 	};
+
+	// For new OsmAnd feeds the URL is built from the browser-generated key so it's
+	// visible immediately. For existing feeds the server-provided URL is used.
+	const osmandTrackingUrl =
+		type === 'osmand'
+			? ( feed?.tracking_url ?? ( fields.key ? buildOsmAndUrl( fields.key ) : null ) )
+			: null;
 
 	const handleSave = async () => {
 		setSaving( true );
@@ -63,16 +131,10 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 			) }
 
 			{ ! isEdit && (
-				<SelectControl
-					label="Provider Type"
+				<ProviderSelector
+					providers={ providers }
 					value={ type }
-					options={ providerKeys.map( ( key ) => ( {
-						value: key,
-						label: providers[ key ].label,
-					} ) ) }
 					onChange={ handleTypeChange }
-					__nextHasNoMarginBottom
-					__next40pxDefaultSize
 				/>
 			) }
 
@@ -106,6 +168,10 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 					/>
 				);
 			} ) }
+
+			{ osmandTrackingUrl && (
+				<OsmAndTrackingUrl url={ osmandTrackingUrl } />
+			) }
 
 			<div style={ { display: 'flex', gap: '8px', marginTop: '16px' } }>
 				<Button
