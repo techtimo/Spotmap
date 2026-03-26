@@ -56,6 +56,61 @@ describe( 'TokensTab — REDACTED token (stored)', () => {
 		expect( input ).toBeInTheDocument();
 		expect( input.value ).toBe( '' );
 	} );
+
+	it( 'sends REDACTED when Change is clicked but input left empty', async () => {
+		const user = userEvent.setup();
+		api.updateTokens.mockResolvedValue( { timezonedb: REDACTED, mapbox: '' } );
+		render( <TokensTab /> );
+		await user.click( await screen.findByRole( 'button', { name: /Change/i } ) );
+
+		await user.click(
+			screen.getByRole( 'button', { name: /Save API Tokens/i } )
+		);
+
+		await waitFor( () => {
+			expect( api.updateTokens ).toHaveBeenCalledWith(
+				expect.objectContaining( { timezonedb: REDACTED } )
+			);
+		} );
+	} );
+
+	it( 'sends REDACTED when Change is clicked, value typed then deleted', async () => {
+		const user = userEvent.setup();
+		api.updateTokens.mockResolvedValue( { timezonedb: REDACTED, mapbox: '' } );
+		render( <TokensTab /> );
+		await user.click( await screen.findByRole( 'button', { name: /Change/i } ) );
+
+		const input = await screen.findByLabelText( /TimezoneDB/i );
+		await user.type( input, 'abc' );
+		await user.clear( input );
+
+		await user.click(
+			screen.getByRole( 'button', { name: /Save API Tokens/i } )
+		);
+
+		await waitFor( () => {
+			expect( api.updateTokens ).toHaveBeenCalledWith(
+				expect.objectContaining( { timezonedb: REDACTED } )
+			);
+		} );
+	} );
+
+	it( 'sends empty string when Clear is clicked and saved without typing', async () => {
+		const user = userEvent.setup();
+		api.updateTokens.mockResolvedValue( { timezonedb: '', mapbox: '' } );
+		render( <TokensTab /> );
+		await user.click( await screen.findByRole( 'button', { name: /Clear/i } ) );
+
+		await user.click(
+			screen.getByRole( 'button', { name: /Save API Tokens/i } )
+		);
+
+		await waitFor( () => {
+			expect( api.updateTokens ).toHaveBeenCalledWith(
+				expect.objectContaining( { timezonedb: '' } )
+			);
+		} );
+	} );
 } );
 
 describe( 'TokensTab — empty token (not stored)', () => {

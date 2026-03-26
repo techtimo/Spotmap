@@ -43,11 +43,15 @@ function TokenField( { tokenKey, value, onChange } ) {
 	const meta = TOKEN_META[ tokenKey ] ?? { label: tokenKey, help: '' };
 	const isStored = value === REDACTED;
 	const [ editing, setEditing ] = useState( ! isStored );
+	const [ clearing, setClearing ] = useState( false );
+	const [ inputVal, setInputVal ] = useState( '' );
 
 	// If the parent resets the value (e.g. after save), sync editing state.
 	useEffect( () => {
 		if ( value === REDACTED ) {
 			setEditing( false );
+			setClearing( false );
+			setInputVal( '' );
 		}
 	}, [ value ] );
 
@@ -70,7 +74,10 @@ function TokenField( { tokenKey, value, onChange } ) {
 							variant="link"
 							onClick={ () => {
 								setEditing( true );
-								onChange( '' );
+								setClearing( false );
+								setInputVal( '' );
+								// Keep REDACTED until the user actually types a new value.
+								onChange( REDACTED );
 							} }
 						>
 							Change
@@ -82,6 +89,8 @@ function TokenField( { tokenKey, value, onChange } ) {
 							isDestructive
 							onClick={ () => {
 								setEditing( true );
+								setClearing( true );
+								setInputVal( '' );
 								onChange( '' );
 							} }
 						>
@@ -93,14 +102,25 @@ function TokenField( { tokenKey, value, onChange } ) {
 		);
 	}
 
+	const handleInputChange = ( val ) => {
+		setInputVal( val );
+		if ( clearing ) {
+			// In clear mode every value (including empty) is intentional.
+			onChange( val );
+		} else {
+			// In change mode an empty field means "keep the stored token".
+			onChange( val === '' ? REDACTED : val );
+		}
+	};
+
 	return (
 		<TextControl
 			label={ meta.label }
 			help={ meta.help }
-			value={ value }
+			value={ inputVal }
 			type="text"
 			autoComplete="off"
-			onChange={ onChange }
+			onChange={ handleInputChange }
 			__nextHasNoMarginBottom
 			__next40pxDefaultSize
 		/>
