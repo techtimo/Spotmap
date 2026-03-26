@@ -60,7 +60,7 @@ const SATELLITE_ICON = (
 
 const DEFAULT_FEED_STYLE = {
 	color: 'blue',
-	splitLines: 0,
+	splitLines: 8,
 	lineWidth: 2,
 	lineOpacity: 1.0,
 	visible: true,
@@ -580,31 +580,22 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
 						clearable={ false }
 					/>
 				</div>
-				<ToggleControl
+				<TextControl
 					__nextHasNoMarginBottom
-					label={ __( 'Connect points with line' ) }
-					checked={ !! s.splitLinesEnabled }
+					__next40pxDefaultSize
+					type="number"
+					min="0"
+					label={ __( 'Split lines (hours)' ) }
+					value={ s.splitLines || '' }
+					placeholder={ __( '0 = disabled' ) }
 					onChange={ ( value ) => {
-						onUpdate( 'splitLinesEnabled', value );
-						if ( value && ! s.splitLines ) {
-							onUpdate( 'splitLines', 12 );
-						}
+						const n = parseInt( value, 10 );
+						onUpdate( 'splitLines', n > 0 ? n : 0 );
 					} }
+					help={ __(
+						'Draws a line connecting GPS points. If the gap between two consecutive points exceeds this many hours, a new line segment starts. Leave empty or 0 to draw no line.'
+					) }
 				/>
-				{ s.splitLinesEnabled && (
-					<TextControl
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __( 'Split lines (hours)' ) }
-						value={ s.splitLines || '' }
-						onChange={ ( value ) =>
-							onUpdate( 'splitLines', value )
-						}
-						help={ __(
-							'Hours between points before starting a new line segment'
-						) }
-					/>
-				) }
 				<RangeControl
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize

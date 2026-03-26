@@ -1,4 +1,5 @@
 import {
+	Button,
 	DateTimePicker,
 	Dropdown,
 	SelectControl,
@@ -27,11 +28,20 @@ const DATE_PRESETS_TO = [
 	{ label: 'a specific date', value: 'specific' },
 ];
 
+const formatDateLabel = ( value ) => {
+	try {
+		const d = new Date( value );
+		return isNaN( d ) ? value : d.toLocaleString();
+	} catch {
+		return value;
+	}
+};
+
 const buildDateOptions = ( value, presets ) =>
 	value &&
 	! presets.find( ( o ) => o.value === value ) &&
 	value !== 'specific'
-		? [ ...presets, { label: value, value } ]
+		? [ ...presets, { label: formatDateLabel( value ), value } ]
 		: presets;
 
 /**
@@ -94,14 +104,35 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
 							}
 						/>
 						{ isCustomFrom && (
-							<DateTimePicker
-								currentDate={ new Date() }
-								onChange={ ( date ) =>
-									onChangeDateRange( {
-										...dateRange,
-										from: date,
-									} )
-								}
+							<Dropdown
+								popoverProps={ { placement: 'right-start' } }
+								renderToggle={ ( { isOpen, onToggle } ) => (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={ onToggle }
+										isPressed={ isOpen }
+									>
+										{ fromValue !== 'specific'
+											? formatDateLabel( fromValue )
+											: __( 'Pick date…' ) }
+									</Button>
+								) }
+								renderContent={ () => (
+									<DateTimePicker
+										currentDate={
+											fromValue !== 'specific'
+												? fromValue
+												: new Date()
+										}
+										onChange={ ( date ) =>
+											onChangeDateRange( {
+												...dateRange,
+												from: date,
+											} )
+										}
+									/>
+								) }
 							/>
 						) }
 						<SelectControl
@@ -121,14 +152,35 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
 							}
 						/>
 						{ isCustomTo && (
-							<DateTimePicker
-								currentDate={ new Date() }
-								onChange={ ( date ) =>
-									onChangeDateRange( {
-										...dateRange,
-										to: date,
-									} )
-								}
+							<Dropdown
+								popoverProps={ { placement: 'right-start' } }
+								renderToggle={ ( { isOpen, onToggle } ) => (
+									<Button
+										variant="secondary"
+										size="small"
+										onClick={ onToggle }
+										isPressed={ isOpen }
+									>
+										{ toValue !== 'specific'
+											? formatDateLabel( toValue )
+											: __( 'Pick date…' ) }
+									</Button>
+								) }
+								renderContent={ () => (
+									<DateTimePicker
+										currentDate={
+											toValue !== 'specific'
+												? toValue
+												: new Date()
+										}
+										onChange={ ( date ) =>
+											onChangeDateRange( {
+												...dateRange,
+												to: date,
+											} )
+										}
+									/>
+								) }
 							/>
 						) }
 					</div>
