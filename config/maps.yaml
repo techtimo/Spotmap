@@ -210,15 +210,4 @@ overlays:
         url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
         options:
             attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenSeaMap</a> contributors"
-
-    openseamap-depth:
-        wms: true
-        label: Sea Depth
-        url: 'https://depth.openseamap.org/geoserver/gwc/service/wms'
-        options:
-            layers: 'gebco2021:gebco_2021'
-            format: image/png
-            transparent: true
-            maxZoom: 20
-            continuousWorld: true
-            attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenSeaMap</a> contributors"
+    
