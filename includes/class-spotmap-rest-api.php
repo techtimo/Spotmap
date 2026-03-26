@@ -121,6 +121,29 @@ class Spotmap_Rest_Api {
 			]
 		);
 
+		// --- Points (position editing) ---
+		register_rest_route(
+			self::NAMESPACE,
+			'/points',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ __CLASS__, 'get_points' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+		register_rest_route(
+			self::NAMESPACE,
+			'/points/(?P<id>\d+)',
+			[
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => [ __CLASS__, 'update_point' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				'args'                => [
+					'id' => [ 'type' => 'integer', 'required' => true ],
+				],
+			]
+		);
+
 		// --- Defaults ---
 		register_rest_route(
 			self::NAMESPACE,
@@ -323,6 +346,61 @@ class Spotmap_Rest_Api {
 
 		Spotmap_Options::save_settings( $sanitized );
 		return rest_ensure_response( Spotmap_Options::get_settings() );
+	}
+
+	// -------------------------------------------------------------------------
+	// Points (position editing)
+	// -------------------------------------------------------------------------
+
+	public static function get_points( WP_REST_Request $request ) {
+		$feed = sanitize_text_field( $request->get_param( 'feed' ) ?? '' );
+		if ( $feed === '' ) {
+			return new WP_Error( 'missing_feed', 'A feed name is required.', [ 'status' => 400 ] );
+		}
+
+		$filter = [
+			'select'  => '*',
+			'feeds'   => [ $feed ],
+			'orderBy' => 'time',
+			'groupBy' => '',
+		];
+
+		$from = sanitize_text_field( $request->get_param( 'from' ) ?? '' );
+		$to   = sanitize_text_field( $request->get_param( 'to' ) ?? '' );
+		if ( $from !== '' || $to !== '' ) {
+			$filter['date-range'] = [ 'from' => $from, 'to' => $to ];
+		}
+
+		$db     = new Spotmap_Database();
+		$points = $db->get_points( $filter );
+
+		if ( isset( $points['error'] ) ) {
+			return new WP_Error( 'points_error', $points['title'] ?? 'Error fetching points.', [ 'status' => 422 ] );
+		}
+
+		return rest_ensure_response( $points );
+	}
+
+	public static function update_point( WP_REST_Request $request ) {
+		$id   = (int) $request->get_param( 'id' );
+		$body = self::json_body( $request );
+		if ( is_wp_error( $body ) ) {
+			return $body;
+		}
+
+		if ( ! isset( $body['latitude'] ) || ! isset( $body['longitude'] ) ) {
+			return new WP_Error( 'missing_fields', 'latitude and longitude are required.', [ 'status' => 400 ] );
+		}
+
+		$latitude  = (float) $body['latitude'];
+		$longitude = (float) $body['longitude'];
+
+		$db = new Spotmap_Database();
+		if ( ! $db->update_point_position( $id, $latitude, $longitude ) ) {
+			return new WP_Error( 'update_failed', 'Failed to update point position — invalid coordinates or DB error.', [ 'status' => 500 ] );
+		}
+
+		return rest_ensure_response( [ 'id' => $id, 'latitude' => $latitude, 'longitude' => $longitude ] );
 	}
 
 	// -------------------------------------------------------------------------

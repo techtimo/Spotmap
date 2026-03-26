@@ -16,44 +16,9 @@ You can interupt the line connecting all points with a time intervall. (Here it 
 
 There is more you can do. Check the Usage section.
 
-## Installation
+## User Guide
 
-Just login to your Wordpress Dashboard and go to `Dasboard > Plugins > Add New`.
-Search for "Spotmap" and install the first search result.
-After installing the plugin you can head over to `Settings > Spotmap` and enter your Feed ID of your Spot Feed.
-
-## Usage
-
-After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. Add a feed by selecting `findmespot` from the dropdown and hit Save.
-
-Now you can enter your XML Feed Id here and give it a nice name. Soon Wordpress will download the points that are present in the XML Feed.
-
-If you use Gutenberg type /spotmap to create a new Spotmap block.
-
-If you prefer shortcodes tpye `[Spotmap]`
-
-Congrats 🎉 You just created your own Spotmap. 
-
-There are some attributes we can parse with the Shortcode:
-
-Note: `feeds` must always match your configured feed name.
-This will show a bigger map and the points are all in yellow:
-
-```shortcode
-[spotmap height=600 width=full feeds=spot colors=yellow]
-```
-
-This will show a map where we zoom into the last known position, and we only show data from the the first of May:
-
-```shortcode
-[spotmap mapcenter=last feeds=spot colors=red date-range-from="2020-05-01"]
-```
-
-We can also show multiple tracks in different colors on a same day:
-
-```shortcode
-[spotmap mapcenter=last feeds=spot,spot2 colors=gray,green date="2020-06-01"]
-```
+For details on features, installation, usage, and frequently asked questions, see [readme.txt](./readme.txt).
 
 ## Development
 
@@ -153,18 +118,3 @@ tokens into WP options, and updates post 1 with a block that lists every map key
 ```bash
 npx wp-env stop
 ```
-
-## FAQ
-
-### How do I get my Feed ID
-
-You need to create an XML Feed in your spot account. ([See here](https://github.com/techtimo/spotmap/issues/4#issuecomment-638001718) for more details)
-Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently.
-Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
-
-### Can I use/add other maps?
-
-Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles.
-If you still search for another map search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
-If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
-

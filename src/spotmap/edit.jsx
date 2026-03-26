@@ -13,7 +13,6 @@ import {
 	ColorPalette,
 	Button,
 	RangeControl,
-	DateTimePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -25,9 +24,11 @@ import {
 	__experimentalUnitControl as UnitControl,
 	ExternalLink,
 } from '@wordpress/components';
-import { brush, calendar, settings, upload, trash } from '@wordpress/icons';
+import { brush, settings, upload, trash } from '@wordpress/icons';
 import { uploadMedia } from '@wordpress/media-utils';
 import { __ } from '@wordpress/i18n';
+import MapsToolbarGroup from './components/MapsToolbarGroup';
+import TimeToolbarGroup from './components/TimeToolbarGroup';
 
 const COLORS = [
 	{ name: 'black', color: 'black' },
@@ -39,44 +40,6 @@ const COLORS = [
 	{ name: 'violet', color: 'violet' },
 	{ name: 'yellow', color: 'yellow' },
 ];
-
-const DATE_PRESETS_FROM = [
-	{ label: "don't filter", value: '' },
-	{ label: 'last week', value: 'last-1-week' },
-	{ label: 'last 10 days', value: 'last-10-days' },
-	{ label: 'last 2 weeks', value: 'last-2-weeks' },
-	{ label: 'last month', value: 'last-1-month' },
-	{ label: 'last year', value: 'last-1-year' },
-	{ label: 'a specific date', value: 'specific' },
-];
-
-const DATE_PRESETS_TO = [
-	{ label: "don't filter", value: '' },
-	{ label: 'last 30 minutes', value: 'last-30-minutes' },
-	{ label: 'last hour', value: 'last-1-hour' },
-	{ label: 'last 2 hours', value: 'last-2-hour' },
-	{ label: 'last day', value: 'last-1-day' },
-	{ label: 'a specific date', value: 'specific' },
-];
-
-// Inline SVG for the Maps toolbar button
-const MAP_ICON = (
-	<svg
-		width="800px"
-		height="800px"
-		viewBox="0 0 24 24"
-		fill="none"
-		xmlns="http://www.w3.org/2000/svg"
-	>
-		<path
-			d="M9 20L3 17V4L9 7M9 20L15 17M9 20V7M15 17L21 20V7L15 4M15 17V4M9 7L15 4"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		/>
-	</svg>
-);
 
 // Satellite icon (inline SVG)
 const SATELLITE_ICON = (
@@ -103,13 +66,6 @@ const DEFAULT_FEED_STYLE = {
 	visible: true,
 };
 
-// Returns options for a date SelectControl, appending a custom value entry if needed.
-const buildDateOptions = ( value, presets ) =>
-	value &&
-	! presets.find( ( o ) => o.value === value ) &&
-	value !== 'specific'
-		? [ ...presets, { label: value, value } ]
-		: presets;
 
 // Toggle with a flyout sub-popover that reveals on hover.
 function NavigationButtonsControl( { value, onChange } ) {
@@ -924,13 +880,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	}, [ attributes.scrollWheelZoom ] );
 
-	// Close all toolbar popovers when the user clicks/taps on the map.
-	const availableMaps = window.spotmapjsobj?.maps
-		? Object.keys( window.spotmapjsobj.maps )
-		: [];
-	const availableOverlays = window.spotmapjsobj?.overlays
-		? Object.keys( window.spotmapjsobj.overlays )
-		: [];
 	let availableFeeds = [];
 	if ( window.spotmapjsobj?.feeds ) {
 		availableFeeds = Array.isArray( window.spotmapjsobj.feeds )
@@ -954,32 +903,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 		setAttributes( { feeds: next, styles: newStyles } );
 	};
-
-	const toggleMap = ( mapKey, checked ) => {
-		const next = checked
-			? [ ...attributes.maps, mapKey ]
-			: attributes.maps.filter( ( m ) => m !== mapKey );
-		setAttributes( { maps: next } );
-	};
-
-	const toggleOverlay = ( overlayKey, checked ) => {
-		const current = attributes.mapOverlays || [];
-		const next = checked
-			? [ ...current, overlayKey ]
-			: current.filter( ( o ) => o !== overlayKey );
-		setAttributes( { mapOverlays: next } );
-	};
-
-	const dateFromValue = attributes.dateRange?.from || '';
-	const dateToValue = attributes.dateRange?.to || '';
-	const isCustomDateFrom =
-		dateFromValue === 'specific' ||
-		( dateFromValue &&
-			! DATE_PRESETS_FROM.find( ( o ) => o.value === dateFromValue ) );
-	const isCustomDateTo =
-		dateToValue === 'specific' ||
-		( dateToValue &&
-			! DATE_PRESETS_TO.find( ( o ) => o.value === dateToValue ) );
 
 	const mergeGpxTracks = ( newTracks, getTitle ) => {
 		const existing = attributes.gpx;
@@ -1112,90 +1035,16 @@ export default function Edit( { attributes, setAttributes } ) {
 				</ToolbarGroup>
 
 				{ /* Maps */ }
-				<ToolbarGroup>
-					<Dropdown
-						popoverProps={ { placement: 'bottom-start' } }
-						renderToggle={ ( { isOpen, onToggle } ) => (
-							<ToolbarButton
-								icon={ MAP_ICON }
-								label={ __( 'Maps' ) }
-								onClick={ onToggle }
-								isPressed={ isOpen }
-							>
-								{ __( 'Maps' ) }
-							</ToolbarButton>
-						) }
-						renderContent={ () => (
-							<div
-								style={ { padding: '8px', minWidth: '200px' } }
-							>
-								{ availableMaps.length === 0 && (
-									<p>{ __( 'No maps available.' ) }</p>
-								) }
-								<Flex direction="column" gap={ 1 }>
-									{ availableMaps.map( ( mapKey ) => (
-										<FlexItem key={ mapKey }>
-											<CheckboxControl
-												__nextHasNoMarginBottom
-												label={
-													window.spotmapjsobj?.maps[
-														mapKey
-													]?.label ?? mapKey
-												}
-												checked={ attributes.maps.includes(
-													mapKey
-												) }
-												onChange={ ( checked ) =>
-													toggleMap( mapKey, checked )
-												}
-											/>
-										</FlexItem>
-									) ) }
-								</Flex>
-								{ availableOverlays.length > 0 && (
-									<>
-										<hr />
-										<Flex direction="column" gap={ 1 }>
-											{ availableOverlays.map(
-												( overlayKey ) => (
-													<FlexItem
-														key={ overlayKey }
-													>
-														<CheckboxControl
-															__nextHasNoMarginBottom
-															label={
-																window
-																	.spotmapjsobj
-																	?.overlays[
-																	overlayKey
-																]?.label ??
-																overlayKey
-															}
-															checked={ (
-																attributes.mapOverlays ||
-																[]
-															).includes(
-																overlayKey
-															) }
-															onChange={ (
-																checked
-															) =>
-																toggleOverlay(
-																	overlayKey,
-																	checked
-																)
-															}
-														/>
-													</FlexItem>
-												)
-											) }
-										</Flex>
-									</>
-								) }
-							</div>
-						) }
-					/>
-				</ToolbarGroup>
+				<MapsToolbarGroup
+					maps={ attributes.maps }
+					mapOverlays={ attributes.mapOverlays }
+					onChangeMaps={ ( next ) =>
+						setAttributes( { maps: next } )
+					}
+					onChangeOverlays={ ( next ) =>
+						setAttributes( { mapOverlays: next } )
+					}
+				/>
 
 				{ /* GPX — opens manager modal */ }
 				<ToolbarGroup>
@@ -1209,95 +1058,12 @@ export default function Edit( { attributes, setAttributes } ) {
 				</ToolbarGroup>
 
 				{ /* Time filter */ }
-				<ToolbarGroup>
-					<Dropdown
-						popoverProps={ { placement: 'bottom-start' } }
-						renderToggle={ ( { isOpen, onToggle } ) => (
-							<ToolbarButton
-								label={ __( 'Time filter' ) }
-								icon={ calendar }
-								onClick={ onToggle }
-								isPressed={ isOpen }
-							>
-								{ __( 'Time' ) }
-							</ToolbarButton>
-						) }
-						renderContent={ () => (
-							<div
-								style={ {
-									padding: '12px',
-									minWidth: '260px',
-									display: 'flex',
-									flexDirection: 'column',
-									gap: '12px',
-								} }
-							>
-								<SelectControl
-									__nextHasNoMarginBottom
-									__next40pxDefaultSize
-									label={ __( 'Show points from' ) }
-									value={ dateFromValue }
-									options={ buildDateOptions(
-										dateFromValue,
-										DATE_PRESETS_FROM
-									) }
-									onChange={ ( value ) =>
-										setAttributes( {
-											dateRange: {
-												...attributes.dateRange,
-												from: value,
-											},
-										} )
-									}
-								/>
-								{ isCustomDateFrom && (
-									<DateTimePicker
-										currentDate={ new Date() }
-										onChange={ ( date ) =>
-											setAttributes( {
-												dateRange: {
-													...attributes.dateRange,
-													from: date,
-												},
-											} )
-										}
-									/>
-								) }
-								<SelectControl
-									__nextHasNoMarginBottom
-									__next40pxDefaultSize
-									label={ __( 'Show points to' ) }
-									value={ dateToValue }
-									options={ buildDateOptions(
-										dateToValue,
-										DATE_PRESETS_TO
-									) }
-									onChange={ ( value ) =>
-										setAttributes( {
-											dateRange: {
-												...attributes.dateRange,
-												to: value,
-											},
-										} )
-									}
-								/>
-								{ isCustomDateTo && (
-									<DateTimePicker
-										currentDate={ new Date() }
-										onChange={ ( date ) =>
-											setAttributes( {
-												dateRange: {
-													...attributes.dateRange,
-													to: date,
-												},
-											} )
-										}
-									/>
-								) }
-							</div>
-						) }
-					/>
-				</ToolbarGroup>
+				<TimeToolbarGroup
+					dateRange={ attributes.dateRange }
+					onChangeDateRange={ ( next ) =>
+						setAttributes( { dateRange: next } )
+					}
+				/>
 
 				{ /* Map settings */ }
 				<ToolbarGroup>
