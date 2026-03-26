@@ -14,6 +14,9 @@ import {
 	Button,
 	RangeControl,
 	DateTimePicker,
+	Dropdown,
+	Flex,
+	FlexItem,
 	ToolbarGroup,
 	ToolbarButton,
 	CheckboxControl,
@@ -67,7 +70,7 @@ const MAP_ICON = (
 	>
 		<path
 			d="M9 20L3 17V4L9 7M9 20L15 17M9 20V7M15 17L21 20V7L15 4M15 17V4M9 7L15 4"
-			stroke="#000000"
+			stroke="currentColor"
 			strokeWidth="2"
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -107,32 +110,6 @@ const buildDateOptions = ( value, presets ) =>
 	value !== 'specific'
 		? [ ...presets, { label: value, value } ]
 		: presets;
-
-// Reusable section header for popovers.
-const SectionHeader = ( { label } ) => (
-	<p
-		style={ {
-			margin: '0 0 8px',
-			fontWeight: 600,
-			fontSize: '11px',
-			textTransform: 'uppercase',
-			color: '#757575',
-		} }
-	>
-		{ label }
-	</p>
-);
-
-// Reusable divider line.
-const Divider = ( { spaced = false } ) => (
-	<hr
-		style={ {
-			margin: spaced ? '8px 0' : 0,
-			border: 'none',
-			borderTop: '1px solid #ddd',
-		} }
-	/>
-);
 
 // Toggle with a flyout sub-popover that reveals on hover.
 function NavigationButtonsControl( { value, onChange } ) {
@@ -183,7 +160,6 @@ function NavigationButtonsControl( { value, onChange } ) {
 						onMouseEnter={ cancelClose }
 						onMouseLeave={ scheduleClose }
 					>
-						<SectionHeader label={ __( 'Show buttons' ) } />
 						<CheckboxControl
 							__nextHasNoMarginBottom
 							label={ __( 'All points' ) }
@@ -727,18 +703,6 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ feedStyleModal, setFeedStyleModal ] = useState( null );
 	// GPX manager modal
 	const [ gpxManagerOpen, setGpxManagerOpen ] = useState( false );
-	// Toolbar popovers — only one open at a time
-	const feedsAnchorRef = useRef( null );
-	const mapsAnchorRef = useRef( null );
-	const timeFilterAnchorRef = useRef( null );
-	const mapSettingsAnchorRef = useRef( null );
-	const [ openPanel, setOpenPanel ] = useState( null ); // 'feeds'|'maps'|'time'|'settings'|null
-	const togglePanel = ( name ) =>
-		setOpenPanel( ( cur ) => ( cur === name ? null : name ) );
-	const feedsOpen = openPanel === 'feeds';
-	const mapsOpen = openPanel === 'maps';
-	const timeFilterOpen = openPanel === 'time';
-	const mapSettingsOpen = openPanel === 'settings';
 
 	// Inject Leaflet CSS into the editor document (handles iframe rendering)
 	useEffect( () => {
@@ -961,18 +925,6 @@ export default function Edit( { attributes, setAttributes } ) {
 	}, [ attributes.scrollWheelZoom ] );
 
 	// Close all toolbar popovers when the user clicks/taps on the map.
-	// The map renders inside the editor iframe so its clicks don't reach the
-	// main-document outside-click handlers that Popover/Dropdown rely on.
-	useEffect( () => {
-		const el = mapRef.current;
-		if ( ! el ) {
-			return;
-		}
-		const closeAll = () => setOpenPanel( null );
-		el.addEventListener( 'mousedown', closeAll );
-		return () => el.removeEventListener( 'mousedown', closeAll );
-	}, [] );
-
 	const availableMaps = window.spotmapjsobj?.maps
 		? Object.keys( window.spotmapjsobj.maps )
 		: [];
@@ -1046,13 +998,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { gpx: merged } );
 	};
 
-	const dropdownContentStyle = { padding: '8px', minWidth: '200px' };
-	const checklistStyle = {
-		display: 'flex',
-		flexDirection: 'column',
-		gap: '6px',
-	};
-
 	return (
 		<>
 			{ gpxManagerOpen && (
@@ -1095,28 +1040,24 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			{ /* Block toolbar */ }
 			<BlockControls>
-				{ /* Feeds popover */ }
+				{ /* Feeds */ }
 				<ToolbarGroup>
-					<div
-						ref={ feedsAnchorRef }
-						style={ { display: 'inline-flex' } }
-					>
-						<ToolbarButton
-							label={ __( 'Feeds' ) }
-							onClick={ () => togglePanel( 'feeds' ) }
-							aria-expanded={ feedsOpen }
-							icon="rss"
-						>
-							{ __( 'Feeds' ) }
-						</ToolbarButton>
-					</div>
-					{ feedsOpen && (
-						<Popover
-							anchor={ feedsAnchorRef.current }
-							onClose={ () => setOpenPanel( null ) }
-							placement="bottom-start"
-						>
-							<div style={ dropdownContentStyle }>
+					<Dropdown
+						popoverProps={ { placement: 'bottom-start' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								icon="rss"
+								label={ __( 'Feeds' ) }
+								onClick={ onToggle }
+								isPressed={ isOpen }
+							>
+								{ __( 'Feeds' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ ( { onClose } ) => (
+							<div
+								style={ { padding: '8px', minWidth: '200px' } }
+							>
 								{ availableFeeds.length === 0 && (
 									<p>
 										{ __(
@@ -1127,213 +1068,161 @@ export default function Edit( { attributes, setAttributes } ) {
 										</ExternalLink>
 									</p>
 								) }
-								<div style={ checklistStyle }>
-									{ availableFeeds.map( ( feed ) => (
-										<div
-											key={ feed }
-											style={ {
-												display: 'flex',
-												alignItems: 'center',
-												gap: '6px',
-											} }
-										>
-											<div style={ { flex: 1 } }>
-												<CheckboxControl
-													__nextHasNoMarginBottom
-													label={ feed }
-													checked={ attributes.feeds.includes(
-														feed
-													) }
-													onChange={ ( checked ) =>
-														toggleFeed(
-															feed,
-															checked
-														)
-													}
-												/>
-											</div>
-											<Button
-												icon={ brush }
-												label={
-													__( 'Style' ) + ' ' + feed
+								{ availableFeeds.map( ( feed ) => (
+									<Flex key={ feed } gap={ 2 } align="center">
+										<FlexItem isBlock>
+											<CheckboxControl
+												__nextHasNoMarginBottom
+												label={ feed }
+												checked={ attributes.feeds.includes(
+													feed
+												) }
+												onChange={ ( checked ) =>
+													toggleFeed( feed, checked )
 												}
-												size="small"
-												variant="tertiary"
-												onClick={ () => {
-													setOpenPanel( null );
-													setFeedStyleModal( feed );
-												} }
-												style={ {
-													minWidth: 'unset',
-													padding: '2px 4px',
-												} }
 											/>
-											<span
-												style={ {
-													display: 'block',
-													width: '16px',
-													height: '16px',
-													borderRadius: '50%',
-													background:
-														attributes.styles?.[
-															feed
-														]?.color || 'blue',
-													flexShrink: 0,
-												} }
-											/>
-										</div>
-									) ) }
-								</div>
+										</FlexItem>
+										<Button
+											icon={ brush }
+											label={ __( 'Style' ) + ' ' + feed }
+											size="small"
+											variant="tertiary"
+											onClick={ () => {
+												onClose();
+												setFeedStyleModal( feed );
+											} }
+										/>
+										<span
+											style={ {
+												display: 'block',
+												width: '16px',
+												height: '16px',
+												borderRadius: '50%',
+												background:
+													attributes.styles?.[ feed ]
+														?.color || 'blue',
+												flexShrink: 0,
+											} }
+										/>
+									</Flex>
+								) ) }
 							</div>
-						</Popover>
-					) }
+						) }
+					/>
 				</ToolbarGroup>
 
-				{ /* Maps popover */ }
+				{ /* Maps */ }
 				<ToolbarGroup>
-					<div
-						ref={ mapsAnchorRef }
-						style={ { display: 'inline-flex' } }
-					>
-						<ToolbarButton
-							label={ __( 'Maps' ) }
-							onClick={ () => togglePanel( 'maps' ) }
-							aria-expanded={ mapsOpen }
-							icon={ MAP_ICON }
-						>
-							{ __( 'Maps' ) }
-						</ToolbarButton>
-					</div>
-					{ mapsOpen && (
-						<Popover
-							anchor={ mapsAnchorRef.current }
-							onClose={ () => setOpenPanel( null ) }
-							placement="bottom-start"
-						>
-							<div style={ dropdownContentStyle }>
+					<Dropdown
+						popoverProps={ { placement: 'bottom-start' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								icon={ MAP_ICON }
+								label={ __( 'Maps' ) }
+								onClick={ onToggle }
+								isPressed={ isOpen }
+							>
+								{ __( 'Maps' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ () => (
+							<div
+								style={ { padding: '8px', minWidth: '200px' } }
+							>
 								{ availableMaps.length === 0 && (
 									<p>{ __( 'No maps available.' ) }</p>
 								) }
-								<div style={ checklistStyle }>
+								<Flex direction="column" gap={ 1 }>
 									{ availableMaps.map( ( mapKey ) => (
-										<CheckboxControl
-											key={ mapKey }
-											__nextHasNoMarginBottom
-											label={
-												window.spotmapjsobj?.maps[
+										<FlexItem key={ mapKey }>
+											<CheckboxControl
+												__nextHasNoMarginBottom
+												label={
+													window.spotmapjsobj?.maps[
+														mapKey
+													]?.label ?? mapKey
+												}
+												checked={ attributes.maps.includes(
 													mapKey
-												]?.label ?? mapKey
-											}
-											checked={ attributes.maps.includes(
-												mapKey
-											) }
-											onChange={ ( checked ) =>
-												toggleMap( mapKey, checked )
-											}
-										/>
+												) }
+												onChange={ ( checked ) =>
+													toggleMap( mapKey, checked )
+												}
+											/>
+										</FlexItem>
 									) ) }
-								</div>
+								</Flex>
 								{ availableOverlays.length > 0 && (
 									<>
-										<Divider spaced />
-										<p
-											style={ {
-												margin: '0 0 6px',
-												fontWeight: 600,
-												fontSize: '11px',
-												textTransform: 'uppercase',
-												color: '#757575',
-											} }
-										>
-											{ __( 'Overlays' ) }
-										</p>
-										<div style={ checklistStyle }>
+										<hr />
+										<Flex direction="column" gap={ 1 }>
 											{ availableOverlays.map(
 												( overlayKey ) => (
-													<CheckboxControl
+													<FlexItem
 														key={ overlayKey }
-														__nextHasNoMarginBottom
-														label={
-															window.spotmapjsobj
-																?.overlays[
+													>
+														<CheckboxControl
+															__nextHasNoMarginBottom
+															label={
+																window
+																	.spotmapjsobj
+																	?.overlays[
+																	overlayKey
+																]?.label ??
 																overlayKey
-															]?.label ??
-															overlayKey
-														}
-														checked={ (
-															attributes.mapOverlays ||
-															[]
-														).includes(
-															overlayKey
-														) }
-														onChange={ (
-															checked
-														) =>
-															toggleOverlay(
-																overlayKey,
+															}
+															checked={ (
+																attributes.mapOverlays ||
+																[]
+															).includes(
+																overlayKey
+															) }
+															onChange={ (
 																checked
-															)
-														}
-													/>
+															) =>
+																toggleOverlay(
+																	overlayKey,
+																	checked
+																)
+															}
+														/>
+													</FlexItem>
 												)
 											) }
-										</div>
+										</Flex>
 									</>
 								) }
 							</div>
-						</Popover>
-					) }
+						) }
+					/>
 				</ToolbarGroup>
 
 				{ /* GPX — opens manager modal */ }
 				<ToolbarGroup>
 					<ToolbarButton
 						label={ __( 'GPX tracks' ) }
-						onClick={ () => {
-							setOpenPanel( null );
-							setGpxManagerOpen( true );
-						} }
+						onClick={ () => setGpxManagerOpen( true ) }
 						icon={ SATELLITE_ICON }
 					>
 						{ __( 'GPX' ) }
-						{ attributes.gpx.length > 0 && (
-							<span
-								style={ {
-									marginLeft: '4px',
-									background: '#1e1e1e',
-									color: '#fff',
-									borderRadius: '10px',
-									padding: '0 5px',
-									fontSize: '10px',
-									lineHeight: '16px',
-								} }
-							>
-								{ attributes.gpx.length }
-							</span>
-						) }
 					</ToolbarButton>
 				</ToolbarGroup>
 
-				{ /* Time filter — calendar icon opens popover */ }
+				{ /* Time filter */ }
 				<ToolbarGroup>
-					<div
-						ref={ timeFilterAnchorRef }
-						style={ { display: 'inline-flex' } }
-					>
-						<ToolbarButton
-							label={ __( 'Time filter' ) }
-							onClick={ () => togglePanel( 'time' ) }
-							icon={ calendar }
-						>
-							{ __( 'Time' ) }
-						</ToolbarButton>
-					</div>
-					{ timeFilterOpen && (
-						<Popover
-							anchor={ timeFilterAnchorRef.current }
-							onClose={ () => setOpenPanel( null ) }
-							placement="bottom-start"
-						>
+					<Dropdown
+						popoverProps={ { placement: 'bottom-start' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								label={ __( 'Time filter' ) }
+								icon={ calendar }
+								onClick={ onToggle }
+								isPressed={ isOpen }
+							>
+								{ __( 'Time' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ () => (
 							<div
 								style={ {
 									padding: '12px',
@@ -1343,15 +1232,6 @@ export default function Edit( { attributes, setAttributes } ) {
 									gap: '12px',
 								} }
 							>
-								<p
-									style={ {
-										margin: 0,
-										fontWeight: 600,
-										fontSize: '13px',
-									} }
-								>
-									{ __( 'Time filter' ) }
-								</p>
 								<SelectControl
 									__nextHasNoMarginBottom
 									__next40pxDefaultSize
@@ -1415,229 +1295,157 @@ export default function Edit( { attributes, setAttributes } ) {
 									/>
 								) }
 							</div>
-						</Popover>
-					) }
+						) }
+					/>
 				</ToolbarGroup>
 
-				{ /* Map settings — gear icon opens popover */ }
+				{ /* Map settings */ }
 				<ToolbarGroup>
-					<div
-						ref={ mapSettingsAnchorRef }
-						style={ { display: 'inline-flex' } }
-					>
-						<ToolbarButton
-							label={ __( 'Map settings' ) }
-							onClick={ () => togglePanel( 'settings' ) }
-							icon={ settings }
-						>
-							{ __( 'Settings' ) }
-						</ToolbarButton>
-					</div>
-					{ mapSettingsOpen && (
-						<Popover
-							anchor={ mapSettingsAnchorRef.current }
-							onClose={ () => setOpenPanel( null ) }
-							placement="bottom-start"
-						>
+					<Dropdown
+						popoverProps={ { placement: 'bottom-start' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
+							<ToolbarButton
+								label={ __( 'Map settings' ) }
+								icon={ settings }
+								onClick={ onToggle }
+								isPressed={ isOpen }
+							>
+								{ __( 'Settings' ) }
+							</ToolbarButton>
+						) }
+						renderContent={ () => (
 							<div
 								style={ {
 									padding: '12px',
 									minWidth: '280px',
 									display: 'flex',
 									flexDirection: 'column',
-									gap: '16px',
+									gap: '8px',
 								} }
 							>
-								<div>
-									<SectionHeader label={ __( 'Display' ) } />
-									<div
-										style={ {
-											display: 'flex',
-											flexDirection: 'column',
-											gap: '8px',
-										} }
-									>
-										<SelectControl
-											__nextHasNoMarginBottom
-											__next40pxDefaultSize
-											label={ __( 'Zoom to' ) }
-											value={ attributes.mapcenter }
-											options={ [
-												{
-													label: 'All points',
-													value: 'all',
-												},
-												{
-													label: 'Last trip',
-													value: 'last-trip',
-												},
-												{
-													label: 'Latest point',
-													value: 'last',
-												},
-												{
-													label: 'GPX tracks',
-													value: 'gpx',
-												},
-											] }
-											onChange={ ( value ) =>
-												setAttributes( {
-													mapcenter: value,
-												} )
-											}
-										/>
-										<RangeControl
-											__nextHasNoMarginBottom
-											__next40pxDefaultSize
-											label={ __( 'Height (px)' ) }
-											value={ attributes.height }
-											onChange={ ( value ) =>
-												setAttributes( {
-													height: value,
-												} )
-											}
-											min={ 200 }
-											max={ 1200 }
-											step={ 50 }
-										/>
-									</div>
-								</div>
-
-								<Divider />
-
-								<div>
-									<SectionHeader
-										label={ __( 'Interaction' ) }
-									/>
-									<div
-										style={ {
-											display: 'flex',
-											flexDirection: 'column',
-											gap: '4px',
-										} }
-									>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Enable panning' ) }
-											checked={ attributes.enablePanning }
-											onChange={ ( value ) =>
-												setAttributes( {
-													enablePanning: value,
-												} )
-											}
-										/>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Scroll wheel zoom' ) }
-											checked={
-												attributes.scrollWheelZoom
-											}
-											onChange={ ( value ) =>
-												setAttributes( {
-													scrollWheelZoom: value,
-												} )
-											}
-										/>
-									</div>
-								</div>
-
-								<Divider />
-
-								<div>
-									<SectionHeader label={ __( 'Data' ) } />
-									<div
-										style={ {
-											display: 'flex',
-											flexDirection: 'column',
-											gap: '8px',
-										} }
-									>
-										<UnitControl
-											__nextHasNoMarginBottom
-											__next40pxDefaultSize
-											label={ __( 'Hide nearby points' ) }
-											value={ `${ attributes.filterPoints }m` }
-											units={ [
-												{
-													value: 'm',
-													label: 'Meter',
-													default: 10,
-												},
-											] }
-											onChange={ ( value ) =>
-												setAttributes( {
-													filterPoints:
-														parseInt( value ) || 0,
-												} )
-											}
-											help={ __(
-												'Hide points within this radius to reduce clutter'
-											) }
-										/>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Auto-reload' ) }
-											checked={ attributes.autoReload }
-											onChange={ ( value ) =>
-												setAttributes( {
-													autoReload: value,
-												} )
-											}
-											help={ __(
-												'Refresh map data every 30 seconds'
-											) }
-										/>
-									</div>
-								</div>
-
-								<Divider />
-
-								<div>
-									<SectionHeader label={ __( 'Controls' ) } />
-									<div
-										style={ {
-											display: 'flex',
-											flexDirection: 'column',
-											gap: '4px',
-										} }
-									>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Location button' ) }
-											checked={ attributes.locateButton }
-											onChange={ ( value ) =>
-												setAttributes( {
-													locateButton: value,
-												} )
-											}
-										/>
-										<ToggleControl
-											__nextHasNoMarginBottom
-											label={ __( 'Fullscreen button' ) }
-											checked={
-												attributes.fullscreenButton
-											}
-											onChange={ ( value ) =>
-												setAttributes( {
-													fullscreenButton: value,
-												} )
-											}
-										/>
-										<NavigationButtonsControl
-											value={
-												attributes.navigationButtons
-											}
-											onChange={ ( value ) =>
-												setAttributes( {
-													navigationButtons: value,
-												} )
-											}
-										/>
-									</div>
-								</div>
+								<SelectControl
+									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+									label={ __( 'Zoom to' ) }
+									value={ attributes.mapcenter }
+									options={ [
+										{
+											label: 'All points',
+											value: 'all',
+										},
+										{
+											label: 'Last trip',
+											value: 'last-trip',
+										},
+										{
+											label: 'Latest point',
+											value: 'last',
+										},
+										{
+											label: 'GPX tracks',
+											value: 'gpx',
+										},
+									] }
+									onChange={ ( value ) =>
+										setAttributes( { mapcenter: value } )
+									}
+								/>
+								<RangeControl
+									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+									label={ __( 'Height (px)' ) }
+									value={ attributes.height }
+									onChange={ ( value ) =>
+										setAttributes( { height: value } )
+									}
+									min={ 200 }
+									max={ 1200 }
+									step={ 50 }
+								/>
+								<ToggleControl
+									__nextHasNoMarginBottom
+									label={ __( 'Enable panning' ) }
+									checked={ attributes.enablePanning }
+									onChange={ ( value ) =>
+										setAttributes( {
+											enablePanning: value,
+										} )
+									}
+								/>
+								<ToggleControl
+									__nextHasNoMarginBottom
+									label={ __( 'Scroll wheel zoom' ) }
+									checked={ attributes.scrollWheelZoom }
+									onChange={ ( value ) =>
+										setAttributes( {
+											scrollWheelZoom: value,
+										} )
+									}
+								/>
+								<UnitControl
+									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+									label={ __( 'Hide nearby points' ) }
+									value={ `${ attributes.filterPoints }m` }
+									units={ [
+										{
+											value: 'm',
+											label: 'Meter',
+											default: 10,
+										},
+									] }
+									onChange={ ( value ) =>
+										setAttributes( {
+											filterPoints:
+												parseInt( value ) || 0,
+										} )
+									}
+									help={ __(
+										'Hide points within this radius to reduce clutter'
+									) }
+								/>
+								<ToggleControl
+									__nextHasNoMarginBottom
+									label={ __( 'Auto-reload' ) }
+									checked={ attributes.autoReload }
+									onChange={ ( value ) =>
+										setAttributes( { autoReload: value } )
+									}
+									help={ __(
+										'Refresh map data every 30 seconds'
+									) }
+								/>
+								<ToggleControl
+									__nextHasNoMarginBottom
+									label={ __( 'Location button' ) }
+									checked={ attributes.locateButton }
+									onChange={ ( value ) =>
+										setAttributes( {
+											locateButton: value,
+										} )
+									}
+								/>
+								<ToggleControl
+									__nextHasNoMarginBottom
+									label={ __( 'Fullscreen button' ) }
+									checked={ attributes.fullscreenButton }
+									onChange={ ( value ) =>
+										setAttributes( {
+											fullscreenButton: value,
+										} )
+									}
+								/>
+								<NavigationButtonsControl
+									value={ attributes.navigationButtons }
+									onChange={ ( value ) =>
+										setAttributes( {
+											navigationButtons: value,
+										} )
+									}
+								/>
 							</div>
-						</Popover>
-					) }
+						) }
+					/>
 				</ToolbarGroup>
 			</BlockControls>
 
