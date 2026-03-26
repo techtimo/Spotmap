@@ -260,6 +260,29 @@ class Spotmap_Database {
 
 		return $result ? true : false;
 	}
+	/**
+	 * Update the latitude/longitude of a single point.
+	 *
+	 * @param int   $id        Row ID.
+	 * @param float $latitude  New latitude  (-90 … 90).
+	 * @param float $longitude New longitude (-180 … 180).
+	 * @return bool True on success, false on invalid coordinates or DB error.
+	 */
+	public function update_point_position( int $id, float $latitude, float $longitude ): bool {
+		if ( $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180 ) {
+			return false;
+		}
+		global $wpdb;
+		$result = $wpdb->update(
+			$wpdb->prefix . 'spotmap_points',
+			[ 'latitude' => $latitude, 'longitude' => $longitude ],
+			[ 'id' => $id ],
+			[ '%f', '%f' ],
+			[ '%d' ]
+		);
+		return $result !== false;
+	}
+
 	function rename_feed_name ($old_name,$new_name){
 		global $wpdb;
 		// error_log('reanem feed');

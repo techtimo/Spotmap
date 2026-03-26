@@ -1,7 +1,6 @@
 import { useState, useEffect } from '@wordpress/element';
 import {
 	Button,
-	Notice,
 	TextControl,
 	__experimentalNumberControl as NumberControl,
 	Spinner,
@@ -59,16 +58,15 @@ const FIELDS = [
 	},
 ];
 
-export default function DefaultsTab() {
+export default function DefaultsTab( { onNoticeChange } ) {
 	const [ defaults, setDefaults ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
 
 	useEffect( () => {
 		api.getDefaults()
 			.then( setDefaults )
 			.catch( ( err ) =>
-				setNotice( { status: 'error', text: err.message } )
+				onNoticeChange( { status: 'error', text: err.message } )
 			);
 	}, [] );
 
@@ -80,9 +78,12 @@ export default function DefaultsTab() {
 		try {
 			const saved = await api.updateDefaults( defaults );
 			setDefaults( saved );
-			setNotice( { status: 'success', text: 'Default settings saved.' } );
+			onNoticeChange( {
+				status: 'success',
+				text: 'Default settings saved.',
+			} );
 		} catch ( err ) {
-			setNotice( { status: 'error', text: err.message } );
+			onNoticeChange( { status: 'error', text: err.message } );
 		} finally {
 			setSaving( false );
 		}
@@ -94,58 +95,52 @@ export default function DefaultsTab() {
 
 	return (
 		<div style={ { maxWidth: '600px', marginTop: '1rem' } }>
-			{ notice && (
-				<Notice
-					status={ notice.status }
-					onRemove={ () => setNotice( null ) }
-					isDismissible
-				>
-					{ notice.text }
-				</Notice>
-			) }
-
-			{ FIELDS.map( ( field ) => {
-				const value = defaults[ field.key ] ?? '';
-				if ( field.type === 'number' ) {
+			<div
+				style={ {
+					display: 'flex',
+					flexDirection: 'column',
+					gap: '16px',
+					marginBottom: '16px',
+				} }
+			>
+				{ FIELDS.map( ( field ) => {
+					const value = defaults[ field.key ] ?? '';
+					if ( field.type === 'number' ) {
+						return (
+							<NumberControl
+								key={ field.key }
+								label={ field.label }
+								help={ field.help }
+								value={ value === null ? '' : value }
+								min={ 0 }
+								onChange={ ( val ) =>
+									set(
+										field.key,
+										val === '' ? null : Number( val )
+									)
+								}
+								__nextHasNoMarginBottom
+								__next40pxDefaultSize
+							/>
+						);
+					}
 					return (
-						<NumberControl
+						<TextControl
 							key={ field.key }
 							label={ field.label }
 							help={ field.help }
-							value={ value === null ? '' : value }
-							min={ 0 }
+							value={ value === null ? '' : String( value ) }
 							onChange={ ( val ) =>
-								set(
-									field.key,
-									val === '' ? null : Number( val )
-								)
+								set( field.key, val === '' ? null : val )
 							}
 							__nextHasNoMarginBottom
 							__next40pxDefaultSize
 						/>
 					);
-				}
-				return (
-					<TextControl
-						key={ field.key }
-						label={ field.label }
-						help={ field.help }
-						value={ value === null ? '' : String( value ) }
-						onChange={ ( val ) =>
-							set( field.key, val === '' ? null : val )
-						}
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-					/>
-				);
-			} ) }
+				} ) }
+			</div>
 
-			<Button
-				variant="primary"
-				isBusy={ saving }
-				style={ { marginTop: '8px' } }
-				onClick={ handleSave }
-			>
+			<Button variant="primary" isBusy={ saving } onClick={ handleSave }>
 				Save Defaults
 			</Button>
 		</div>
