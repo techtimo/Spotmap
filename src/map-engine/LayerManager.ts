@@ -5,7 +5,7 @@ import type {
 	FeedStyle,
 } from './types';
 import { DEFAULT_COLOR, DEFAULT_GPX_COLOR } from './constants';
-import { getColorDot } from './utils';
+import { debug as debugLog, getColorDot } from './utils';
 
 /**
  * Manages tile layers, overlays, feed layer groups, and the layer control.
@@ -17,11 +17,13 @@ export class LayerManager {
 	readonly layerControl: L.Control.Layers;
 	private baseLayers: Array< L.TileLayer | L.TileLayer.WMS > = [];
 	private overlayLayers: Array< L.TileLayer | L.TileLayer.WMS > = [];
+	private readonly dbg: ( ...args: unknown[] ) => void;
 
-	constructor( map: L.Map, options: SpotmapOptions, layers: SpotmapLayers ) {
+	constructor( map: L.Map, options: SpotmapOptions, layers: SpotmapLayers, debugEnabled = false ) {
 		this.map = map;
 		this.options = options;
 		this.layers = layers;
+		this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
 		this.layerControl = L.control.layers(
 			{},
 			{},
@@ -42,6 +44,7 @@ export class LayerManager {
 		for ( const mapName of this.options.maps ) {
 			const config = spotmapjsobj.maps[ mapName ];
 			if ( ! config ) {
+				this.dbg( `LayerManager: unknown map "${ mapName }" — skipped` );
 				continue;
 			}
 
@@ -104,6 +107,7 @@ export class LayerManager {
 		for ( const overlayName of this.options.mapOverlays ) {
 			const config = spotmapjsobj.overlays[ overlayName ];
 			if ( ! config ) {
+				this.dbg( `LayerManager: unknown overlay "${ overlayName }" — skipped` );
 				continue;
 			}
 
@@ -187,11 +191,14 @@ export class LayerManager {
 			// so the public user can toggle the feed back on.
 			if ( this.isFeedVisible( feedName ) ) {
 				feed.featureGroup.addTo( this.map );
+			} else {
+				this.dbg( `LayerManager: feed "${ feedName }" initially hidden` );
 			}
 
 			const color = this.getFeedColor( feedName );
 			const label = `${ feedName } ${ getColorDot( color ) }`;
 			this.layerControl.addOverlay( feed.featureGroup, label );
+			this.dbg( `LayerManager: feed "${ feedName }" added — color=${ color }, points=${ feed.points.length }` );
 		}
 	}
 

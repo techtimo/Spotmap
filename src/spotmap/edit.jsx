@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from '@wordpress/element';
 import {
 	BlockControls,
+	InspectorAdvancedControls,
 	InspectorControls,
 	MediaUpload,
 	useBlockProps,
@@ -1207,18 +1208,16 @@ export default function Edit( { attributes, setAttributes } ) {
 			</BlockControls>
 
 			{ /* Sidebar — Advanced only */ }
-			<InspectorControls>
-				<PanelBody title={ __( 'Advanced' ) } initialOpen={ false }>
-					<ToggleControl
-						__nextHasNoMarginBottom
-						label={ __( 'Debug' ) }
-						checked={ attributes.debug }
-						onChange={ ( value ) =>
-							setAttributes( { debug: value } )
-						}
-					/>
-				</PanelBody>
-			</InspectorControls>
+			<InspectorAdvancedControls>
+				<ToggleControl
+					__nextHasNoMarginBottom
+					label={ __( 'Debug' ) }
+					checked={ attributes.debug }
+					onChange={ ( value ) =>
+						setAttributes( { debug: value } )
+					}
+				/>
+			</InspectorAdvancedControls>
 
 			{ /* Block preview */ }
 			<div

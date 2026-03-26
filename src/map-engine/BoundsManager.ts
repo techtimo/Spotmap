@@ -1,4 +1,5 @@
 import type { MapCenter, SpotmapLayers } from './types';
+import { debug as debugLog } from './utils';
 
 /**
  * Calculates and applies map bounds for different view modes.
@@ -6,10 +7,12 @@ import type { MapCenter, SpotmapLayers } from './types';
 export class BoundsManager {
 	private readonly map: L.Map;
 	private readonly layers: SpotmapLayers;
+	private readonly dbg: ( ...args: unknown[] ) => void;
 
-	constructor( map: L.Map, layers: SpotmapLayers ) {
+	constructor( map: L.Map, layers: SpotmapLayers, debugEnabled = false ) {
 		this.map = map;
 		this.layers = layers;
+		this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
 	}
 
 	/**
@@ -18,7 +21,10 @@ export class BoundsManager {
 	fitBounds( option: MapCenter ): void {
 		const bounds = this.getBounds( option );
 		if ( bounds.isValid() ) {
+			this.dbg( `BoundsManager: fitBounds mode="${ option }"`, bounds.toBBoxString() );
 			this.map.fitBounds( bounds );
+		} else {
+			this.dbg( `BoundsManager: fitBounds mode="${ option }" — no valid bounds (no points?)` );
 		}
 	}
 

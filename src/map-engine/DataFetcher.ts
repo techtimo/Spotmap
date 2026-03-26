@@ -1,4 +1,5 @@
 import type { AjaxRequestBody, AjaxResponse, SpotPoint } from './types';
+import { debug as debugLog } from './utils';
 
 /**
  * Handles AJAX communication with the WordPress backend.
@@ -7,9 +8,11 @@ import type { AjaxRequestBody, AjaxResponse, SpotPoint } from './types';
 export class DataFetcher {
 	private readonly ajaxUrl: string;
 	private abortController: AbortController | null = null;
+	private readonly dbg: ( ...args: unknown[] ) => void;
 
-	constructor( ajaxUrl: string ) {
+	constructor( ajaxUrl: string, debugEnabled = false ) {
 		this.ajaxUrl = ajaxUrl;
+		this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
 	}
 
 	/**
@@ -47,6 +50,8 @@ export class DataFetcher {
 			}
 		}
 
+		this.dbg( 'DataFetcher: POST', this.ajaxUrl, body );
+
 		const res = await fetch( this.ajaxUrl, {
 			method: 'POST',
 			headers: {
@@ -56,23 +61,37 @@ export class DataFetcher {
 			signal: this.abortController.signal,
 		} );
 
+		if ( ! res.ok ) {
+			this.dbg( `DataFetcher: HTTP ${ res.status } ${ res.statusText }` );
+		}
+
 		const response = ( await res.json() ) as AjaxResponse;
 
 		if ( response.empty ) {
+			this.dbg( 'DataFetcher: empty response' );
 			return response;
 		}
 
 		if ( response.error ) {
+			this.dbg( 'DataFetcher: error response', response );
 			return response;
 		}
 
 		if ( filter && ! response.empty ) {
-			return DataFetcher.removeClosePoints(
+			const before = ( response as SpotPoint[] ).length;
+			const filtered = DataFetcher.removeClosePoints(
 				response,
 				filter
 			) as AjaxResponse;
+			this.dbg(
+				`DataFetcher: filterPoints=${ filter }m — ${ before } → ${ ( filtered as SpotPoint[] ).length } points`
+			);
+			return filtered;
 		}
 
+		this.dbg(
+			`DataFetcher: received ${ ( response as SpotPoint[] ).length } points`
+		);
 		return response;
 	}
 

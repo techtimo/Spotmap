@@ -1,4 +1,5 @@
 import type { SpotPoint, SpotmapLayers } from './types';
+import { debug as debugLog } from './utils';
 import {
 	TRACK_TYPES,
 	CIRCLE_DOT_ICON_SIZE,
@@ -19,15 +20,18 @@ export class MarkerManager {
 	private readonly layers: SpotmapLayers;
 	private readonly layerManager: LayerManager;
 	private readonly tableCellControllers: AbortController[] = [];
+	private readonly dbg: ( ...args: unknown[] ) => void;
 
 	constructor(
 		map: L.Map,
 		layers: SpotmapLayers,
-		layerManager: LayerManager
+		layerManager: LayerManager,
+		debugEnabled = false
 	) {
 		this.map = map;
 		this.layers = layers;
 		this.layerManager = layerManager;
+		this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
 	}
 
 	/**
@@ -37,13 +41,18 @@ export class MarkerManager {
 		const feedName = point.feed_name;
 		const coordinates: L.LatLngTuple = [ point.latitude, point.longitude ];
 
+		const feed = this.layers.feeds[ feedName ];
+		if ( ! feed ) {
+			this.dbg( `MarkerManager: unknown feed "${ feedName }" for point id=${ point.id } — skipped` );
+			return;
+		}
+
 		const markerOptions = this.getMarkerOptions( point );
 		const popupHtml = MarkerManager.getPopupHtml( point );
 		const marker = L.marker( coordinates, markerOptions ).bindPopup(
 			popupHtml
 		);
 
-		const feed = this.layers.feeds[ feedName ];
 		feed.points.push( point );
 		feed.markers.push( marker );
 		feed.featureGroup.addLayer( marker );
@@ -137,6 +146,7 @@ export class MarkerManager {
 			iconOptions.iconSize = CIRCLE_DOT_ICON_SIZE;
 			iconOptions.borderWith = CIRCLE_DOT_BORDER_WIDTH;
 		} else {
+			this.dbg( `MarkerManager: no marker config for type "${ pointType ?? '(none)' }" — using generic marker` );
 			iconOptions.iconShape = 'marker';
 			iconOptions.icon = 'circle';
 		}

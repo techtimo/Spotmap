@@ -182,7 +182,6 @@ export class Spotmap {
 		// Create the Leaflet map
 		this.map = L.map( el, {
 			scrollWheelZoom: this.options.scrollWheelZoom ?? false,
-			attributionControl: false,
 			dragging: this.options.enablePanning ?? true,
 			zoomControl: this.options.zoomControl ?? true,
 		} );
@@ -203,19 +202,22 @@ export class Spotmap {
 		}
 
 		// Initialize sub-managers
-		this.dataFetcher = new DataFetcher( spotmapjsobj.ajaxUrl );
+		const dbg = !! this.options.debug;
+		this.dataFetcher = new DataFetcher( spotmapjsobj.ajaxUrl, dbg );
 		this.layerManager = new LayerManager(
 			this.map,
 			this.options,
-			this.layers
+			this.layers,
+			dbg
 		);
 		this.markerManager = new MarkerManager(
 			this.map,
 			this.layers,
-			this.layerManager
+			this.layerManager,
+			dbg
 		);
-		this.lineManager = new LineManager( this.layers, this.layerManager );
-		this.boundsManager = new BoundsManager( this.map, this.layers );
+		this.lineManager = new LineManager( this.layers, this.layerManager, dbg );
+		this.boundsManager = new BoundsManager( this.map, this.layers, dbg );
 		this.buttonManager = new ButtonManager(
 			this.map,
 			this.options,

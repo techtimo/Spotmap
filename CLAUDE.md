@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Spotmap is a WordPress plugin that displays GPS tracking data from SPOT devices on interactive Leaflet maps. It provides a Gutenberg block and shortcodes for embedding maps in posts/pages.
 
+## Editing conventions
+
+- This project uses **real tab characters** (`\t`) for indentation throughout — never spaces.
+- When using the Edit tool, always use literal tab characters in `old_string`/`new_string`. Do not run `cat -A` to verify this; assume tabs.
+- If an Edit tool call fails due to whitespace mismatch, retry once using `sed -i` with explicit `\t` escapes rather than rereading or rewriting the whole file.
+- Never rewrite an entire file just to work around an indentation matching issue.
+- add phpunit test with sample data to rename a feed - what happens if the feedname already exists? (this might wanted but on the UI we should get a warning that must be accepted)
+
 ## Build Commands
 
 ```bash
@@ -69,7 +77,7 @@ Two webpack entry points (configured in `webpack.config.js`):
    - `edit.jsx` — ~33KB React editor component with live preview
    - Block is registered via `build/spotmap/` by `register_block_type()`
 
-2. **`src/spotmap-map/`** — TypeScript map engine compiled to `build/spotmap-map/index.js`
+2. **`src/map-engine/`** — TypeScript map engine compiled to `build/spotmap-map/index.js`
    - `index.ts` — exposes `window.Spotmap`
    - `Spotmap.ts` — main class, `initMap()` entry point
    - `DataFetcher.ts`, `LayerManager.ts`, `MarkerManager.ts`, `LineManager.ts`, `BoundsManager.ts`, `ButtonManager.ts`, `TableRenderer.ts`
@@ -101,6 +109,10 @@ Table `wp_spotmap_points`:
 - **`latestUnixtimeByFeed` redundant state** (`Spotmap.ts`): The `Map<string, number>` tracking the latest unixtime per feed duplicates `feed.points.at(-1)?.unixtime`, since `MarkerManager.addPoint()` already pushes to `feed.points`. Refactor the auto-reload polling loop to read `feed.points` directly and remove the Map.
 - **Duplicated polling pattern**: `Spotmap.ts` and `TableRenderer.ts` share ~70 lines of identical timeout/visibility-change polling logic. Consider extracting a `VisibilityAwarePoller` utility class into `utils.ts`.
 - **Feed style defaults should move to the map engine**: `render-block.php` and the shortcode both pre-populate per-feed `styles` (color, splitLines) from WP admin defaults in PHP. Ideally `LayerManager.getFeedColor()` and `getFeedSplitLines()` would fall back to `spotmapjsobj.defaultValues` (already available at runtime) and cycle colors by feed index from `options.feeds`, allowing both renderers to pass a sparse/empty `styles`. The PHP pre-population in `render-block.php` was added to match shortcode behaviour for now.
+- move maps.yaml into wp_options table? and potentially make it so that the user can modify/add via GUI?
+- the ajax call to retrieve points should be prefixed with spotmap_
+- feat: use blog metadata to store lat/lng / inject in every post a small map where the user can select the location of this post.
+
 
 ## Key Conventions
 
