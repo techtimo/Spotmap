@@ -8,6 +8,9 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 
 	private const FEED_ID = '0onlLopfoM4bG5jXvWRE8H0Obd0oMxMBq';
 
+	/** @var callable|null Currently registered pre_http_request mock. */
+	private $http_mock = null;
+
 	public static function setUpBeforeClass(): void {
 		parent::setUpBeforeClass();
 
@@ -24,6 +27,13 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 		parent::setUp();
 		self::$cache_prop->setValue( null, [] );
 		wp_set_current_user( self::$admin_id );
+		// Default: SPOT API reports E-0195 (valid feed, no points yet).
+		$this->mock_spot_api( 'E-0195' );
+	}
+
+	protected function tearDown(): void {
+		$this->remove_spot_api_mock();
+		parent::tearDown();
 	}
 
 	// -------------------------------------------------------------------------
@@ -46,6 +56,32 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 			'feed_id'  => self::FEED_ID,
 			'password' => '',
 		];
+	}
+
+	/**
+	 * Replaces the current HTTP mock with one that returns the given SPOT error code.
+	 * Pass an empty string to simulate a successful response with data (no error).
+	 */
+	private function mock_spot_api( string $error_code ): void {
+		$this->remove_spot_api_mock();
+		$body = $error_code !== ''
+			? wp_json_encode( [ 'response' => [ 'errors' => [ 'error' => [ 'code' => $error_code ] ] ] ] )
+			: wp_json_encode( [ 'response' => [ 'feedMessageResponse' => [ 'count' => 1 ] ] ] );
+		$this->http_mock = fn() => [
+			'headers'       => [],
+			'body'          => $body,
+			'response'      => [ 'code' => 200, 'message' => 'OK' ],
+			'cookies'       => [],
+			'http_response' => null,
+		];
+		add_filter( 'pre_http_request', $this->http_mock, 10, 3 );
+	}
+
+	private function remove_spot_api_mock(): void {
+		if ( $this->http_mock !== null ) {
+			remove_filter( 'pre_http_request', $this->http_mock );
+			$this->http_mock = null;
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -168,6 +204,19 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 		$this->assertSame( 'p@$$w0rd&<more>', $feed['password'] );
 	}
 
+	public function test_create_feed_returns_422_for_unknown_feed_id(): void {
+		$this->mock_spot_api( 'E-0160' );
+		$response = $this->request( 'POST', '/feeds', $this->valid_feed() );
+		$this->assertSame( 422, $response->get_status() );
+	}
+
+	public function test_create_feed_succeeds_when_spot_api_unreachable(): void {
+		$this->remove_spot_api_mock();
+		add_filter( 'pre_http_request', fn() => new WP_Error( 'http_request_failed', 'cURL error 6' ), 10, 3 );
+		$response = $this->request( 'POST', '/feeds', $this->valid_feed() );
+		$this->assertSame( 201, $response->get_status() );
+	}
+
 	public function test_get_feeds_masks_non_empty_password(): void {
 		$this->request( 'POST', '/feeds', [
 			'type'     => 'findmespot',
@@ -280,6 +329,13 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 			'name'    => '',
 			'feed_id' => self::FEED_ID,
 		] );
+		$this->assertSame( 422, $response->get_status() );
+	}
+
+	public function test_update_feed_returns_422_for_unknown_feed_id(): void {
+		$feed = Spotmap_Options::add_feed( $this->valid_feed() );
+		$this->mock_spot_api( 'E-0160' );
+		$response = $this->request( 'PUT', '/feeds/' . $feed['id'], $this->valid_feed() );
 		$this->assertSame( 422, $response->get_status() );
 	}
 
