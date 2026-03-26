@@ -164,6 +164,11 @@ class Spotmap_Rest_Api {
 			return $validation;
 		}
 
+		$live = self::validate_feed_with_provider( $data );
+		if ( is_wp_error( $live ) ) {
+			return $live;
+		}
+
 		$feed = Spotmap_Options::add_feed( $data );
 		return new WP_REST_Response( self::mask_feed( $feed ), 201 );
 	}
@@ -188,6 +193,11 @@ class Spotmap_Rest_Api {
 					$data[ $field['key'] ] = $stored[ $field['key'] ] ?? '';
 				}
 			}
+		}
+
+		$live = self::validate_feed_with_provider( $data );
+		if ( is_wp_error( $live ) ) {
+			return $live;
 		}
 
 		$data['id'] = $id;
@@ -369,6 +379,47 @@ class Spotmap_Rest_Api {
 				return new WP_Error(
 					'missing_field',
 					sprintf( '"%s" is required.', $field['label'] ),
+					[ 'status' => 422 ]
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Probes the provider's live API to verify the feed credentials are accepted.
+	 * Returns WP_Error with status 422 when the provider reports an unknown feed ID (E-0160).
+	 * Network failures are silently allowed so a temporary outage does not block saving.
+	 *
+	 * @param array<string, mixed> $data Sanitized feed data (REDACTED already resolved for update).
+	 * @return true|WP_Error
+	 */
+	private static function validate_feed_with_provider( array $data ) {
+		$type = $data['type'] ?? '';
+
+		if ( $type === 'findmespot' ) {
+			$feed_id  = $data['feed_id'] ?? '';
+			$password = $data['password'] ?? '';
+
+			$url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'
+				. rawurlencode( $feed_id ) . '/message.json';
+			if ( ! empty( $password ) ) {
+				$url .= '?feedPassword=' . rawurlencode( $password );
+			}
+
+			$response = wp_remote_get( $url, [ 'timeout' => 10 ] );
+			if ( is_wp_error( $response ) ) {
+				return true; // Network error — don't block saving.
+			}
+
+			$json = json_decode( wp_remote_retrieve_body( $response ), true );
+			$code = $json['response']['errors']['error']['code'] ?? '';
+
+			if ( $code === 'E-0160' ) {
+				return new WP_Error(
+					'invalid_feed_id',
+					'The Feed ID was not found on findmespot.com. Please check it and try again.',
 					[ 'status' => 422 ]
 				);
 			}
