@@ -1,4 +1,5 @@
 import type { SpotmapLayers, SpotPoint } from './types';
+import { debug as debugLog } from './utils';
 import {
 	LINE_ARROW_CHAR,
 	LINE_ARROW_FONT_SIZE,
@@ -13,10 +14,12 @@ import type { LayerManager } from './LayerManager';
 export class LineManager {
 	private readonly layers: SpotmapLayers;
 	private readonly layerManager: LayerManager;
+	private readonly dbg: ( ...args: unknown[] ) => void;
 
-	constructor( layers: SpotmapLayers, layerManager: LayerManager ) {
+	constructor( layers: SpotmapLayers, layerManager: LayerManager, debugEnabled = false ) {
 		this.layers = layers;
 		this.layerManager = layerManager;
+		this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
 	}
 
 	/**
@@ -54,6 +57,8 @@ export class LineManager {
 			lastPoint &&
 			point.unixtime - lastPoint.unixtime >= splitThresholdSeconds
 		) {
+			const gapHours = ( ( point.unixtime - lastPoint.unixtime ) / 3600 ).toFixed( 1 );
+			this.dbg( `LineManager: line split for feed "${ feedName }" — gap ${ gapHours }h > threshold ${ splitLines }h` );
 			const line = this.createLine( feedName );
 			line.addLatLng( coordinates );
 			feed.lines.push( line );
