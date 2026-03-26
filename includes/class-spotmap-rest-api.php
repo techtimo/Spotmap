@@ -176,7 +176,7 @@ class Spotmap_Rest_Api {
 	// -------------------------------------------------------------------------
 
 	public static function get_feeds( WP_REST_Request $request ) {
-		return rest_ensure_response( self::mask_feeds( Spotmap_Options::get_feeds() ) );
+		return rest_ensure_response( self::decorate_feeds( Spotmap_Options::get_feeds() ) );
 	}
 
 	public static function create_feed( WP_REST_Request $request ) {
@@ -192,8 +192,14 @@ class Spotmap_Rest_Api {
 			return $live;
 		}
 
+		// OsmAnd feeds authenticate via a per-feed pre-shared key in the URL.
+		// Use the client-generated key when provided; fall back to server generation.
+		if ( ( $data['type'] ?? '' ) === 'osmand' && empty( $data['key'] ) ) {
+			$data['key'] = bin2hex( random_bytes( 16 ) );
+		}
+
 		$feed = Spotmap_Options::add_feed( $data );
-		return new WP_REST_Response( self::mask_feed( $feed ), 201 );
+		return new WP_REST_Response( self::decorate_feed( $feed ), 201 );
 	}
 
 	public static function update_feed( WP_REST_Request $request ) {
@@ -223,12 +229,18 @@ class Spotmap_Rest_Api {
 			return $live;
 		}
 
+		// OsmAnd: preserve the stored key (it is never sent back by the client).
+		if ( ( $data['type'] ?? '' ) === 'osmand' ) {
+			$stored ??= Spotmap_Options::get_feed( $id ) ?? [];
+			$data['key'] = $stored['key'] ?? '';
+		}
+
 		$data['id'] = $id;
 		if ( ! Spotmap_Options::update_feed( $id, $data ) ) {
 			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
 		}
 
-		return rest_ensure_response( self::mask_feed( $data ) );
+		return rest_ensure_response( self::decorate_feed( $data ) );
 	}
 
 	public static function delete_feed( WP_REST_Request $request ) {
@@ -518,6 +530,37 @@ class Spotmap_Rest_Api {
 			return new WP_Error( 'invalid_body', 'Expected a JSON object.', [ 'status' => 400 ] );
 		}
 		return $body;
+	}
+
+	/**
+	 * Applies mask_feed() then appends computed display fields.
+	 *
+	 * For OsmAnd feeds: adds `tracking_url` — the full URL the user pastes into
+	 * the OsmAnd app. The pre-shared key is intentionally included in plain text
+	 * (it is not a secret; the URL itself must be copyable).
+	 *
+	 * @param array<string, mixed> $feed
+	 * @return array<string, mixed>
+	 */
+	private static function decorate_feed( array $feed ): array {
+		$feed = self::mask_feed( $feed );
+		if ( ( $feed['type'] ?? '' ) === 'osmand' && ! empty( $feed['key'] ) ) {
+			$base                  = rest_url( self::NAMESPACE . '/ingest/osmand' );
+			$feed['tracking_url']  = $base
+				. '?key=' . rawurlencode( $feed['key'] )
+				. '&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}';
+		}
+		return $feed;
+	}
+
+	/**
+	 * Applies decorate_feed() to every feed in the array.
+	 *
+	 * @param list<array<string, mixed>> $feeds
+	 * @return list<array<string, mixed>>
+	 */
+	private static function decorate_feeds( array $feeds ): array {
+		return array_map( [ __CLASS__, 'decorate_feed' ], $feeds );
 	}
 
 	/**

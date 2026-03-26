@@ -103,10 +103,15 @@ export default function App() {
 							<FeedsTab
 								providers={ providers }
 								openAddModal={ openAddFeed }
+								onNoticeChange={ setGlobalNotice }
 							/>
 						),
-						markers: <MarkersTab />,
-						tokens: <TokensTab />,
+						markers: (
+							<MarkersTab onNoticeChange={ setGlobalNotice } />
+						),
+						tokens: (
+							<TokensTab onNoticeChange={ setGlobalNotice } />
+						),
 						defaults: (
 							<DefaultsTab onNoticeChange={ setGlobalNotice } />
 						),

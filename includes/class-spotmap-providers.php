@@ -54,11 +54,20 @@ class Spotmap_Providers {
 					],
 				],
 
+				'osmand' => [
+					'label'  => 'OsmAnd (Live Tracking)',
+					'fields' => [
+						[
+							'key'         => 'name',
+							'type'        => 'text',
+							'label'       => 'Feed Name',
+							'required'    => true,
+							'description' => 'A unique name used to identify this feed in the map block.',
+						],
+					],
+				],
+
 				// Future providers — add crawler implementation alongside each entry.
-				// 'osmand' => [
-				//     'label'  => 'OsmAnd',
-				//     'fields' => [ ... ],
-				// ],
 				// 'teltonika' => [
 				//     'label'  => 'Teltonika',
 				//     'fields' => [ ... ],

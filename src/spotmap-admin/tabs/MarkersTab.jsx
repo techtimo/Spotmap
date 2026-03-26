@@ -1,7 +1,6 @@
 import { useState, useEffect } from '@wordpress/element';
 import {
 	Button,
-	Notice,
 	SelectControl,
 	TextControl,
 	Spinner,
@@ -15,17 +14,16 @@ const ICON_SHAPES = [
 	{ value: 'circle-dot', label: 'Circle Dot' },
 ];
 
-export default function MarkersTab() {
+export default function MarkersTab( { onNoticeChange } ) {
 	const [ markers, setMarkers ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
 	const [ pickerFor, setPickerFor ] = useState( null ); // marker type key
 
 	useEffect( () => {
 		api.getMarkers()
 			.then( setMarkers )
 			.catch( ( err ) =>
-				setNotice( { status: 'error', text: err.message } )
+				onNoticeChange( { status: 'error', text: err.message } )
 			);
 	}, [] );
 
@@ -40,9 +38,9 @@ export default function MarkersTab() {
 		try {
 			const saved = await api.updateMarkers( markers );
 			setMarkers( saved );
-			setNotice( { status: 'success', text: 'Marker settings saved.' } );
+			onNoticeChange( { status: 'success', text: 'Marker settings saved.' } );
 		} catch ( err ) {
-			setNotice( { status: 'error', text: err.message } );
+			onNoticeChange( { status: 'error', text: err.message } );
 		} finally {
 			setSaving( false );
 		}
@@ -54,16 +52,6 @@ export default function MarkersTab() {
 
 	return (
 		<div style={ { marginTop: '1rem' } }>
-			{ notice && (
-				<Notice
-					status={ notice.status }
-					onRemove={ () => setNotice( null ) }
-					isDismissible
-				>
-					{ notice.text }
-				</Notice>
-			) }
-
 			<table className="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>

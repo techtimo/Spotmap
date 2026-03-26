@@ -19,6 +19,7 @@ class Spotmap{
 
 	private function register_rest_api() {
 		add_action( 'rest_api_init', [ 'Spotmap_Rest_Api', 'register_routes' ] );
+		add_action( 'rest_api_init', [ 'Spotmap_Ingest', 'register_routes' ] );
 	}
 
 	private function load_dependencies() {
@@ -47,6 +48,11 @@ class Spotmap{
 		 * REST API endpoints for the admin UI.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-rest-api.php';
+
+		/**
+		 * Public ingestion endpoints for push-based providers (e.g. OsmAnd).
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-ingest.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
