@@ -60,7 +60,7 @@ function TokenField( { tokenKey, value, onChange } ) {
                 label={ meta.label }
                 help={ meta.help }
                 id={ `token-${ tokenKey }` }
-                __nextHasNoMarginBottom={ false }
+                __nextHasNoMarginBottom
             >
                 <Flex align="center" gap={ 2 }>
                     <FlexItem>
@@ -136,7 +136,7 @@ export default function TokensTab( { onNoticeChange } ) {
             .catch( ( err ) =>
                 onNoticeChange( { status: 'error', text: err.message } )
             );
-    }, [] );
+    }, [ onNoticeChange ] );
 
     const handleSave = async () => {
         setSaving( true );

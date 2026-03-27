@@ -47,9 +47,9 @@ const buildDateOptions = ( value, presets ) =>
 /**
  * Toolbar group for selecting the date range filter.
  *
- * @param {object}   props
- * @param {object}   props.dateRange            { from: string, to: string }
- * @param {Function} props.onChangeDateRange    Called with new { from, to } object.
+ * @param {Object}   props
+ * @param {Object}   props.dateRange         { from: string, to: string }
+ * @param {Function} props.onChangeDateRange Called with new { from, to } object.
  */
 export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
     const fromValue = dateRange?.from || '';

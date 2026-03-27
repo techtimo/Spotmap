@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const { execSync } = require( 'child_process' );
 const dotenv = require( 'dotenv' );
 const fs = require( 'fs' );
@@ -29,6 +30,9 @@ const TEMP_PHP_CONTAINER = `${ CONTAINER_PLUGIN_PATH }/tests/e2e/.inject.php`;
  * Write PHP code to a temp file and execute it via wp eval-file.
  * Avoids all shell-quoting issues: Node.js writes the file directly,
  * and wp eval-file only receives a simple file path argument.
+ *
+ * @param {string} php PHP code to execute.
+ * @param {string} env wp-env environment name (default 'cli').
  */
 const runPhp = ( php, env = 'cli' ) => {
     fs.writeFileSync( TEMP_PHP_LOCAL, `<?php\n${ php }\n` );
@@ -43,7 +47,11 @@ const runPhp = ( php, env = 'cli' ) => {
     }
 };
 
-/** Converts a plain JS object to a PHP associative array literal. */
+/**
+ * Converts a plain JS object to a PHP associative array literal.
+ *
+ * @param {Object} obj Key-value pairs to encode.
+ */
 const phpArray = ( obj ) => {
     const pairs = Object.entries( obj ).map(
         ( [ k, v ] ) => `'${ k }' => '${ v }'`
@@ -75,7 +83,9 @@ const TOKEN_OPTION_MAP = {
 const tokens = {};
 for ( const [ envKey, optionKey ] of Object.entries( TOKEN_OPTION_MAP ) ) {
     const value = process.env[ envKey ];
-    if ( value ) tokens[ optionKey ] = value;
+    if ( value ) {
+        tokens[ optionKey ] = value;
+    }
 }
 
 // ---------------------------------------------------------------------------

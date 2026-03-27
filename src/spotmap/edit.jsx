@@ -2,12 +2,10 @@ import { useEffect, useRef, useState } from '@wordpress/element';
 import {
     BlockControls,
     InspectorAdvancedControls,
-    InspectorControls,
     MediaUpload,
     useBlockProps,
 } from '@wordpress/block-editor';
 import {
-    PanelBody,
     TextControl,
     ToggleControl,
     SelectControl,

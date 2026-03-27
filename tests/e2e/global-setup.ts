@@ -55,6 +55,7 @@ const TEMP_PHP_LOCAL = path.resolve( process.cwd(), 'tests/e2e/.inject.php' );
 const TEMP_PHP_CONTAINER = `${ CONTAINER_PLUGIN_PATH }/tests/e2e/.inject.php`;
 
 function run( cmd: string ): void {
+    // eslint-disable-next-line no-console
     console.log( `\n> ${ cmd }` );
     execSync( cmd, { stdio: 'inherit' } );
 }

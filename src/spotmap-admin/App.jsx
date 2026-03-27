@@ -1,4 +1,4 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { Notice, TabPanel, Spinner } from '@wordpress/components';
 import * as api from './api';
 import FeedsTab from './tabs/FeedsTab';
@@ -31,6 +31,9 @@ export default function App() {
     const [ globalNotice, setGlobalNotice ] = useState( null );
     const [ initialTab ] = useState( getTabFromHash );
     const openAddFeed = window.location.hash === '#add-feed';
+    const handleNoticeChange = useCallback( setGlobalNotice, [
+        setGlobalNotice,
+    ] );
 
     useEffect( () => {
         api.getProviders()
@@ -103,20 +106,24 @@ export default function App() {
                             <FeedsTab
                                 providers={ providers }
                                 openAddModal={ openAddFeed }
-                                onNoticeChange={ setGlobalNotice }
+                                onNoticeChange={ handleNoticeChange }
                             />
                         ),
                         markers: (
-                            <MarkersTab onNoticeChange={ setGlobalNotice } />
+                            <MarkersTab onNoticeChange={ handleNoticeChange } />
                         ),
                         tokens: (
-                            <TokensTab onNoticeChange={ setGlobalNotice } />
+                            <TokensTab onNoticeChange={ handleNoticeChange } />
                         ),
                         defaults: (
-                            <DefaultsTab onNoticeChange={ setGlobalNotice } />
+                            <DefaultsTab
+                                onNoticeChange={ handleNoticeChange }
+                            />
                         ),
                         'edit-points': (
-                            <EditPointsTab onNoticeChange={ setGlobalNotice } />
+                            <EditPointsTab
+                                onNoticeChange={ handleNoticeChange }
+                            />
                         ),
                     } )[ tab.name ]
                 }

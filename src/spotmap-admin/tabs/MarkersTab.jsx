@@ -25,7 +25,7 @@ export default function MarkersTab( { onNoticeChange } ) {
             .catch( ( err ) =>
                 onNoticeChange( { status: 'error', text: err.message } )
             );
-    }, [] );
+    }, [ onNoticeChange ] );
 
     const update = ( type, key, value ) =>
         setMarkers( ( prev ) => ( {

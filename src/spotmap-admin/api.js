@@ -36,9 +36,15 @@ export const updateDefaults = ( data ) =>
 
 export const getPoints = ( { feed, from, to } = {} ) => {
     const params = new URLSearchParams();
-    if ( feed ) params.set( 'feed', feed );
-    if ( from ) params.set( 'from', from );
-    if ( to ) params.set( 'to', to );
+    if ( feed ) {
+        params.set( 'feed', feed );
+    }
+    if ( from ) {
+        params.set( 'from', from );
+    }
+    if ( to ) {
+        params.set( 'to', to );
+    }
     const qs = params.toString();
     return apiFetch( { url: url( 'points' ) + ( qs ? '?' + qs : '' ) } );
 };
