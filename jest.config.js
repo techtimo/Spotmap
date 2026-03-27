@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
 const defaultConfig = require( '@wordpress/jest-preset-default/jest-preset' );
 
 module.exports = {

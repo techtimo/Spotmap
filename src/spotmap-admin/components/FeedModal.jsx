@@ -1,3 +1,4 @@
+/* global navigator */
 import { useState } from '@wordpress/element';
 import { Modal, Button, TextControl, Notice } from '@wordpress/components';
 import { REDACTED } from '../api';

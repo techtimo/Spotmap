@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 // Regenerates src/spotmap-admin/icons.js from FA metadata.
 // Run: node scripts/generate-fa-icons.js
 const yaml = require( 'js-yaml' );

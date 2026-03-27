@@ -1,3 +1,4 @@
+/* global jQuery */
 const $ = jQuery;
 $( document ).ready( function () {
     $( '#spotmap-add-feed-button' ).on( 'click', function () {

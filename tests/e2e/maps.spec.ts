@@ -96,7 +96,7 @@ test.describe( 'Tile layer URL validation', () => {
                             'width:512px;height:512px;position:fixed;left:0;top:0;z-index:9999;';
                         document.body.appendChild( el );
 
-                        let setupError: string | null = null;
+                        let layerError: string | null = null;
 
                         try {
                             const map = L.map( el );
@@ -117,7 +117,7 @@ test.describe( 'Tile layer URL validation', () => {
 
                             map.remove();
                         } catch ( e: any ) {
-                            setupError = e?.message ?? String( e );
+                            layerError = e?.message ?? String( e );
                         } finally {
                             Object.defineProperty(
                                 HTMLImageElement.prototype,
@@ -131,7 +131,7 @@ test.describe( 'Tile layer URL validation', () => {
 
                         return {
                             url: capturedUrls[ 0 ] ?? null,
-                            setupError,
+                            setupError: layerError,
                         };
                     },
                     { key: mapKey, config: mapConfig, view }
@@ -193,16 +193,15 @@ test.describe( 'Tile layer URL validation', () => {
             label: string;
             error: string | null;
         } > = await page.evaluate( () => {
-            const L = ( window as any ).L;
-            const overlays: Record< string, any > = ( window as any )
+            const allOverlays: Record< string, any > = ( window as any )
                 .spotmapjsobj.overlays;
-            const results: Array< {
+            const overlayResults: Array< {
                 key: string;
                 label: string;
                 error: string | null;
             } > = [];
 
-            for ( const [ mapKey, config ] of Object.entries( overlays ) ) {
+            for ( const [ mapKey, config ] of Object.entries( allOverlays ) ) {
                 const el = document.createElement( 'div' );
                 el.id = `test-overlay-${ mapKey }`;
                 el.style.cssText =
@@ -237,12 +236,17 @@ test.describe( 'Tile layer URL validation', () => {
                         ?.remove();
                 }
 
-                results.push( { key: mapKey, label: config.label, error } );
+                overlayResults.push( {
+                    key: mapKey,
+                    label: config.label,
+                    error,
+                } );
             }
 
-            return results;
+            return overlayResults;
         } );
 
+        // eslint-disable-next-line no-console
         console.log(
             `Testing ${ results.length } overlay(s): ${ results
                 .map( ( r ) => r.key )

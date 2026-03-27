@@ -36,7 +36,7 @@ export default function FeedsTab( {
         return () => {
             cancelled = true;
         };
-    }, [] );
+    }, [ onNoticeChange ] );
 
     const handleSave = async ( data, id ) => {
         const saved = id

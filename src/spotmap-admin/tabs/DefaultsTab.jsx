@@ -2,6 +2,7 @@ import { useState, useEffect } from '@wordpress/element';
 import {
     Button,
     TextControl,
+    // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
     __experimentalNumberControl as NumberControl,
     Spinner,
 } from '@wordpress/components';
@@ -68,7 +69,7 @@ export default function DefaultsTab( { onNoticeChange } ) {
             .catch( ( err ) =>
                 onNoticeChange( { status: 'error', text: err.message } )
             );
-    }, [] );
+    }, [ onNoticeChange ] );
 
     const set = ( key, value ) =>
         setDefaults( ( prev ) => ( { ...prev, [ key ]: value } ) );
