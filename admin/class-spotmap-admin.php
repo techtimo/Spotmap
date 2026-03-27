@@ -208,8 +208,12 @@ class Spotmap_Admin {
 	}
 
 	public function add_images_to_map( $attachment_id ) {
-		$filepath = get_attached_file( $attachment_id );
-		$exif     = exif_read_data( $filepath, 0, true );
+		$filepath  = get_attached_file( $attachment_id );
+		$file_type = wp_check_filetype( $filepath );
+		if ( ! in_array( $file_type['type'], [ 'image/jpeg', 'image/tiff' ], true ) ) {
+			return;
+		}
+		$exif = exif_read_data( $filepath, 0, true );
 		if ( ! isset( $exif['GPS'] ) ) { return; }
 		if ( ! isset( $exif['EXIF']['DateTimeOriginal'] ) ) { return; }
 
