@@ -2,7 +2,14 @@
 
 class Spotmap_Database {
 
-	private const ALLOWED_COLUMNS = [
+	/**
+	 * Hard cap on rows returned by get_points() when no explicit limit is requested.
+	 * Prevents runaway memory use / PHP timeout on large datasets.
+	 * Callers can pass a lower $filter['limit'] to request fewer rows.
+	 */
+	public const MAX_POINTS_PER_QUERY = 50000;
+
+private const ALLOWED_COLUMNS = [
 		'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
 		'battery_status', 'message', 'custom_message', 'feed_name',
 		'feed_id', 'model', 'device_name', 'local_timezone',
@@ -73,7 +80,8 @@ class Spotmap_Database {
 		    `speed` float DEFAULT NULL,
 		    `bearing` float DEFAULT NULL,
 		    PRIMARY KEY (`id`),
-		    UNIQUE KEY `id_UNIQUE` (`id`)
+		    UNIQUE KEY `id_UNIQUE` (`id`),
+		    KEY `idx_feed_time` (`feed_name`, `time`)
 		    ) $charset_collate";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -126,7 +134,7 @@ class Spotmap_Database {
 		$select   = self::sanitize_select( $filter['select'] ?? '*' );
 		$group_by = empty( $filter['groupBy'] ) ? null : self::sanitize_identifier( $filter['groupBy'] );
 		$order    = empty( $filter['orderBy'] ) ? '' : self::sanitize_order( $filter['orderBy'] );
-		$limit    = empty( $filter['limit'] )   ? '' : 'LIMIT ' . absint( $filter['limit'] );
+		$limit    = 'LIMIT ' . ( empty( $filter['limit'] ) ? self::MAX_POINTS_PER_QUERY : absint( $filter['limit'] ) );
 		global $wpdb;
 		$where = '';
 		if(!empty($filter['feeds'])){
@@ -190,6 +198,7 @@ class Spotmap_Database {
 		if ( ! empty( $group_by ) ) {
 			$where .= " AND id IN (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY " . $group_by . " )";
 		}
+
 		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
 		// error_log("Query: " .$query);
 		$points = $wpdb->get_results($query);
@@ -216,6 +225,32 @@ class Spotmap_Database {
 	}
 
 	/**
+	 * Returns the haversine great-circle distance in metres between two coordinates.
+	 */
+	private static function haversine_distance( float $lat1, float $lon1, float $lat2, float $lon2 ): float {
+		$r    = 6371000.0; // Earth radius in metres
+		$phi1 = deg2rad( $lat1 );
+		$phi2 = deg2rad( $lat2 );
+		$dphi = deg2rad( $lat2 - $lat1 );
+		$dlam = deg2rad( $lon2 - $lon1 );
+		$a    = sin( $dphi / 2 ) ** 2 + cos( $phi1 ) * cos( $phi2 ) * sin( $dlam / 2 ) ** 2;
+		return 2 * $r * asin( sqrt( $a ) );
+	}
+
+	/**
+	 * Returns the most-recently inserted point for a given feed_name, or null.
+	 */
+	private function get_last_point_for_feed( string $feed_name ): ?object {
+		global $wpdb;
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = %s ORDER BY id DESC LIMIT 1",
+				$feed_name
+			)
+		) ?: null;
+	}
+
+	/**
 	 * Low-level insert: accepts DB column names directly.
 	 *
 	 * Required keys: feed_name, type, time, latitude, longitude.
@@ -223,6 +258,11 @@ class Spotmap_Database {
 	 *
 	 * Coordinate bounds are validated; if invalid, the last known point's
 	 * coordinates for the same feed_id are used as a fallback.
+	 *
+	 * Stationary-deduplication: if the new point is within 25 m of the last
+	 * stored point for the same feed AND < 10 minutes later, the insert is
+	 * skipped (returns 0).  The first arrival point is always kept because
+	 * no prior point exists at that location yet.
 	 *
 	 * @param array<string, mixed> $data           Column → value pairs (DB column names).
 	 * @param bool                 $schedule_tz     Whether to schedule the timezone lookup event.
@@ -236,6 +276,23 @@ class Spotmap_Database {
 		}
 		if ( ( $data['longitude'] ?? 0 ) > 180 || ( $data['longitude'] ?? 0 ) < -180 ) {
 			$data['longitude'] = $last_point->longitude ?? 0;
+		}
+
+		// Stationary-deduplication: skip points that are too close in space and time.
+		if ( ! empty( $data['feed_name'] ) ) {
+			$prev = $this->get_last_point_for_feed( $data['feed_name'] );
+			if ( $prev !== null ) {
+				$distance_m = self::haversine_distance(
+					(float) $prev->latitude,
+					(float) $prev->longitude,
+					(float) $data['latitude'],
+					(float) $data['longitude']
+				);
+				$time_diff_s = abs( (int) $data['time'] - (int) $prev->time );
+				if ( $distance_m <= 25 && $time_diff_s < 600 ) {
+					return 0; // duplicate of a stationary point — skip
+				}
+			}
 		}
 
 		global $wpdb;

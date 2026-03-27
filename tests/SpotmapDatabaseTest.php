@@ -80,12 +80,13 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 	// --- get_last_point ---
 
 	public function test_get_last_point_returns_most_recently_inserted(): void {
+		// Space > 10 min apart so deduplication does not skip the second insert.
 		self::$db->insert_point( $this->make_point( [ 'unixTime' => 1700000001 ] ) );
-		self::$db->insert_point( $this->make_point( [ 'unixTime' => 1700000002 ] ) );
+		self::$db->insert_point( $this->make_point( [ 'unixTime' => 1700000001 + 601 ] ) );
 
 		$last = self::$db->get_last_point();
 
-		$this->assertSame( '1700000002', $last->time );
+		$this->assertSame( (string) ( 1700000001 + 601 ), $last->time );
 	}
 
 	// --- does_point_exist ---
@@ -126,11 +127,12 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_points_respects_limit(): void {
+		// Space > 10 min apart so deduplication does not skip any insert.
 		for ( $i = 0; $i < 5; $i++ ) {
-			self::$db->insert_point( $this->make_point( [ 'unixTime' => 1700000030 + $i ] ) );
+			self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-feed', 'unixTime' => 1700000030 + $i * 601 ] ) );
 		}
 
-		$points = self::$db->get_points( [ 'limit' => 3 ] );
+		$points = self::$db->get_points( [ 'feeds' => [ 'limit-feed' ], 'limit' => 3 ] );
 
 		$this->assertCount( 3, $points );
 	}
@@ -278,9 +280,10 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_points_limit_injection_is_treated_as_integer(): void {
+		// Space > 10 min apart so deduplication does not skip any insert.
 		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900010 ] ) );
-		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900011 ] ) );
-		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900012 ] ) );
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900010 + 601 ] ) );
+		self::$db->insert_point( $this->make_point( [ 'feedName' => 'limit-test', 'unixTime' => 1700900010 + 1202 ] ) );
 
 		$points = self::$db->get_points( [
 			'feeds' => [ 'limit-test' ],
@@ -315,6 +318,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'error', $points );
 	}
 
+
 	// --- does_media_exist / delete_media_point ---
 
 	public function test_does_media_exist_returns_true_after_insert(): void {
@@ -339,5 +343,111 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 
 	public function test_delete_media_point_returns_false_when_nothing_to_delete(): void {
 		$this->assertFalse( self::$db->delete_media_point( 999888 ) );
+	}
+
+	// --- stationary deduplication ---
+
+	/**
+	 * Arrival point (first in feed) must always be stored.
+	 */
+	public function test_stationary_dedup_first_point_is_always_stored(): void {
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-feed',
+			'unixTime' => 1710000000,
+			'latitude' => 47.3769,
+			'longitude' => 8.5417,
+		] ) );
+
+		$this->assertSame( 1, $result );
+	}
+
+	/**
+	 * A second point within 25 m and < 10 min later must be skipped.
+	 */
+	public function test_stationary_dedup_skips_nearby_point_within_10_min(): void {
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-near',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+
+		// ~5 m away, 5 min later — should be skipped.
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-near',
+			'unixTime' => 1710000300,
+			'latitude' => 47.376940,  // ~4 m north
+			'longitude' => 8.541700,
+		] ) );
+
+		$this->assertSame( 0, $result );
+	}
+
+	/**
+	 * A second point > 10 min later (even if close) must be stored — device may have
+	 * moved away and returned, or the gap itself is meaningful.
+	 */
+	public function test_stationary_dedup_stores_point_after_10_min_gap(): void {
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-time',
+			'unixTime' => 1710000000,
+			'latitude' => 47.3769,
+			'longitude' => 8.5417,
+		] ) );
+
+		// Same spot but 11 min later.
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-time',
+			'unixTime' => 1710000000 + 660,
+			'latitude' => 47.3769,
+			'longitude' => 8.5417,
+		] ) );
+
+		$this->assertSame( 1, $result );
+	}
+
+	/**
+	 * A point > 25 m away must be stored regardless of time gap.
+	 */
+	public function test_stationary_dedup_stores_point_that_moved_beyond_25m(): void {
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-move',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+
+		// ~30 m north, 2 min later.
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-move',
+			'unixTime' => 1710000120,
+			'latitude' => 47.377170,  // ~30 m north
+			'longitude' => 8.541700,
+		] ) );
+
+		$this->assertSame( 1, $result );
+	}
+
+	/**
+	 * Deduplication is per feed_name: a nearby point on a *different* feed
+	 * must not be suppressed.
+	 */
+	public function test_stationary_dedup_does_not_affect_different_feed(): void {
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-feed-a',
+			'unixTime' => 1710000000,
+			'latitude' => 47.3769,
+			'longitude' => 8.5417,
+		] ) );
+
+		// Different feed, same location, within 10 min — must be stored.
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-feed-b',
+			'unixTime' => 1710000060,
+			'latitude' => 47.3769,
+			'longitude' => 8.5417,
+		] ) );
+
+		$this->assertSame( 1, $result );
 	}
 }
