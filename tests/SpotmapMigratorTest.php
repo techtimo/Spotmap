@@ -19,6 +19,11 @@ class SpotmapMigratorTest extends WP_UnitTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		delete_option( 'spotmap_version' );
+		delete_option( 'spotmap_feeds' );
+		delete_option( 'spotmap_findmespot_name' );
+		delete_option( 'spotmap_findmespot_id' );
+		delete_option( 'spotmap_findmespot_password' );
+		delete_option( 'spotmap_api_providers' );
 		self::$cache_prop->setValue( null, [] );
 	}
 

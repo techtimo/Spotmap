@@ -776,6 +776,7 @@ export default function Edit( { attributes, setAttributes } ) {
                 spotmapRef.current = null;
             }
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         mapId,
         attributes.feeds,
