@@ -74,6 +74,26 @@ class Spotmap_Rest_Api {
 			]
 		);
 
+		register_rest_route(
+			self::NAMESPACE,
+			'/feeds/(?P<id>[\w.]+)/pause',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ __CLASS__, 'pause_feed' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/feeds/(?P<id>[\w.]+)/unpause',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ __CLASS__, 'unpause_feed' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+
 		// --- Providers ---
 		register_rest_route(
 			self::NAMESPACE,
@@ -176,7 +196,18 @@ class Spotmap_Rest_Api {
 	// -------------------------------------------------------------------------
 
 	public static function get_feeds( WP_REST_Request $request ) {
-		return rest_ensure_response( self::decorate_feeds( Spotmap_Options::get_feeds() ) );
+		$db     = new Spotmap_Database();
+		$counts = $db->get_point_counts_by_feed();
+		$feeds  = array_map(
+			function ( $feed ) use ( $counts ) {
+				$decorated                = self::decorate_feed( $feed );
+				$decorated['point_count'] = $counts[ $feed['name'] ?? '' ] ?? 0;
+				$decorated['paused']      = (bool) ( $feed['paused'] ?? false );
+				return $decorated;
+			},
+			Spotmap_Options::get_feeds()
+		);
+		return rest_ensure_response( $feeds );
 	}
 
 	public static function create_feed( WP_REST_Request $request ) {
@@ -235,6 +266,10 @@ class Spotmap_Rest_Api {
 			$data['key'] = $stored['key'] ?? '';
 		}
 
+		// Preserve the paused state across edits — it is managed via dedicated endpoints.
+		$stored          ??= Spotmap_Options::get_feed( $id ) ?? [];
+		$data['paused']    = $stored['paused'] ?? false;
+
 		$data['id'] = $id;
 		if ( ! Spotmap_Options::update_feed( $id, $data ) ) {
 			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
@@ -251,6 +286,24 @@ class Spotmap_Rest_Api {
 		}
 
 		return new WP_REST_Response( null, 204 );
+	}
+
+	public static function pause_feed( WP_REST_Request $request ) {
+		return self::set_feed_pause_state( $request, true );
+	}
+
+	public static function unpause_feed( WP_REST_Request $request ) {
+		return self::set_feed_pause_state( $request, false );
+	}
+
+	private static function set_feed_pause_state( WP_REST_Request $request, bool $paused ) {
+		$id = $request->get_param( 'id' );
+		if ( ! Spotmap_Options::set_feed_paused( $id, $paused ) ) {
+			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
+		}
+		$feed           = self::decorate_feed( Spotmap_Options::get_feed( $id ) );
+		$feed['paused'] = $paused;
+		return rest_ensure_response( $feed );
 	}
 
 	// -------------------------------------------------------------------------

@@ -49,6 +49,10 @@ class Spotmap_Ingest {
 			return new WP_REST_Response( [ 'error' => 'Invalid key.' ], 401 );
 		}
 
+		if ( ! empty( $feed['paused'] ) ) {
+			return new WP_REST_Response( [ 'error' => 'Feed is paused.' ], 400 );
+		}
+
 		// 2. Validate required params.
 		$lat_raw = $request->get_param( 'lat' );
 		$lon_raw = $request->get_param( 'lon' );

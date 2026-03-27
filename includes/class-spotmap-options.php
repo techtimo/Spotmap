@@ -217,6 +217,22 @@ class Spotmap_Options {
 	}
 
 	/**
+	 * Sets the paused flag on a feed and returns true, or false if not found.
+	 *
+	 * @param string $id
+	 * @param bool   $paused
+	 * @return bool
+	 */
+	public static function set_feed_paused( string $id, bool $paused ): bool {
+		$feed = self::get_feed( $id );
+		if ( ! $feed ) {
+			return false;
+		}
+		$feed['paused'] = $paused;
+		return self::update_feed( $id, $feed );
+	}
+
+	/**
 	 * Removes the feed with the given id and returns true, or false if not found.
 	 *
 	 * @param string $id
