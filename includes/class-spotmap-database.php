@@ -87,6 +87,25 @@ class Spotmap_Database {
 		$from_options = array_column( $configured, 'name' );
 		return array_values( array_unique( array_merge( $from_options, $from_db ) ) );
 	}
+
+	/**
+	 * Returns a map of feed_name => point count for all feeds in the DB.
+	 *
+	 * @return array<string, int>
+	 */
+	public function get_point_counts_by_feed(): array {
+		global $wpdb;
+		$rows = $wpdb->get_results(
+			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL GROUP BY feed_name",
+			ARRAY_A
+		);
+		$counts = [];
+		foreach ( $rows as $row ) {
+			$counts[ $row['feed_name'] ] = (int) $row['cnt'];
+		}
+		return $counts;
+	}
+
 	public function get_all_types(){
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT type FROM " . $wpdb->prefix . "spotmap_points");

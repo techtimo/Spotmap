@@ -122,6 +122,9 @@ class Spotmap_Admin {
 		$feeds           = Spotmap_Options::get_feeds();
 		$findmespot_crawler = null;
 		foreach ( $feeds as $feed ) {
+			if ( ! empty( $feed['paused'] ) ) {
+				continue;
+			}
 			$type = $feed['type'] ?? '';
 			if ( $type === 'findmespot' ) {
 				if ( $findmespot_crawler === null ) {

@@ -23,6 +23,7 @@ const sampleFeeds = [
         name: 'Timo',
         feed_id: '0XXu6',
         password: REDACTED,
+        point_count: 42,
     },
     {
         id: 'f2',
@@ -30,6 +31,7 @@ const sampleFeeds = [
         name: 'Elia',
         feed_id: '07bNOnYeUGdYIqFy0b8Bd3uiFVjqgnzTk',
         password: '',
+        point_count: 0,
     },
 ];
 
@@ -84,6 +86,12 @@ describe( 'FeedsTab — loaded', () => {
         render( <FeedsTab providers={ providers } /> );
         await screen.findByText( '0XXu6' );
         expect( screen.getByText( '0XXu6' ).tagName ).toBe( 'CODE' );
+    } );
+
+    it( 'renders point count per feed', async () => {
+        render( <FeedsTab providers={ providers } /> );
+        await screen.findByText( 'Timo' );
+        expect( screen.getByText( '42' ) ).toBeInTheDocument();
     } );
 } );
 

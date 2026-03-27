@@ -17,6 +17,12 @@ export const updateFeed = ( id, data ) =>
 export const deleteFeed = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }` ), method: 'DELETE' } );
 
+export const pauseFeed = ( id ) =>
+    apiFetch( { url: url( `feeds/${ id }/pause` ), method: 'POST' } );
+
+export const unpauseFeed = ( id ) =>
+    apiFetch( { url: url( `feeds/${ id }/unpause` ), method: 'POST' } );
+
 export const getProviders = () => apiFetch( { url: url( 'providers' ) } );
 
 export const getMarkers = () => apiFetch( { url: url( 'markers' ) } );

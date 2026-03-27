@@ -53,6 +53,25 @@ export default function FeedsTab( {
         onNoticeChange( { status: 'success', text: 'Feed saved.' } );
     };
 
+    const handleTogglePause = async ( feed ) => {
+        try {
+            const updated = feed.paused
+                ? await api.unpauseFeed( feed.id )
+                : await api.pauseFeed( feed.id );
+            setFeeds( ( prev ) =>
+                prev.map( ( f ) =>
+                    f.id === feed.id ? { ...f, paused: updated.paused } : f
+                )
+            );
+            onNoticeChange( {
+                status: 'success',
+                text: updated.paused ? 'Feed paused.' : 'Feed resumed.',
+            } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        }
+    };
+
     const handleDelete = async ( feed ) => {
         // eslint-disable-next-line no-alert
         if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) {
@@ -85,7 +104,8 @@ export default function FeedsTab( {
                             <th>Name</th>
                             <th>Type</th>
                             <th>Feed ID</th>
-                            <th style={ { width: '140px' } }>Actions</th>
+                            <th style={ { width: '80px' } }>Points</th>
+                            <th style={ { width: '220px' } }>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,6 +125,7 @@ export default function FeedsTab( {
                                         <code>{ feed.feed_id }</code>
                                     ) }
                                 </td>
+                                <td>{ feed.point_count ?? 0 }</td>
                                 <td>
                                     <Button
                                         variant="secondary"
@@ -113,6 +134,35 @@ export default function FeedsTab( {
                                     >
                                         Edit
                                     </Button>{ ' ' }
+                                    { feed.paused ? (
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            style={ {
+                                                color: '#996600',
+                                                borderColor: '#996600',
+                                            } }
+                                            onClick={ () =>
+                                                handleTogglePause( feed )
+                                            }
+                                        >
+                                            Unpause
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            style={ {
+                                                color: '#0073aa',
+                                                borderColor: '#0073aa',
+                                            } }
+                                            onClick={ () =>
+                                                handleTogglePause( feed )
+                                            }
+                                        >
+                                            Pause
+                                        </Button>
+                                    ) }{ ' ' }
                                     <Button
                                         variant="secondary"
                                         size="small"
