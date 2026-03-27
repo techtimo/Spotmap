@@ -3,136 +3,143 @@ import { Button, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
 
-export default function FeedsTab( { providers, openAddModal, onNoticeChange } ) {
-	const [ feeds, setFeeds ] = useState( null );
-	const [ loading, setLoading ] = useState( true );
-	const [ editingFeed, setEditingFeed ] = useState(
-		openAddModal ? {} : null
-	); // null=closed, {}=new, feed=edit
+export default function FeedsTab( {
+    providers,
+    openAddModal,
+    onNoticeChange,
+} ) {
+    const [ feeds, setFeeds ] = useState( null );
+    const [ loading, setLoading ] = useState( true );
+    const [ editingFeed, setEditingFeed ] = useState(
+        openAddModal ? {} : null
+    ); // null=closed, {}=new, feed=edit
 
-	useEffect( () => {
-		let cancelled = false;
-		api.getFeeds()
-			.then( ( data ) => {
-				if ( ! cancelled ) {
-					setFeeds( data );
-				}
-			} )
-			.catch( ( err ) => {
-				if ( ! cancelled ) {
-					setFeeds( [] );
-					onNoticeChange( { status: 'error', text: err.message } );
-				}
-			} )
-			.finally( () => {
-				if ( ! cancelled ) {
-					setLoading( false );
-				}
-			} );
-		return () => {
-			cancelled = true;
-		};
-	}, [] );
+    useEffect( () => {
+        let cancelled = false;
+        api.getFeeds()
+            .then( ( data ) => {
+                if ( ! cancelled ) {
+                    setFeeds( data );
+                }
+            } )
+            .catch( ( err ) => {
+                if ( ! cancelled ) {
+                    setFeeds( [] );
+                    onNoticeChange( { status: 'error', text: err.message } );
+                }
+            } )
+            .finally( () => {
+                if ( ! cancelled ) {
+                    setLoading( false );
+                }
+            } );
+        return () => {
+            cancelled = true;
+        };
+    }, [] );
 
-	const handleSave = async ( data, id ) => {
-		const saved = id
-			? await api.updateFeed( id, data )
-			: await api.createFeed( data );
+    const handleSave = async ( data, id ) => {
+        const saved = id
+            ? await api.updateFeed( id, data )
+            : await api.createFeed( data );
 
-		setFeeds( ( prev ) =>
-			id
-				? prev.map( ( f ) => ( f.id === id ? saved : f ) )
-				: [ ...prev, saved ]
-		);
+        setFeeds( ( prev ) =>
+            id
+                ? prev.map( ( f ) => ( f.id === id ? saved : f ) )
+                : [ ...prev, saved ]
+        );
 
-		setEditingFeed( null );
-		onNoticeChange( { status: 'success', text: 'Feed saved.' } );
-	};
+        setEditingFeed( null );
+        onNoticeChange( { status: 'success', text: 'Feed saved.' } );
+    };
 
-	const handleDelete = async ( feed ) => {
-		// eslint-disable-next-line no-alert
-		if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) {
-			return;
-		}
-		try {
-			await api.deleteFeed( feed.id );
-			setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
-			onNoticeChange( { status: 'success', text: 'Feed deleted.' } );
-		} catch ( err ) {
-			onNoticeChange( { status: 'error', text: err.message } );
-		}
-	};
+    const handleDelete = async ( feed ) => {
+        // eslint-disable-next-line no-alert
+        if ( ! window.confirm( `Delete feed "${ feed.name }"?` ) ) {
+            return;
+        }
+        try {
+            await api.deleteFeed( feed.id );
+            setFeeds( ( prev ) => prev.filter( ( f ) => f.id !== feed.id ) );
+            onNoticeChange( { status: 'success', text: 'Feed deleted.' } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        }
+    };
 
-	if ( loading ) {
-		return <Spinner />;
-	}
+    if ( loading ) {
+        return <Spinner />;
+    }
 
-	return (
-		<div style={ { marginTop: '1rem' } }>
-			{ feeds.length === 0 ? (
-				<p>No feeds configured yet.</p>
-			) : (
-				<table
-					className="wp-list-table widefat fixed striped"
-					style={ { marginBottom: '1rem' } }
-				>
-					<thead>
-						<tr>
-							<th>Name</th>
-							<th>Type</th>
-							<th>Feed ID</th>
-							<th style={ { width: '140px' } }>Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{ feeds.map( ( feed ) => (
-							<tr key={ feed.id }>
-								<td>{ feed.name }</td>
-								<td>
-									{ providers[ feed.type ]?.label ??
-										feed.type }
-								</td>
-								<td>
-									{ feed.type === 'osmand'
-										? <em style={ { color: '#888' } }>push feed</em>
-										: <code>{ feed.feed_id }</code>
-									}
-								</td>
-								<td>
-									<Button
-										variant="secondary"
-										size="small"
-										onClick={ () => setEditingFeed( feed ) }
-									>
-										Edit
-									</Button>{ ' ' }
-									<Button
-										variant="secondary"
-										size="small"
-										isDestructive
-										onClick={ () => handleDelete( feed ) }
-									>
-										Delete
-									</Button>
-								</td>
-							</tr>
-						) ) }
-					</tbody>
-				</table>
-			) }
+    return (
+        <div style={ { marginTop: '1rem' } }>
+            { feeds.length === 0 ? (
+                <p>No feeds configured yet.</p>
+            ) : (
+                <table
+                    className="wp-list-table widefat fixed striped"
+                    style={ { marginBottom: '1rem' } }
+                >
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Feed ID</th>
+                            <th style={ { width: '140px' } }>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        { feeds.map( ( feed ) => (
+                            <tr key={ feed.id }>
+                                <td>{ feed.name }</td>
+                                <td>
+                                    { providers[ feed.type ]?.label ??
+                                        feed.type }
+                                </td>
+                                <td>
+                                    { feed.type === 'osmand' ? (
+                                        <em style={ { color: '#888' } }>
+                                            push feed
+                                        </em>
+                                    ) : (
+                                        <code>{ feed.feed_id }</code>
+                                    ) }
+                                </td>
+                                <td>
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={ () => setEditingFeed( feed ) }
+                                    >
+                                        Edit
+                                    </Button>{ ' ' }
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        isDestructive
+                                        onClick={ () => handleDelete( feed ) }
+                                    >
+                                        Delete
+                                    </Button>
+                                </td>
+                            </tr>
+                        ) ) }
+                    </tbody>
+                </table>
+            ) }
 
-			<Button variant="primary" onClick={ () => setEditingFeed( {} ) }>
-				Add Feed
-			</Button>
+            <Button variant="primary" onClick={ () => setEditingFeed( {} ) }>
+                Add Feed
+            </Button>
 
-			{ editingFeed !== null && (
-				<FeedModal
-					providers={ providers }
-					feed={ editingFeed.id ? editingFeed : null }
-					onSave={ handleSave }
-					onClose={ () => setEditingFeed( null ) }
-				/>
-			) }
-		</div>
-	);
+            { editingFeed !== null && (
+                <FeedModal
+                    providers={ providers }
+                    feed={ editingFeed.id ? editingFeed : null }
+                    onSave={ handleSave }
+                    onClose={ () => setEditingFeed( null ) }
+                />
+            ) }
+        </div>
+    );
 }

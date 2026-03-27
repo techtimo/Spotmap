@@ -210,4 +210,3 @@ overlays:
         url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
         options:
             attribution: "© <a href='https://www.openstreetmap.org/copyright'>OpenSeaMap</a> contributors"
-    

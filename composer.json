@@ -1,36 +1,39 @@
 {
-	"name": "techtimo/spotmap",
-	"description": "Spotmap WordPress plugin",
-	"version": "0.11.2",
-	"type": "wordpress-plugin",
-	"require": {
-		"symfony/yaml": "^7.0"
-	},
-	"require-dev": {
-		"brianhenryie/strauss": "^0.19",
-		"phpunit/phpunit": "^9.6",
-		"wp-phpunit/wp-phpunit": "^6.7",
-		"yoast/phpunit-polyfills": "^1.0"
-	},
-	"extra": {
-		"strauss": {
-			"target_directory": "vendor-prefixed",
-			"namespace_prefix": "Spotmap\\",
-			"classmap_prefix": "Spotmap_",
-			"create_autoloader": true,
-			"packages": [
-				"symfony/yaml"
-			]
-		}
-	},
-	"scripts": {
-		"post-install-cmd": [
-			"vendor/bin/strauss"
-		],
-		"post-update-cmd": [
-			"vendor/bin/strauss"
-		],
-		"test": "phpunit",
-		"test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-text"
-	}
+    "name": "techtimo/spotmap",
+    "description": "Spotmap WordPress plugin",
+    "version": "0.11.2",
+    "type": "wordpress-plugin",
+    "require": {
+        "symfony/yaml": "^7.0"
+    },
+    "require-dev": {
+        "brianhenryie/strauss": "^0.19",
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpunit/phpunit": "^9.6",
+        "wp-phpunit/wp-phpunit": "^6.7",
+        "yoast/phpunit-polyfills": "^1.0"
+    },
+    "extra": {
+        "strauss": {
+            "target_directory": "vendor-prefixed",
+            "namespace_prefix": "Spotmap\\",
+            "classmap_prefix": "Spotmap_",
+            "create_autoloader": true,
+            "packages": [
+                "symfony/yaml"
+            ]
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "vendor/bin/strauss"
+        ],
+        "post-update-cmd": [
+            "vendor/bin/strauss"
+        ],
+        "test": "phpunit",
+        "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-text",
+        "format": "php-cs-fixer fix",
+        "lint": "php-cs-fixer check"
+    }
 }
