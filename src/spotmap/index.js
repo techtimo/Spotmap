@@ -3,6 +3,6 @@ import metadata from './block.json';
 import Edit from './edit';
 
 registerBlockType( metadata.name, {
-	edit: Edit,
-	save: () => null,
+    edit: Edit,
+    save: () => null,
 } );

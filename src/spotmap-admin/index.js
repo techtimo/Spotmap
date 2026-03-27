@@ -6,5 +6,5 @@ apiFetch.use( apiFetch.createNonceMiddleware( window.spotmapAdminData.nonce ) );
 
 const root = document.getElementById( 'spotmap-admin-root' );
 if ( root ) {
-	createRoot( root ).render( <App /> );
+    createRoot( root ).render( <App /> );
 }

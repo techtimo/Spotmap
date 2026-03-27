@@ -1,3 +1,3 @@
 module.exports = {
-	presets: [ require.resolve( '@wordpress/babel-preset-default' ) ],
+    presets: [ require.resolve( '@wordpress/babel-preset-default' ) ],
 };

@@ -8,10 +8,9 @@ Spotmap is a WordPress plugin that displays GPS tracking data from SPOT devices 
 
 ## Editing conventions
 
-- This project uses **real tab characters** (`\t`) for indentation throughout — never spaces.
-- When using the Edit tool, always use literal tab characters in `old_string`/`new_string`. Do not run `cat -A` to verify this; assume tabs.
-- If an Edit tool call fails due to whitespace mismatch, retry once using `sed -i` with explicit `\t` escapes rather than rereading or rewriting the whole file.
-- Never rewrite an entire file just to work around an indentation matching issue.
+- This project uses **4 spaces** for indentation throughout — never tabs.
+- When using the Edit tool, use 4-space indentation in `old_string`/`new_string`.
+- Run `npm run format` (JS/TS/CSS) and `npm run format:php` (PHP) to auto-format code.
 - add phpunit test with sample data to rename a feed - what happens if the feedname already exists? (this might wanted but on the UI we should get a warning that must be accepted)
 
 ## Build Commands
@@ -38,9 +37,11 @@ npm run composer -- run test:coverage  # PHP coverage report
 # Lint
 npm run lint:js
 npm run lint:css
+npm run lint:php
 
 # Format
-npm run format
+npm run format        # JS/TS/CSS (Prettier via wp-scripts)
+npm run format:php    # PHP (php-cs-fixer via wp-env; requires env:start + composer install)
 
 # Package plugin zip
 npm run plugin-zip
