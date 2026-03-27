@@ -33,6 +33,10 @@ class Spotmap_Migrator {
 	 * @return void
 	 */
 	public static function run() {
+		// Always sync the schema (dbDelta is idempotent — no-ops when up to date).
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+		Spotmap_Database::create_table();
+
 		$stored = get_option( Spotmap_Options::OPTION_VERSION, '0.0.0' );
 
 		if ( version_compare( $stored, SPOTMAP_VERSION, '>=' ) ) {

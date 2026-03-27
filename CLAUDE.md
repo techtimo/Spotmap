@@ -113,6 +113,10 @@ Table `wp_spotmap_points`:
 - move maps.yaml into wp_options table? and potentially make it so that the user can modify/add via GUI?
 - the ajax call to retrieve points should be prefixed with spotmap_
 - feat: use blog metadata to store lat/lng / inject in every post a small map where the user can select the location of this post.
+- **[perf T1] Insertion-time deduplication for stationary trackers**: In `insert_row()`, before inserting check if the new point is within ~25 m of the last stored point for the same feed AND < 10 min apart → skip insert (or update the existing point's `time`). Mirrors the existing client-side `removeClosePoints()` logic in `DataFetcher.ts`. Handles Teltonika/OsmAnd parked-vehicle flooding.
+- **[perf T1] Server-side point decimation**: When the queried range returns too many rows, reduce to a target (e.g. 5,000 pts) before sending JSON. Simple approaches (MOD timestamp, N-th row, time-bucket) all have flaws for GPS tracks with irregular density — they can drop geometrically significant points on sparse stretches. **Douglas-Peucker** (simplify by perpendicular deviation, ε configurable) is the right algorithm: it preserves shape-defining points regardless of time distribution. Needs PHP implementation since MySQL has no native DP. Consider running DP per feed per query, or as a pre-simplification pass stored back to DB.
+- **[perf T2] Block-level `maxPoints` attribute**: Add a `maxPoints` block attribute (default e.g. 5000). The server decimates to that count using time-based sampling before responding. Let editors tune the trade-off between detail and load time per map.
+- **[perf T2] Admin: DB pruning action**: Add an admin button that previews how many points would be removed per feed by a Douglas-Peucker simplification pass (ε configurable), then executes the prune on confirmation. Run against points older than N days to preserve recent full-resolution data.
 
 
 ## Key Conventions
