@@ -209,7 +209,7 @@ export class TableRenderer {
 
     private buildRequestBody(): AjaxRequestBody {
         return {
-            action: 'get_positions',
+            action: 'spotmap_get_positions',
             feeds: this.options.feeds ?? '',
             'date-range': this.options.dateRange,
             date: this.options.date,
