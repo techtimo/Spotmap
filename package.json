@@ -14,6 +14,16 @@
         "url": "https://github.com/techtimo/Spotmap/issues"
     },
     "main": "index.js",
+    "files": [
+        "admin",
+        "build",
+        "config",
+        "includes",
+        "languages",
+        "public",
+        "vendor-prefixed",
+        "spotmap.php"
+    ],
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.3",
         "beautifymarker": "^1.0.9",

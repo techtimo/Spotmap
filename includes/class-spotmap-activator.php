@@ -12,6 +12,7 @@ class Spotmap_Activator {
 		Spotmap_Database::create_table();
 
 		//activate cron for every 2.5min to get latest data from feed
+		add_filter( 'cron_schedules', [ $admin, 'add_cron_schedule' ] );
 		if ( ! wp_next_scheduled( 'spotmap_api_crawler_hook' ) ) {
 			wp_schedule_event( time(), 'twohalf_min', 'spotmap_api_crawler_hook' );
 		}
@@ -22,25 +23,12 @@ class Spotmap_Activator {
 		// Seed baseline option values for a fresh installation.
 		// Updates are handled by Spotmap_Migrator via plugins_loaded, not here.
 		Spotmap_Options::seed_defaults();
-		
-		$args = array(
-			'post_type' => 'attachment',
-			'post_mime_type' => 'image',
-			'posts_per_page' => -1
-		);
-		
-		$attachments = get_posts($args);
 
-		if ($attachments) {
-			foreach ($attachments as $attachment) {
-				// Get attachment details
-				$attachment_id = $attachment->ID;
-				error_log($attachment_id);
-				if ($db->does_media_exist($attachment_id)) {
-					continue;
-				}
-				$admin->add_images_to_map($attachment_id);
-			}
-		} 
+		// Schedule a one-time background job to import EXIF data from existing
+		// media attachments — this can be slow on large libraries and must not
+		// block the activation request.
+		if ( ! wp_next_scheduled( 'spotmap_import_media_hook' ) ) {
+			wp_schedule_single_event( time() + 10, 'spotmap_import_media_hook' );
+		}
 	}
 }

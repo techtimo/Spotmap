@@ -658,13 +658,12 @@ class Spotmap_Rest_Api {
 		$feed = self::mask_feed( $feed );
 		if ( ( $feed['type'] ?? '' ) === 'osmand' && ! empty( $feed['key'] ) ) {
 			$base                  = rest_url( self::NAMESPACE . '/ingest/osmand' );
-			$feed['tracking_url']  = $base
-				. '?key=' . rawurlencode( $feed['key'] )
+			$feed['tracking_url']  = add_query_arg( 'key', $feed['key'], $base )
 				. '&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}';
 		}
 		if ( ( $feed['type'] ?? '' ) === 'teltonika' && ! empty( $feed['key'] ) ) {
 			$base                 = rest_url( self::NAMESPACE . '/ingest/teltonika' );
-			$feed['tracking_url'] = $base . '?key=' . rawurlencode( $feed['key'] );
+			$feed['tracking_url'] = add_query_arg( 'key', $feed['key'], $base );
 		}
 		return $feed;
 	}

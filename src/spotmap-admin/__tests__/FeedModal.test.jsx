@@ -6,6 +6,33 @@ import { REDACTED, providers } from './fixtures';
 jest.mock( '../api', () => ( { REDACTED: '__REDACTED__' } ) );
 
 const noop = () => {};
+const pushProviders = {
+    ...providers,
+    osmand: {
+        label: 'OsmAnd',
+        fields: [
+            {
+                key: 'name',
+                type: 'text',
+                label: 'Feed Name',
+                required: true,
+                description: '',
+            },
+        ],
+    },
+    teltonika: {
+        label: 'Teltonika',
+        fields: [
+            {
+                key: 'name',
+                type: 'text',
+                label: 'Feed Name',
+                required: true,
+                description: '',
+            },
+        ],
+    },
+};
 
 describe( 'FeedModal — add mode', () => {
     it( 'shows "Add Feed" title', () => {
@@ -174,5 +201,82 @@ describe( 'FeedModal — edit mode', () => {
         // WP components also announce to a11y-speak, so multiple matches are expected.
         const notices = await screen.findAllByText( 'Server error' );
         expect( notices.length ).toBeGreaterThan( 0 );
+    } );
+} );
+
+describe( 'FeedModal — push feed URLs', () => {
+    const originalRestUrl = window.spotmapAdminData.restUrl;
+
+    afterEach( () => {
+        window.spotmapAdminData.restUrl = originalRestUrl;
+    } );
+
+    it( 'builds a Teltonika URL with &key for rest_route-based sites', async () => {
+        window.spotmapAdminData.restUrl =
+            'http://localhost:8888/index.php?rest_route=/spotmap/v1/';
+        const user = userEvent.setup();
+
+        render(
+            <FeedModal
+                providers={ pushProviders }
+                feed={ null }
+                onSave={ noop }
+                onClose={ noop }
+            />
+        );
+
+        await user.click( screen.getByRole( 'button', { name: /Teltonika/i } ) );
+
+        expect(
+            screen.getByText( /index\.php\?rest_route=\/spotmap\/v1\/ingest\/teltonika&key=/i )
+        ).toBeInTheDocument();
+    } );
+
+    it( 'normalizes a malformed server-provided Teltonika tracking URL', () => {
+        render(
+            <FeedModal
+                providers={ pushProviders }
+                feed={ {
+                    id: 'feed-tel',
+                    type: 'teltonika',
+                    name: 'Tracker',
+                    key: 'abc123',
+                    tracking_url:
+                        'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/teltonika?key=abc123',
+                } }
+                onSave={ noop }
+                onClose={ noop }
+            />
+        );
+
+        expect(
+            screen.getByText(
+                'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/teltonika&key=abc123'
+            )
+        ).toBeInTheDocument();
+    } );
+
+    it( 'normalizes a malformed server-provided OsmAnd tracking URL', () => {
+        render(
+            <FeedModal
+                providers={ pushProviders }
+                feed={ {
+                    id: 'feed-osm',
+                    type: 'osmand',
+                    name: 'Phone',
+                    key: 'abc123',
+                    tracking_url:
+                        'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/osmand?key=abc123&lat={0}&lon={1}&timestamp={2}',
+                } }
+                onSave={ noop }
+                onClose={ noop }
+            />
+        );
+
+        expect(
+            screen.getByText(
+                'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/osmand&key=abc123&lat={0}&lon={1}&timestamp={2}'
+            )
+        ).toBeInTheDocument();
     } );
 } );

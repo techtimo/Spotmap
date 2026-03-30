@@ -62,19 +62,29 @@ function getIngestBase() {
     return window.spotmapAdminData.restUrl.replace( /\/$/, '' );
 }
 
+function appendQueryParam( url, key, value ) {
+    const separator = url.includes( '?' ) ? '&' : '?';
+    return `${ url }${ separator }${ key }=${ encodeURIComponent( value ) }`;
+}
+
+function normalizeTrackingUrl( url ) {
+    if ( ! url ) {
+        return url;
+    }
+
+    return url.replace( /(rest_route=[^&?]+)\?/, '$1&' );
+}
+
 function buildOsmAndUrl( key ) {
-    return (
-        getIngestBase() +
-        '/ingest/osmand?key=' +
-        encodeURIComponent( key ) +
-        '&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}'
-    );
+    return `${ appendQueryParam(
+        `${ getIngestBase() }/ingest/osmand`,
+        'key',
+        key
+    ) }&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}`;
 }
 
 function buildTeltonikaUrl( key ) {
-    return (
-        getIngestBase() + '/ingest/teltonika?key=' + encodeURIComponent( key )
-    );
+    return appendQueryParam( `${ getIngestBase() }/ingest/teltonika`, 'key', key );
 }
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
@@ -123,13 +133,17 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
     // visible immediately. For existing feeds the server-provided URL is used.
     const osmandTrackingUrl =
         type === 'osmand'
-            ? feed?.tracking_url ??
-              ( fields.key ? buildOsmAndUrl( fields.key ) : null )
+            ? normalizeTrackingUrl(
+                feed?.tracking_url ??
+                    ( fields.key ? buildOsmAndUrl( fields.key ) : null )
+            )
             : null;
     const teltonikaTrackingUrl =
         type === 'teltonika'
-            ? feed?.tracking_url ??
-              ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
+            ? normalizeTrackingUrl(
+                feed?.tracking_url ??
+                    ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
+            )
             : null;
 
     const handleSave = async () => {

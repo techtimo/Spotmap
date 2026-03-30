@@ -187,7 +187,7 @@ export class Spotmap {
         } );
 
         // Optional controls
-        if ( this.options.fullscreenButton !== false ) {
+        if ( this.options.fullscreenButton !== false && L.Control.FullScreen ) {
             new L.Control.FullScreen().addTo( this.map );
         }
         if ( this.options.scaleControl !== false ) {
@@ -255,7 +255,9 @@ export class Spotmap {
                 return;
             }
 
-            if ( ! response.empty ) {
+            if ( response.error ) {
+                this.debug( 'Feed error:', ( response as { title?: string } ).title );
+            } else if ( ! response.empty ) {
                 for ( const entry of response as import('./types').SpotPoint[] ) {
                     this.ensureFeedLayer( entry.feed_name );
                     this.markerManager.addPoint( entry );
@@ -398,26 +400,26 @@ export class Spotmap {
 
             const track = new L.GPX( entry.url, gpxOptions )
                 .on( 'loaded', () => {
-                    if ( this.options.mapcenter === 'gpx' || response.empty ) {
-                        this.boundsManager.fitBounds( 'gpx' );
+                    if ( this.options.mapcenter === 'gpx' || response.empty || response.error ) {
+                        this.boundsManager.fitBounds( this.options.mapcenter === 'gpx' ? 'gpx' : 'all' );
                     }
                 } )
                 .on( 'addline', ( e: L.LeafletEvent ) => {
                     (
                         e as L.LeafletEvent & { line: L.Polyline }
-                     ).line.bindPopup( entry.title + downloadLink );
+                     ).line.bindPopup( entry.name + downloadLink );
                 } );
 
             const html = ` ${ getColorDot( color ) }${ downloadLink }`;
-            this.layers.gpx[ entry.title ] = {
+            this.layers.gpx[ entry.name ] = {
                 featureGroup: L.featureGroup( [ track ] ),
             };
             if ( entry.visible !== false ) {
-                this.layers.gpx[ entry.title ].featureGroup.addTo( this.map );
+                this.layers.gpx[ entry.name ].featureGroup.addTo( this.map );
             }
             this.layerManager.layerControl.addOverlay(
-                this.layers.gpx[ entry.title ].featureGroup,
-                entry.title + html
+                this.layers.gpx[ entry.name ].featureGroup,
+                entry.name + html
             );
         }
     }

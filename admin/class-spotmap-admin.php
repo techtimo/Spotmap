@@ -219,6 +219,8 @@ class Spotmap_Admin {
 		$exif = exif_read_data( $filepath, 0, true );
 		if ( ! isset( $exif['GPS'] ) ) { return; }
 		if ( ! isset( $exif['EXIF']['DateTimeOriginal'] ) ) { return; }
+		if ( ! isset( $exif['GPS']['GPSLatitude'], $exif['GPS']['GPSLatitudeRef'],
+		              $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'] ) ) { return; }
 
 		$latitude  = $this->gps( $exif['GPS']['GPSLatitude'],  $exif['GPS']['GPSLatitudeRef'] );
 		$longitude = $this->gps( $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'] );
@@ -237,6 +239,20 @@ class Spotmap_Admin {
 			'modelId'        => $attachment_id,
 			'messageContent' => $image,
 		] );
+	}
+
+	public function import_existing_media() {
+		$attachments = get_posts( [
+			'post_type'      => 'attachment',
+			'post_mime_type' => 'image',
+			'posts_per_page' => -1,
+		] );
+		foreach ( $attachments as $attachment ) {
+			if ( $this->db->does_media_exist( $attachment->ID ) ) {
+				continue;
+			}
+			$this->add_images_to_map( $attachment->ID );
+		}
 	}
 
 	public function delete_images_from_map( $attachment_id ) {
