@@ -80,6 +80,19 @@ class Spotmap_Providers {
 					],
 				],
 
+				'media' => [
+					'label'  => 'Photos',
+					'fields' => [
+						[
+							'key'         => 'name',
+							'type'        => 'text',
+							'label'       => 'Feed Name',
+							'required'    => true,
+							'description' => 'A unique name used to identify this photo feed in the map block.',
+						],
+					],
+				],
+
 				// Future providers — add crawler implementation alongside each entry.
 				// 'garmin' => [
 				//     'label'  => 'Garmin inReach',

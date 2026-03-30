@@ -377,10 +377,13 @@ private const ALLOWED_COLUMNS = [
 		return $result ? true : false;
 	}
 	
-	function does_media_exist($attachment_id){
+	function does_media_exist( $attachment_id ) {
 		global $wpdb;
-		$result = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE model = {$attachment_id}");
-		return $result ? true : false;
+		$result = $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE model = %d",
+			$attachment_id
+		) );
+		return (bool) $result;
 	}
 	function delete_media_point($attachment_id){
 		global $wpdb;

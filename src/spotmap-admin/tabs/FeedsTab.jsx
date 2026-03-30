@@ -3,7 +3,7 @@ import { Button, Modal, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
 
-const isPushFeed = ( type ) => type === 'osmand' || type === 'teltonika';
+const isMediaFeed = ( type ) => type === 'media';
 
 export default function FeedsTab( {
     providers,
@@ -18,6 +18,7 @@ export default function FeedsTab( {
     ); // null=closed, {}=new, feed=edit
     const [ confirmDelete, setConfirmDelete ] = useState( null ); // feed object or null
     const [ confirmDeleteDbFeed, setConfirmDeleteDbFeed ] = useState( null ); // { feedName, pointCount }
+    const [ importingFeedId, setImportingFeedId ] = useState( null );
 
     useEffect( () => {
         let cancelled = false;
@@ -76,6 +77,31 @@ export default function FeedsTab( {
             } );
         } catch ( err ) {
             onNoticeChange( { status: 'error', text: err.message } );
+        }
+    };
+
+    const handleImportPhotos = async ( feed ) => {
+        setImportingFeedId( feed.id );
+        try {
+            const result = await api.importPhotos( feed.id );
+            const count = result.imported ?? 0;
+            setFeeds( ( prev ) =>
+                prev.map( ( f ) =>
+                    f.id === feed.id
+                        ? { ...f, point_count: ( f.point_count ?? 0 ) + count }
+                        : f
+                )
+            );
+            onNoticeChange( {
+                status: 'success',
+                text: count > 0
+                    ? `Imported ${ count } photo${ count === 1 ? '' : 's' }.`
+                    : 'No new photos found to import.',
+            } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        } finally {
+            setImportingFeedId( null );
         }
     };
 
@@ -154,7 +180,6 @@ export default function FeedsTab( {
                         <tr>
                             <th>Name</th>
                             <th>Type</th>
-                            <th>Feed ID</th>
                             <th style={ { width: '80px' } }>Points</th>
                             <th style={ { width: '220px' } }>Actions</th>
                         </tr>
@@ -167,15 +192,6 @@ export default function FeedsTab( {
                                     { providers[ feed.type ]?.label ??
                                         feed.type }
                                 </td>
-                                <td>
-                                    { isPushFeed( feed.type ) ? (
-                                        <em style={ { color: '#888' } }>
-                                            push feed
-                                        </em>
-                                    ) : (
-                                        <code>{ feed.feed_id }</code>
-                                    ) }
-                                </td>
                                 <td>{ feed.point_count ?? 0 }</td>
                                 <td>
                                     <Button
@@ -185,6 +201,25 @@ export default function FeedsTab( {
                                     >
                                         Edit
                                     </Button>{ ' ' }
+                                    { isMediaFeed( feed.type ) && (
+                                        <>
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                isBusy={
+                                                    importingFeedId === feed.id
+                                                }
+                                                disabled={
+                                                    importingFeedId === feed.id
+                                                }
+                                                onClick={ () =>
+                                                    handleImportPhotos( feed )
+                                                }
+                                            >
+                                                Check Photos
+                                            </Button>{ ' ' }
+                                        </>
+                                    ) }
                                     { feed.paused ? (
                                         <Button
                                             variant="secondary"

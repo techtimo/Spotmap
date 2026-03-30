@@ -87,8 +87,10 @@ class Spotmap{
 		$this->loader->add_action( 'spotmap_import_media_hook', $this->admin, 'import_existing_media');
 		$this->loader->add_action( 'spotmap_get_timezone_hook', $this->admin, 'get_local_timezone');
 		$this->loader->add_action( 'upload_mimes', $this->admin, 'allow_gpx_upload');
-		$this->loader->add_action( 'add_attachment', $this->admin, 'add_images_to_map');
-		$this->loader->add_action( 'delete_attachment', $this->admin, 'delete_images_from_map');
+		// Always register attachment hooks — add_images_to_map / delete_images_from_map
+		// guard themselves and no-op when no media feed is configured.
+		$this->loader->add_action( 'add_attachment', $this->admin, 'add_images_to_map' );
+		$this->loader->add_action( 'delete_attachment', $this->admin, 'delete_images_from_map' );
 	}
 
 	/**

@@ -30,6 +30,9 @@ export const deleteDbFeedPoints = ( feedName ) =>
         data: { feed_name: feedName },
     } );
 
+export const importPhotos = ( id ) =>
+    apiFetch( { url: url( `feeds/${ id }/import-photos` ), method: 'POST' } );
+
 export const pauseFeed = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/pause` ), method: 'POST' } );
 

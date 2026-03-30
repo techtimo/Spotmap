@@ -80,6 +80,16 @@ class Spotmap_Rest_Api {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/feeds/(?P<id>[\w.]+)/import-photos',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ __CLASS__, 'import_photos' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/feeds/(?P<id>[\w.]+)/pause',
 			[
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -253,6 +263,14 @@ class Spotmap_Rest_Api {
 		}
 
 		$feed = Spotmap_Options::add_feed( $data );
+
+		// When a media feed is created, run the EXIF import immediately so existing
+		// media library photos are picked up without waiting for cron.
+		if ( ( $data['type'] ?? '' ) === 'media' ) {
+			$admin = new Spotmap_Admin();
+			$admin->import_existing_media();
+		}
+
 		return new WP_REST_Response( self::decorate_feed( $feed ), 201 );
 	}
 
@@ -290,12 +308,20 @@ class Spotmap_Rest_Api {
 		}
 
 		// Preserve the paused state across edits — it is managed via dedicated endpoints.
-		$stored          ??= Spotmap_Options::get_feed( $id ) ?? [];
-		$data['paused']    = $stored['paused'] ?? false;
+		$stored       ??= Spotmap_Options::get_feed( $id ) ?? [];
+		$old_name       = $stored['name'] ?? '';
+		$data['paused'] = $stored['paused'] ?? false;
 
 		$data['id'] = $id;
 		if ( ! Spotmap_Options::update_feed( $id, $data ) ) {
 			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
+		}
+
+		// Rename DB rows so existing points follow the feed to its new name.
+		$new_name = $data['name'] ?? '';
+		if ( $old_name !== '' && $new_name !== '' && $old_name !== $new_name ) {
+			$db = new Spotmap_Database();
+			$db->rename_feed_name( $old_name, $new_name );
 		}
 
 		return rest_ensure_response( self::decorate_feed( $data ) );
@@ -345,6 +371,23 @@ class Spotmap_Rest_Api {
 		$deleted = $db->delete_points_by_feed_name( $feed_name );
 
 		return rest_ensure_response( [ 'deleted' => $deleted ] );
+	}
+
+	public static function import_photos( WP_REST_Request $request ) {
+		$id   = $request->get_param( 'id' );
+		$feed = Spotmap_Options::get_feed( $id );
+
+		if ( ! $feed ) {
+			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
+		}
+		if ( ( $feed['type'] ?? '' ) !== 'media' ) {
+			return new WP_Error( 'invalid_type', 'This feed is not a media feed.', [ 'status' => 422 ] );
+		}
+
+		$admin    = new Spotmap_Admin();
+		$imported = $admin->import_existing_media();
+
+		return rest_ensure_response( [ 'imported' => $imported ] );
 	}
 
 	public static function pause_feed( WP_REST_Request $request ) {
