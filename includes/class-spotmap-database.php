@@ -212,7 +212,13 @@ private const ALLOWED_COLUMNS = [
 			} 
 		}
 		if ( ! empty( $group_by ) ) {
-			$where .= " AND id IN (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points GROUP BY " . $group_by . " )";
+			$type_sub = '';
+			if ( ! empty( $filter['type'] ) ) {
+				$sub_placeholders = implode( ', ', array_fill( 0, count( $filter['type'] ), '%s' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+				$type_sub = $wpdb->prepare( " WHERE type IN ($sub_placeholders)", ...$filter['type'] );
+			}
+			$where .= " AND id IN (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points" . $type_sub . " GROUP BY " . $group_by . " )";
 		}
 
 		$query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
