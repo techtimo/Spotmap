@@ -39,7 +39,7 @@ class Spotmap_Ingest {
 			Spotmap_Rest_Api::NAMESPACE,
 			'/ingest/teltonika',
 			[
-				'methods'             => WP_REST_Server::CREATABLE,
+				'methods'             => [ WP_REST_Server::READABLE, WP_REST_Server::CREATABLE ],
 				'callback'            => [ __CLASS__, 'handle_teltonika' ],
 				'permission_callback' => '__return_true',
 			]
@@ -51,15 +51,29 @@ class Spotmap_Ingest {
 	// -------------------------------------------------------------------------
 
 	public static function handle_osmand( WP_REST_Request $request ): WP_REST_Response {
+		self::log_ingest_event(
+			'osmand',
+			'request_received',
+			[ 'has_key' => $request->get_param( 'key' ) !== null ]
+		);
+
 		// 1. Resolve feed by pre-shared key.
 		$key  = sanitize_text_field( $request->get_param( 'key' ) ?? '' );
 		$feed = self::find_feed_by_key( 'osmand', $key );
 		if ( $feed === null ) {
+			self::log_ingest_event( 'osmand', 'invalid_key' );
 			return new WP_REST_Response( [ 'error' => 'Invalid key.' ], 401 );
 		}
 
 		if ( ! empty( $feed['paused'] ) ) {
+			self::log_ingest_event( 'osmand', 'feed_paused', self::feed_context( $feed ) );
 			return new WP_REST_Response( [ 'error' => 'Feed is paused.' ], 400 );
+		}
+
+		$verification_response = self::maybe_build_verification_response( 'osmand', $request, $feed );
+		if ( $verification_response !== null ) {
+			self::log_ingest_event( 'osmand', 'verification_probe', self::feed_context( $feed ) );
+			return $verification_response;
 		}
 
 		// 2. Validate required params.
@@ -68,9 +82,19 @@ class Spotmap_Ingest {
 		$ts_raw  = $request->get_param( 'timestamp' );
 
 		if ( self::is_unsubstituted( $lat_raw ) || self::is_unsubstituted( $lon_raw ) || self::is_unsubstituted( $ts_raw ) ) {
+			self::log_ingest_event( 'osmand', 'unsubstituted_params', self::feed_context( $feed ) );
 			return new WP_REST_Response( [ 'error' => 'lat, lon, and timestamp are required.' ], 400 );
 		}
 		if ( $lat_raw === null || $lon_raw === null || $ts_raw === null ) {
+			self::log_ingest_event(
+				'osmand',
+				'missing_required_params',
+				self::feed_context( $feed ) + [
+					'has_lat' => $lat_raw !== null ? 'yes' : 'no',
+					'has_lon' => $lon_raw !== null ? 'yes' : 'no',
+					'has_ts'  => $ts_raw !== null ? 'yes' : 'no',
+				]
+			);
 			return new WP_REST_Response( [ 'error' => 'lat, lon, and timestamp are required.' ], 400 );
 		}
 
@@ -119,9 +143,18 @@ class Spotmap_Ingest {
 		$db     = new Spotmap_Database();
 		$result = $db->insert_row( $data );
 
+		$point_context = self::feed_context( $feed ) + [
+			'timestamp' => $unix_ts,
+			'latitude'  => $lat,
+			'longitude' => $lon,
+		];
+
 		if ( $result === false ) {
+			self::log_ingest_event( 'osmand', 'db_insert_failed', $point_context );
 			return new WP_REST_Response( [ 'error' => 'Failed to store point.' ], 500 );
 		}
+
+		self::log_ingest_event( 'osmand', 'point_stored', $point_context );
 
 		return new WP_REST_Response( [ 'ok' => true ], 200 );
 	}
@@ -133,38 +166,59 @@ class Spotmap_Ingest {
 	/**
 	 * Receives a Teltonika GPS push.
 	 *
-	 * Endpoint: POST /wp-json/spotmap/v1/ingest/teltonika?key=<auth_key>
+	 * Endpoints:
+	 *   GET  /wp-json/spotmap/v1/ingest/teltonika?key=<auth_key>
+	 *   POST /wp-json/spotmap/v1/ingest/teltonika?key=<auth_key>
 	 *
 	 * The JSON body is a single-key object; the key name is ignored — only the
-	 * nested values matter:
+	 * nested values matter for POST requests:
 	 *   {"<any>": {"latitude":…, "longitude":…, "timestamp":…, …}}
 	 *
 	 * Unlike OsmAnd, Teltonika sends timestamp in Unix seconds (not ms).
 	 */
 	public static function handle_teltonika( WP_REST_Request $request ): WP_REST_Response {
+		self::log_ingest_event(
+			'teltonika',
+			'request_received',
+			[
+				'method'  => $request->get_method(),
+				'has_key' => $request->get_param( 'key' ) !== null,
+			]
+		);
+
 		// 1. Resolve feed by pre-shared key.
 		$key  = sanitize_text_field( $request->get_param( 'key' ) ?? '' );
 		$feed = self::find_feed_by_key( 'teltonika', $key );
 		if ( $feed === null ) {
+			self::log_ingest_event( 'teltonika', 'invalid_key' );
 			return new WP_REST_Response( [ 'error' => 'Invalid key.' ], 401 );
 		}
 
 		if ( ! empty( $feed['paused'] ) ) {
+			self::log_ingest_event( 'teltonika', 'feed_paused', self::feed_context( $feed ) );
 			return new WP_REST_Response( [ 'error' => 'Feed is paused.' ], 400 );
 		}
 
-		// 2. Decode body — accept the first (and only) object in the payload.
-		$body = $request->get_json_params();
-		if ( ! is_array( $body ) || empty( $body ) ) {
-			return new WP_REST_Response( [ 'error' => 'Invalid JSON body.' ], 400 );
+		$verification_response = self::maybe_build_verification_response( 'teltonika', $request, $feed );
+		if ( $verification_response !== null ) {
+			self::log_ingest_event( 'teltonika', 'verification_probe', self::feed_context( $feed ) );
+			return $verification_response;
 		}
-		$payload = reset( $body ); // key name is ignored
-		if ( ! is_array( $payload ) ) {
-			return new WP_REST_Response( [ 'error' => 'Payload value must be an object.' ], 400 );
+
+		// 2. Build payload from wrapped JSON body.
+		$payload = self::build_teltonika_payload( $request );
+		if ( $payload === null ) {
+			self::log_ingest_event( 'teltonika', 'invalid_payload', self::feed_context( $feed ) );
+			return new WP_REST_Response( [ 'error' => 'Invalid payload. Expected wrapped JSON body: {"<key>": {"latitude":…, "longitude":…, "timestamp":…}}.' ], 400 );
 		}
 
 		// 3. Validate required fields.
 		if ( ! isset( $payload['latitude'], $payload['longitude'], $payload['timestamp'] ) ) {
+			self::log_ingest_event(
+				'teltonika',
+				'missing_required_fields',
+				self::feed_context( $feed ) + [ 'keys' => implode( ',', array_keys( $payload ) ) ]
+			);
 			return new WP_REST_Response( [ 'error' => 'latitude, longitude, and timestamp are required.' ], 400 );
 		}
 
@@ -199,9 +253,18 @@ class Spotmap_Ingest {
 		$db     = new Spotmap_Database();
 		$result = $db->insert_row( $data );
 
+		$point_context = self::feed_context( $feed ) + [
+			'timestamp' => $unix_ts,
+			'latitude'  => $lat,
+			'longitude' => $lon,
+		];
+
 		if ( $result === false ) {
+			self::log_ingest_event( 'teltonika', 'db_insert_failed', $point_context );
 			return new WP_REST_Response( [ 'error' => 'Failed to store point.' ], 500 );
 		}
+
+		self::log_ingest_event( 'teltonika', 'point_stored', $point_context );
 
 		return new WP_REST_Response( [ 'ok' => true ], 200 );
 	}
@@ -230,6 +293,59 @@ class Spotmap_Ingest {
 	}
 
 	/**
+	 * Returns a small JSON response for GET-based endpoint verification.
+	 *
+	 * OsmAnd uses GET for real tracking updates, so only a request with the key
+	 * and no tracking params is treated as a verification probe.
+	 *
+	 * @param string               $type    Feed type.
+	 * @param WP_REST_Request      $request Current request.
+	 * @param array<string, mixed> $feed    Matched feed.
+	 * @return WP_REST_Response|null
+	 */
+	private static function maybe_build_verification_response( string $type, WP_REST_Request $request, array $feed ): ?WP_REST_Response {
+		if ( 'GET' !== $request->get_method() ) {
+			return null;
+		}
+
+		if ( ! self::is_verification_request( $type, $request ) ) {
+			return null;
+		}
+
+		$provider_label = 'osmand' === $type ? 'OsmAnd' : 'Teltonika';
+
+		return new WP_REST_Response(
+			[
+				'ok'      => true,
+				'message' => sprintf( '%s endpoint is reachable and the key is configured.', $provider_label ),
+				'feed'    => [
+					'id'   => $feed['id'] ?? '',
+					'name' => $feed['name'] ?? '',
+					'type' => $feed['type'] ?? $type,
+				],
+			],
+			200
+		);
+	}
+
+	/**
+	 * Returns true when the request should be treated as a verification probe.
+	 *
+	 * @param string          $type    Feed type.
+	 * @param WP_REST_Request $request Current request.
+	 * @return bool
+	 */
+	private static function is_verification_request( string $type, WP_REST_Request $request ): bool {
+		if ( 'teltonika' === $type ) {
+			return true; // All GET requests to the teltonika endpoint are verification probes.
+		}
+
+		return null === $request->get_param( 'lat' )
+			&& null === $request->get_param( 'lon' )
+			&& null === $request->get_param( 'timestamp' );
+	}
+
+	/**
 	 * Returns null if the value is absent, empty, or an unsubstituted OsmAnd
 	 * placeholder like "{11}". Otherwise casts to float.
 	 *
@@ -255,5 +371,62 @@ class Spotmap_Ingest {
 	 */
 	private static function is_unsubstituted( $value ): bool {
 		return is_string( $value ) && (bool) preg_match( '/^\{\d+\}$/', $value );
+	}
+
+	/**
+	 * Extracts the inner payload from a Teltonika wrapped JSON POST body.
+	 *
+	 * Teltonika sends a single-key object whose key name is ignored:
+	 *   {"<any>": {"latitude":…, "longitude":…, "timestamp":…, …}}
+	 *
+	 * @param WP_REST_Request $request Current request.
+	 * @return array<string, mixed>|null
+	 */
+	private static function build_teltonika_payload( WP_REST_Request $request ): ?array {
+		$body = $request->get_json_params();
+		if ( ! is_array( $body ) || empty( $body ) ) {
+			return null;
+		}
+		$payload = reset( $body );
+		return is_array( $payload ) ? $payload : null;
+	}
+
+	/**
+	 * Returns the standard feed_id/feed_name context array for a feed.
+	 *
+	 * @param array<string, mixed> $feed
+	 * @return array<string, string>
+	 */
+	private static function feed_context( array $feed ): array {
+		return [
+			'feed_id'   => (string) ( $feed['id'] ?? '' ),
+			'feed_name' => (string) ( $feed['name'] ?? '' ),
+		];
+	}
+
+	/**
+	 * Logs ingest diagnostics when WP_DEBUG is enabled.
+	 *
+	 * @param string               $provider Ingest provider.
+	 * @param string               $event    Event identifier.
+	 * @param array<string, mixed> $context  Context values.
+	 * @return void
+	 */
+	private static function log_ingest_event( string $provider, string $event, array $context = [] ): void {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+
+		$timestamp = gmdate( 'c' );
+		$line = sprintf(
+			'[%s] [spotmap ingest] provider=%s event=%s context=%s',
+			$timestamp,
+			$provider,
+			$event,
+			wp_json_encode( $context )
+		);
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+		trigger_error( $line, E_USER_NOTICE );
 	}
 }

@@ -50,4 +50,16 @@ if ( /^[\d]+\.[\d]+\.[\d]+$/.test( version ) ) {
     );
 }
 
+// --- composer.json ---
+const composerFile = path.join( root, 'composer.json' );
+let composer = fs.readFileSync( composerFile, 'utf8' );
+
+composer = composer.replace(
+    /("version":\s*")[\d.]+(-[\w.]+)?(")/,
+    `$1${ version }$3`
+);
+
+fs.writeFileSync( composerFile, composer );
+console.log( `  composer.json updated` );
+
 console.log( 'Done.' );

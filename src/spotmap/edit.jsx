@@ -250,8 +250,8 @@ function GpxManagerModal( {
                     </Button>
                     <p style={ { margin: 0 } }>
                         { styleTarget === 'all'
-                            ? gpx.map( ( t ) => t.title ).join( ', ' )
-                            : styleTrack?.title }
+                            ? gpx.map( ( t ) => t.name ).join( ', ' )
+                            : styleTrack?.name }
                     </p>
                     <div>
                         <p
@@ -457,7 +457,7 @@ function GpxManagerModal( {
                                                         width: '100%',
                                                     } }
                                                 >
-                                                    { track.title }
+                                                    { track.name }
                                                 </td>
                                                 <td
                                                     style={ {
@@ -904,7 +904,7 @@ export default function Edit( { attributes, setAttributes } ) {
                 .map( ( t ) => ( {
                     id: t.id,
                     url: t.url,
-                    title: getTitle( t ),
+                    name: getTitle( t ),
                     color: existing[ 0 ]?.color || 'gold',
                 } ) ),
         ];

@@ -119,6 +119,30 @@ class SpotmapOsmAndIngestTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $response->get_status() );
 	}
 
+	public function test_get_with_only_key_returns_verification_message(): void {
+		$this->seed_osmand_feed( 'MyPhone', 'verifykey42' );
+
+		$response = $this->ingest( [
+			'key' => 'verifykey42',
+		] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame(
+			[
+				'ok'      => true,
+				'message' => 'OsmAnd endpoint is reachable and the key is configured.',
+				'feed'    => [
+					'id'   => Spotmap_Options::get_feeds()[0]['id'],
+					'name' => 'MyPhone',
+					'type' => 'osmand',
+				],
+			],
+			$response->get_data()
+		);
+
+		$this->assertCount( 0, $this->get_points( 'MyPhone' ) );
+	}
+
 	// -------------------------------------------------------------------------
 	// Required parameter validation
 	// -------------------------------------------------------------------------
