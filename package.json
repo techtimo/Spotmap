@@ -43,8 +43,7 @@
     },
     "scripts": {
         "copy-deps": "node scripts/copy-deps.js",
-        "copy-deps:prod": "node scripts/copy-deps.js --strip-maps",
-        "build": "npm run copy-deps:prod && wp-scripts build --webpack-src-dir=src",
+        "build": "npm run copy-deps && wp-scripts build --webpack-src-dir=src",
         "start": "npm run copy-deps && wp-scripts start --webpack-src-dir=src",
         "wp-env": "wp-env",
         "env:start": "wp-env start --debug --xdebug=debug",
@@ -64,6 +63,7 @@
         "test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c \"XDEBUG_MODE=off composer run test\"",
         "test:e2e": "playwright test",
         "packages-update": "wp-scripts packages-update",
+        "version:bump": "node scripts/bump-version.js",
         "plugin-zip": "npm run build && npm run composer -- install --no-dev && wp-scripts plugin-zip",
         "composer": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap composer"
     }

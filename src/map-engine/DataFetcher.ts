@@ -94,7 +94,9 @@ export class DataFetcher {
                 filter
             ) as AjaxResponse;
             this.dbg(
-                `DataFetcher: filterPoints=${ filter }m — ${ before } → rdp ${ rdp.length } → ${ ( filtered as SpotPoint[] ).length } points`
+                `DataFetcher: filterPoints=${ filter }m — ${ before } → rdp ${
+                    rdp.length
+                } → ${ ( filtered as SpotPoint[] ).length } points`
             );
             return filtered;
         }
@@ -114,10 +116,13 @@ export class DataFetcher {
      * runs of TRACK / EXTREME-TRACK / UNLIMITED-TRACK points are simplified.
      * Removed points are not annotated — this is purely a render optimisation.
      *
-     * @param points       - Input array in time order.
+     * @param points        - Input array in time order.
      * @param epsilonMeters - Maximum allowed perpendicular deviation (metres).
      */
-    static rdpSimplify( points: SpotPoint[], epsilonMeters: number ): SpotPoint[] {
+    static rdpSimplify(
+        points: SpotPoint[],
+        epsilonMeters: number
+    ): SpotPoint[] {
         if ( points.length <= 2 || epsilonMeters <= 0 ) {
             return points;
         }
@@ -162,7 +167,11 @@ export class DataFetcher {
         const end = points[ points.length - 1 ];
 
         for ( let i = 1; i < points.length - 1; i++ ) {
-            const d = DataFetcher.pointToSegmentMeters( points[ i ], start, end );
+            const d = DataFetcher.pointToSegmentMeters(
+                points[ i ],
+                start,
+                end
+            );
             if ( d > maxDist ) {
                 maxDist = d;
                 maxIdx = i;
@@ -174,7 +183,10 @@ export class DataFetcher {
                 points.slice( 0, maxIdx + 1 ),
                 epsilon
             );
-            const right = DataFetcher.rdpReduce( points.slice( maxIdx ), epsilon );
+            const right = DataFetcher.rdpReduce(
+                points.slice( maxIdx ),
+                epsilon
+            );
             return [ ...left.slice( 0, -1 ), ...right ];
         }
 
@@ -192,8 +204,9 @@ export class DataFetcher {
         b: SpotPoint
     ): number {
         const DEG_TO_M = 111_320;
-        const cosLat =
-            Math.cos( ( ( a.latitude + b.latitude ) / 2 ) * ( Math.PI / 180 ) );
+        const cosLat = Math.cos(
+            ( ( a.latitude + b.latitude ) / 2 ) * ( Math.PI / 180 )
+        );
 
         const ax = a.longitude * cosLat * DEG_TO_M;
         const ay = a.latitude * DEG_TO_M;
@@ -214,7 +227,9 @@ export class DataFetcher {
             0,
             Math.min( 1, ( ( px - ax ) * dx + ( py - ay ) * dy ) / lenSq )
         );
-        return Math.sqrt( ( px - ( ax + t * dx ) ) ** 2 + ( py - ( ay + t * dy ) ) ** 2 );
+        return Math.sqrt(
+            ( px - ( ax + t * dx ) ) ** 2 + ( py - ( ay + t * dy ) ) ** 2
+        );
     }
 
     /**

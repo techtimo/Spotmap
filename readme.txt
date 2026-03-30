@@ -5,8 +5,9 @@ Donate link: paypal.me/ebaytimo
 Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeacon, liveposition, gpx, gps tracking, gps tracker, spottrace, spotwalla
 License: GPL2
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 5.3
+Requires at least: 6.3
 Tested up to: 6.9
+Stable tag: 0.11.2
 
 See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
 

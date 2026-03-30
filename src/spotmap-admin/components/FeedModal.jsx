@@ -72,7 +72,9 @@ function buildOsmAndUrl( key ) {
 }
 
 function buildTeltonikaUrl( key ) {
-    return getIngestBase() + '/ingest/teltonika?key=' + encodeURIComponent( key );
+    return (
+        getIngestBase() + '/ingest/teltonika?key=' + encodeURIComponent( key )
+    );
 }
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
@@ -88,7 +90,10 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
             initial[ f.key ] = feed?.[ f.key ] ?? '';
         } );
         // For new OsmAnd/Teltonika feeds, generate the key upfront so the URL is visible immediately.
-        if ( ! feed && ( initialType === 'osmand' || initialType === 'teltonika' ) ) {
+        if (
+            ! feed &&
+            ( initialType === 'osmand' || initialType === 'teltonika' )
+        ) {
             initial.key = generateFeedKey();
         }
         return initial;
@@ -196,8 +201,8 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                         <>
                             Enter this URL in OsmAnd:{ ' ' }
                             <em>
-                                Plugins → Trip Recording → Online tracking →
-                                Web address
+                                Plugins → Trip Recording → Online tracking → Web
+                                address
                             </em>
                             . Set Tracking interval to 10 s or more.{ ' ' }
                             <a
