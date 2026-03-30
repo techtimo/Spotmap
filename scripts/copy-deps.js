@@ -1,9 +1,6 @@
 /**
  * Copy front-end dependencies from node_modules to public/ so WordPress can
  * enqueue them as separate scripts/styles (no bundling).
- *
- * Run via: npm run copy-deps          (dev – keeps source maps)
- *          npm run copy-deps:prod     (production – strips sourceMappingURL)
  */
 
 /* eslint-disable no-console */
@@ -15,25 +12,6 @@ const pub = ( ...parts ) => path.join( root, 'public', ...parts );
 const nm = ( ...parts ) => path.join( root, 'node_modules', ...parts );
 const inc = ( ...parts ) => path.join( root, 'includes', ...parts );
 
-const stripMaps = process.argv.includes( '--strip-maps' );
-
-function stripSourceMappingURL( filePath ) {
-    const content = fs.readFileSync( filePath, 'utf8' );
-    const stripped = content.replace(
-        /\/[*/]#\s*sourceMappingURL=.*?(?:\*\/|$)/gm,
-        ''
-    );
-    if ( content !== stripped ) {
-        fs.writeFileSync( filePath, stripped, 'utf8' );
-        console.log(
-            `  (stripped sourceMappingURL from ${ path.relative(
-                root,
-                filePath
-            ) })`
-        );
-    }
-}
-
 function copyFile( src, dest ) {
     fs.mkdirSync( path.dirname( dest ), { recursive: true } );
     fs.copyFileSync( src, dest );
@@ -42,21 +20,11 @@ function copyFile( src, dest ) {
     );
 }
 
-/**
- * Copy a JS file. In dev mode, also copies the .map file if it exists.
- * In production mode (--strip-maps), strips the sourceMappingURL comment.
- * @param {string} src
- * @param {string} dest
- */
 function copyJsFile( src, dest ) {
     copyFile( src, dest );
-    if ( stripMaps ) {
-        stripSourceMappingURL( dest );
-    } else {
-        const mapSrc = src + '.map';
-        if ( fs.existsSync( mapSrc ) ) {
-            copyFile( mapSrc, dest + '.map' );
-        }
+    const mapSrc = src + '.map';
+    if ( fs.existsSync( mapSrc ) ) {
+        copyFile( mapSrc, dest + '.map' );
     }
 }
 
@@ -79,11 +47,7 @@ function copyDir( src, dest ) {
     }
 }
 
-console.log(
-    `Copying front-end dependencies${
-        stripMaps ? ' (production)' : ' (dev)'
-    }...\n`
-);
+console.log( 'Copying front-end dependencies...\n' );
 
 // Leaflet core
 copyJsFile(
