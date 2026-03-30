@@ -25,7 +25,7 @@ class Spotmap_Public{
 		if ( ! is_a( $post, 'WP_Post' ) ) {
 			return $this->enqueue_cache = false;
 		}
-		if ( has_block( 'spotmap/spotmap', $post ) ) {
+		if ( has_block( 'spotmap/spotmap', $post ) || has_block( 'spotmap/spotmessages', $post ) ) {
 			return $this->enqueue_cache = true;
 		}
 		foreach ( self::SHORTCODE_TAGS as $tags ) {
@@ -54,12 +54,15 @@ class Spotmap_Public{
 	public function register_block(){
 		$block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap';
 		register_block_type( $block_path );
+		$messages_block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmessages';
+		register_block_type( $messages_block_path );
 	}
 
 	public function enqueue_block_editor_assets(){
 		$this->enqueue_scripts();
 		$this->enqueue_styles();
 		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
+		$this->localize_js_script( 'spotmap-spotmessages-editor-script' );
 	}
 
 	public function enqueue_scripts(){

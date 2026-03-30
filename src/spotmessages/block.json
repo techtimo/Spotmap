@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "spotmap/spotmessages",
+    "title": "Spot Messages",
+    "category": "embed",
+    "icon": "list-view",
+    "description": "Display a table of the latest SPOT messages grouped by feed (e.g. last SOS, check-in, etc.).",
+    "keywords": [ "spot", "messages", "gps", "tracking", "table" ],
+    "supports": {
+        "html": false
+    },
+    "attributes": {
+        "feeds": {
+            "type": "array",
+            "default": []
+        },
+        "count": {
+            "type": "number",
+            "default": 10
+        },
+        "types": {
+            "type": "array",
+            "default": []
+        },
+        "groupBy": {
+            "type": "string",
+            "default": "feed_name"
+        },
+        "autoReload": {
+            "type": "boolean",
+            "default": false
+        },
+        "dateRange": {
+            "type": "object",
+            "default": { "from": "", "to": "" }
+        },
+        "filterPoints": {
+            "type": "number",
+            "default": 5
+        }
+    },
+    "editorScript": "file:./index.js",
+    "render": "file:../../public/render-block-messages.php"
+}

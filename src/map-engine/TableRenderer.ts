@@ -63,7 +63,10 @@ export class TableRenderer {
     ): void {
         table.innerHTML = '';
 
-        const headers = [ 'Type', 'Message', 'Time' ];
+        const showFeed = !! this.options.groupBy;
+        const headers = showFeed
+            ? [ 'Feed', 'Type', 'Message', 'Time' ]
+            : [ 'Type', 'Message', 'Time' ];
         if ( hasLocaltime ) {
             headers.push( 'Local Time' );
         }
@@ -79,17 +82,24 @@ export class TableRenderer {
 
         // Data rows
         for ( const entry of points ) {
-            this.appendPointRow( table, entry, hasLocaltime );
+            this.appendPointRow( table, entry, hasLocaltime, showFeed );
         }
     }
 
     private appendPointRow(
         table: HTMLElement,
         entry: SpotPoint,
-        hasLocaltime: boolean
+        hasLocaltime: boolean,
+        showFeed: boolean = false
     ): void {
         const row = document.createElement( 'tr' );
         row.className = `spotmap ${ entry.type }`;
+
+        if ( showFeed ) {
+            const feedCell = document.createElement( 'td' );
+            feedCell.textContent = entry.feed_name ?? '';
+            row.appendChild( feedCell );
+        }
 
         const typeCell = document.createElement( 'td' );
         typeCell.id = `spotmap_${ entry.id }`;
