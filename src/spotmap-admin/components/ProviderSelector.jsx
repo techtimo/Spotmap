@@ -118,6 +118,16 @@ function FindMeSpotIcon() {
     );
 }
 
+function MediaIcon() {
+    return (
+        <i
+            className="fas fa-camera"
+            style={ { fontSize: '36px', color: '#555' } }
+            aria-hidden="true"
+        />
+    );
+}
+
 /** Fallback for providers without a dedicated icon. */
 function GenericProviderIcon() {
     return (
@@ -152,6 +162,7 @@ function GenericProviderIcon() {
 const PROVIDER_ICONS = {
     findmespot: FindMeSpotIcon,
     osmand: OsmAndIcon,
+    media: MediaIcon,
 };
 
 // ---------------------------------------------------------------------------

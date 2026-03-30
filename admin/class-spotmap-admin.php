@@ -210,49 +210,76 @@ class Spotmap_Admin {
 		return $mime_types;
 	}
 
-	public function add_images_to_map( $attachment_id ) {
+	public function add_images_to_map( $attachment_id ): int {
+		$media_feeds = array_filter(
+			Spotmap_Options::get_feeds(),
+			fn( $f ) => ( $f['type'] ?? '' ) === 'media'
+		);
+		if ( empty( $media_feeds ) ) {
+			return 0;
+		}
+
 		$filepath  = get_attached_file( $attachment_id );
 		$file_type = wp_check_filetype( $filepath );
 		if ( ! in_array( $file_type['type'], [ 'image/jpeg', 'image/tiff' ], true ) ) {
-			return;
+			return 0;
 		}
 		$exif = exif_read_data( $filepath, 0, true );
-		if ( ! isset( $exif['GPS'] ) ) { return; }
-		if ( ! isset( $exif['EXIF']['DateTimeOriginal'] ) ) { return; }
+		if ( ! isset( $exif['GPS'] ) ) { return 0; }
+		if ( ! isset( $exif['EXIF']['DateTimeOriginal'] ) ) { return 0; }
 		if ( ! isset( $exif['GPS']['GPSLatitude'], $exif['GPS']['GPSLatitudeRef'],
-		              $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'] ) ) { return; }
+		              $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'] ) ) { return 0; }
 
 		$latitude  = $this->gps( $exif['GPS']['GPSLatitude'],  $exif['GPS']['GPSLatitudeRef'] );
 		$longitude = $this->gps( $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'] );
 		$timestamp = strtotime( $exif['EXIF']['DateTimeOriginal'] );
 		$image     = get_post_field( 'guid', $attachment_id );
 
-		$this->db->insert_point( [
-			'latitude'       => $latitude,
-			'longitude'      => $longitude,
-			'unixTime'       => $timestamp,
-			'timestamp'      => $timestamp,
-			'feedName'       => 'media',
-			'feedId'         => 'media',
-			'messengerName'  => 'media',
-			'messageType'    => 'MEDIA',
-			'modelId'        => $attachment_id,
-			'messageContent' => $image,
-		] );
+		$inserted = 0;
+		foreach ( $media_feeds as $feed ) {
+			$feed_name = $feed['name'] ?? 'media';
+			$result    = $this->db->insert_point( [
+				'latitude'       => $latitude,
+				'longitude'      => $longitude,
+				'unixTime'       => $timestamp,
+				'timestamp'      => $timestamp,
+				'feedName'       => $feed_name,
+				'feedId'         => $feed_name,
+				'messengerName'  => $feed_name,
+				'messageType'    => 'MEDIA',
+				'modelId'        => $attachment_id,
+				'messageContent' => $image,
+			] );
+			if ( $result !== false ) {
+				$inserted++;
+			}
+		}
+		return $inserted;
 	}
 
-	public function import_existing_media() {
+	public function import_existing_media(): int {
+		$media_feeds = array_filter(
+			Spotmap_Options::get_feeds(),
+			fn( $f ) => ( $f['type'] ?? '' ) === 'media'
+		);
+		if ( empty( $media_feeds ) ) {
+			return 0;
+		}
+
 		$attachments = get_posts( [
 			'post_type'      => 'attachment',
 			'post_mime_type' => 'image',
 			'posts_per_page' => -1,
 		] );
+
+		$imported = 0;
 		foreach ( $attachments as $attachment ) {
 			if ( $this->db->does_media_exist( $attachment->ID ) ) {
 				continue;
 			}
-			$this->add_images_to_map( $attachment->ID );
+			$imported += $this->add_images_to_map( $attachment->ID );
 		}
+		return $imported;
 	}
 
 	public function delete_images_from_map( $attachment_id ) {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import {
     BlockControls,
     InspectorAdvancedControls,
@@ -648,6 +649,21 @@ export default function Edit( { attributes, setAttributes } ) {
     const [ feedStyleModal, setFeedStyleModal ] = useState( null );
     // GPX manager modal
     const [ gpxManagerOpen, setGpxManagerOpen ] = useState( false );
+    // Total DB point count: null = loading, number = loaded
+    const [ totalPoints, setTotalPoints ] = useState( null );
+
+    // Fetch total point count once on mount to guard against loading huge datasets in the editor.
+    useEffect( () => {
+        apiFetch( { path: '/spotmap/v1/db-feeds' } )
+            .then( ( feeds ) => {
+                const total = feeds.reduce(
+                    ( sum, f ) => sum + ( f.point_count || 0 ),
+                    0
+                );
+                setTotalPoints( total );
+            } )
+            .catch( () => setTotalPoints( 0 ) );
+    }, [] );
 
     // Inject Leaflet CSS into the editor document (handles iframe rendering)
     useEffect( () => {
@@ -737,6 +753,11 @@ export default function Edit( { attributes, setAttributes } ) {
             return;
         }
 
+        // Skip map init while point count is still loading, or if it exceeds the editor threshold.
+        if ( totalPoints === null || totalPoints > 10000 ) {
+            return;
+        }
+
         const options = {
             ...attributes,
             mapId,
@@ -779,6 +800,7 @@ export default function Edit( { attributes, setAttributes } ) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         mapId,
+        totalPoints,
         attributes.feeds,
         attributes.styles,
         attributes.mapcenter,
@@ -1225,11 +1247,42 @@ export default function Edit( { attributes, setAttributes } ) {
                     },
                 } ) }
             >
-                <div
-                    ref={ mapRef }
-                    id={ mapId }
-                    style={ { height: '100%', width: '100%' } }
-                />
+                { totalPoints !== null && totalPoints > 10000 ? (
+                    <div
+                        style={ {
+                            height: '100%',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#f0f0f0',
+                            color: '#666',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            textAlign: 'center',
+                            padding: '16px',
+                        } }
+                    >
+                        <strong>
+                            { __(
+                                'Map preview disabled — database contains'
+                            ) }{ ' ' }
+                            { totalPoints.toLocaleString() }{ ' ' }
+                            { __( 'points (limit: 10,000).' ) }
+                        </strong>
+                        <span>
+                            { __(
+                                'The map will load normally for site visitors.'
+                            ) }
+                        </span>
+                    </div>
+                ) : (
+                    <div
+                        ref={ mapRef }
+                        id={ mapId }
+                        style={ { height: '100%', width: '100%' } }
+                    />
+                ) }
             </div>
         </>
     );
