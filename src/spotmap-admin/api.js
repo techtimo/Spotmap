@@ -14,8 +14,21 @@ export const createFeed = ( data ) =>
 export const updateFeed = ( id, data ) =>
     apiFetch( { url: url( `feeds/${ id }` ), method: 'PUT', data } );
 
-export const deleteFeed = ( id ) =>
-    apiFetch( { url: url( `feeds/${ id }` ), method: 'DELETE' } );
+export const deleteFeed = ( id, deletePoints = false ) =>
+    apiFetch( {
+        url: url( `feeds/${ id }` ),
+        method: 'DELETE',
+        data: { delete_points: deletePoints },
+    } );
+
+export const getDbFeeds = () => apiFetch( { url: url( 'db-feeds' ) } );
+
+export const deleteDbFeedPoints = ( feedName ) =>
+    apiFetch( {
+        url: url( 'db-feeds' ),
+        method: 'DELETE',
+        data: { feed_name: feedName },
+    } );
 
 export const pauseFeed = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/pause` ), method: 'POST' } );

@@ -57,6 +57,18 @@ const FIELDS = [
         help: 'Comma-separated overlay keys to enable by default. Leave blank for none.',
         type: 'text',
     },
+    {
+        key: 'import-min-distance',
+        label: 'Import: Min Distance (m)',
+        help: 'Skip incoming points within this many metres of the last stored point (stationary deduplication). Default: 25.',
+        type: 'number',
+    },
+    {
+        key: 'import-min-time',
+        label: 'Import: Min Time (s)',
+        help: 'Skip incoming points arriving within this many seconds of the last stored point. Default: 60.',
+        type: 'number',
+    },
 ];
 
 export default function DefaultsTab( { onNoticeChange } ) {

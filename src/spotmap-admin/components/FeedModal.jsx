@@ -4,7 +4,7 @@ import { Modal, Button, TextControl, Notice } from '@wordpress/components';
 import { REDACTED } from '../api';
 import ProviderSelector from './ProviderSelector';
 
-function OsmAndTrackingUrl( { url } ) {
+function TrackingUrlBox( { title, description, url } ) {
     const [ copied, setCopied ] = useState( false );
     const copy = () => {
         navigator.clipboard.writeText( url ).then( () => {
@@ -22,22 +22,9 @@ function OsmAndTrackingUrl( { url } ) {
                 borderRadius: '4px',
             } }
         >
-            <p style={ { margin: '0 0 6px', fontWeight: 600 } }>
-                OsmAnd Tracking URL
-            </p>
+            <p style={ { margin: '0 0 6px', fontWeight: 600 } }>{ title }</p>
             <p style={ { margin: '0 0 10px', fontSize: '0.85em' } }>
-                Enter this URL in OsmAnd:{ ' ' }
-                <em>
-                    Plugins → Trip Recording → Online tracking → Web address
-                </em>
-                . Set Tracking interval to 10 s or more.{ ' ' }
-                <a
-                    href="https://osmand.net/docs/user/plugins/trip-recording/#required-setup-parameters"
-                    target="_blank"
-                    rel="noreferrer"
-                >
-                    OsmAnd docs ↗
-                </a>
+                { description }
             </p>
             <div
                 style={ { display: 'flex', alignItems: 'center', gap: '8px' } }
@@ -63,7 +50,7 @@ function OsmAndTrackingUrl( { url } ) {
     );
 }
 
-function generateOsmAndKey() {
+function generateFeedKey() {
     const bytes = new Uint8Array( 16 );
     crypto.getRandomValues( bytes );
     return Array.from( bytes )
@@ -71,14 +58,21 @@ function generateOsmAndKey() {
         .join( '' );
 }
 
+function getIngestBase() {
+    return window.spotmapAdminData.restUrl.replace( /\/$/, '' );
+}
+
 function buildOsmAndUrl( key ) {
-    const base = window.spotmapAdminData.restUrl.replace( /\/$/, '' );
     return (
-        base +
+        getIngestBase() +
         '/ingest/osmand?key=' +
         encodeURIComponent( key ) +
         '&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}'
     );
+}
+
+function buildTeltonikaUrl( key ) {
+    return getIngestBase() + '/ingest/teltonika?key=' + encodeURIComponent( key );
 }
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
@@ -93,9 +87,9 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
         provider?.fields.forEach( ( f ) => {
             initial[ f.key ] = feed?.[ f.key ] ?? '';
         } );
-        // For new OsmAnd feeds, generate the key upfront so the URL is visible immediately.
-        if ( ! feed && initialType === 'osmand' ) {
-            initial.key = generateOsmAndKey();
+        // For new OsmAnd/Teltonika feeds, generate the key upfront so the URL is visible immediately.
+        if ( ! feed && ( initialType === 'osmand' || initialType === 'teltonika' ) ) {
+            initial.key = generateFeedKey();
         }
         return initial;
     } );
@@ -114,18 +108,23 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
         newProvider?.fields.forEach( ( f ) => {
             reset[ f.key ] = '';
         } );
-        if ( newType === 'osmand' ) {
-            reset.key = generateOsmAndKey();
+        if ( newType === 'osmand' || newType === 'teltonika' ) {
+            reset.key = generateFeedKey();
         }
         setFields( reset );
     };
 
-    // For new OsmAnd feeds the URL is built from the browser-generated key so it's
+    // For new OsmAnd/Teltonika feeds the URL is built from the browser-generated key so it's
     // visible immediately. For existing feeds the server-provided URL is used.
     const osmandTrackingUrl =
         type === 'osmand'
             ? feed?.tracking_url ??
               ( fields.key ? buildOsmAndUrl( fields.key ) : null )
+            : null;
+    const teltonikaTrackingUrl =
+        type === 'teltonika'
+            ? feed?.tracking_url ??
+              ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
             : null;
 
     const handleSave = async () => {
@@ -191,7 +190,34 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
             } ) }
 
             { osmandTrackingUrl && (
-                <OsmAndTrackingUrl url={ osmandTrackingUrl } />
+                <TrackingUrlBox
+                    title="OsmAnd Tracking URL"
+                    description={
+                        <>
+                            Enter this URL in OsmAnd:{ ' ' }
+                            <em>
+                                Plugins → Trip Recording → Online tracking →
+                                Web address
+                            </em>
+                            . Set Tracking interval to 10 s or more.{ ' ' }
+                            <a
+                                href="https://osmand.net/docs/user/plugins/trip-recording/#required-setup-parameters"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                OsmAnd docs ↗
+                            </a>
+                        </>
+                    }
+                    url={ osmandTrackingUrl }
+                />
+            ) }
+            { teltonikaTrackingUrl && (
+                <TrackingUrlBox
+                    title="Teltonika Push URL"
+                    description="Configure this as the HTTP POST destination in your Teltonika device (Codec 8 / JSON over HTTP). The device should POST JSON with a single object key containing latitude, longitude, altitude, speed, angle, and timestamp fields."
+                    url={ teltonikaTrackingUrl }
+                />
             ) }
 
             <div style={ { display: 'flex', gap: '8px', marginTop: '16px' } }>
