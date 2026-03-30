@@ -235,7 +235,7 @@ export class Spotmap {
 
         // Fetch and render data
         const body: AjaxRequestBody = {
-            action: 'get_positions',
+            action: 'spotmap_get_positions',
             select: '*',
             feeds: this.options.feeds ?? '',
             'date-range': this.options.dateRange,
