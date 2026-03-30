@@ -1,6 +1,12 @@
 import type { AjaxRequestBody, AjaxResponse, SpotPoint } from './types';
 import { debug as debugLog } from './utils';
 
+const TRACK_TYPES = new Set< SpotPoint[ 'type' ] >( [
+    'TRACK',
+    'EXTREME-TRACK',
+    'UNLIMITED-TRACK',
+] );
+
 /**
  * Handles AJAX communication with the WordPress backend.
  * Replaces jQuery.post with the native fetch API.
@@ -79,14 +85,16 @@ export class DataFetcher {
 
         if ( filter && ! response.empty ) {
             const before = ( response as SpotPoint[] ).length;
+            const rdp = DataFetcher.rdpSimplify(
+                response as SpotPoint[],
+                filter
+            );
             const filtered = DataFetcher.removeClosePoints(
-                response,
+                rdp,
                 filter
             ) as AjaxResponse;
             this.dbg(
-                `DataFetcher: filterPoints=${ filter }m — ${ before } → ${
-                    ( filtered as SpotPoint[] ).length
-                } points`
+                `DataFetcher: filterPoints=${ filter }m — ${ before } → rdp ${ rdp.length } → ${ ( filtered as SpotPoint[] ).length } points`
             );
             return filtered;
         }
@@ -97,6 +105,116 @@ export class DataFetcher {
             } points`
         );
         return response;
+    }
+
+    /**
+     * Simplify a polyline using the Ramer-Douglas-Peucker algorithm.
+     *
+     * Non-track points (OK, HELP, SOS, etc.) are always kept; only consecutive
+     * runs of TRACK / EXTREME-TRACK / UNLIMITED-TRACK points are simplified.
+     * Removed points are not annotated — this is purely a render optimisation.
+     *
+     * @param points       - Input array in time order.
+     * @param epsilonMeters - Maximum allowed perpendicular deviation (metres).
+     */
+    static rdpSimplify( points: SpotPoint[], epsilonMeters: number ): SpotPoint[] {
+        if ( points.length <= 2 || epsilonMeters <= 0 ) {
+            return points;
+        }
+
+        const isTrack = ( p: SpotPoint ) => TRACK_TYPES.has( p.type );
+
+        const result: SpotPoint[] = [];
+        let i = 0;
+
+        while ( i < points.length ) {
+            if ( ! isTrack( points[ i ] ) ) {
+                result.push( points[ i ] );
+                i++;
+            } else {
+                const runStart = i;
+                while ( i < points.length && isTrack( points[ i ] ) ) {
+                    i++;
+                }
+                const simplified = DataFetcher.rdpReduce(
+                    points.slice( runStart, i ),
+                    epsilonMeters
+                );
+                result.push( ...simplified );
+            }
+        }
+
+        return result;
+    }
+
+    /** Recursive RDP core — assumes all points in the slice are track-type. */
+    private static rdpReduce(
+        points: SpotPoint[],
+        epsilon: number
+    ): SpotPoint[] {
+        if ( points.length <= 2 ) {
+            return points;
+        }
+
+        let maxDist = 0;
+        let maxIdx = 0;
+        const start = points[ 0 ];
+        const end = points[ points.length - 1 ];
+
+        for ( let i = 1; i < points.length - 1; i++ ) {
+            const d = DataFetcher.pointToSegmentMeters( points[ i ], start, end );
+            if ( d > maxDist ) {
+                maxDist = d;
+                maxIdx = i;
+            }
+        }
+
+        if ( maxDist > epsilon ) {
+            const left = DataFetcher.rdpReduce(
+                points.slice( 0, maxIdx + 1 ),
+                epsilon
+            );
+            const right = DataFetcher.rdpReduce( points.slice( maxIdx ), epsilon );
+            return [ ...left.slice( 0, -1 ), ...right ];
+        }
+
+        return [ start, end ];
+    }
+
+    /**
+     * Perpendicular distance (metres) from point `p` to the segment `a→b`,
+     * using an equirectangular projection centred on the segment midpoint.
+     * Accurate to <1 % for segments shorter than ~100 km.
+     */
+    private static pointToSegmentMeters(
+        p: SpotPoint,
+        a: SpotPoint,
+        b: SpotPoint
+    ): number {
+        const DEG_TO_M = 111_320;
+        const cosLat =
+            Math.cos( ( ( a.latitude + b.latitude ) / 2 ) * ( Math.PI / 180 ) );
+
+        const ax = a.longitude * cosLat * DEG_TO_M;
+        const ay = a.latitude * DEG_TO_M;
+        const bx = b.longitude * cosLat * DEG_TO_M;
+        const by = b.latitude * DEG_TO_M;
+        const px = p.longitude * cosLat * DEG_TO_M;
+        const py = p.latitude * DEG_TO_M;
+
+        const dx = bx - ax;
+        const dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+
+        if ( lenSq === 0 ) {
+            return Math.sqrt( ( px - ax ) ** 2 + ( py - ay ) ** 2 );
+        }
+
+        const t = Math.max(
+            0,
+            Math.min( 1, ( ( px - ax ) * dx + ( py - ay ) * dy ) / lenSq )
+        );
+        return Math.sqrt( ( px - ( ax + t * dx ) ) ** 2 + ( py - ( ay + t * dy ) ) ** 2 );
     }
 
     /**

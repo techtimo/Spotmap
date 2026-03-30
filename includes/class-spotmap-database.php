@@ -114,6 +114,22 @@ private const ALLOWED_COLUMNS = [
 		return $counts;
 	}
 
+	/**
+	 * Deletes all points for a given feed_name.
+	 *
+	 * @param string $feed_name
+	 * @return int Number of rows deleted.
+	 */
+	public function delete_points_by_feed_name( string $feed_name ): int {
+		global $wpdb;
+		$result = $wpdb->delete(
+			$wpdb->prefix . 'spotmap_points',
+			[ 'feed_name' => $feed_name ],
+			[ '%s' ]
+		);
+		return $result === false ? 0 : (int) $result;
+	}
+
 	public function get_all_types(){
 		global $wpdb;
 		return $wpdb->get_col("SELECT DISTINCT type FROM " . $wpdb->prefix . "spotmap_points");
@@ -259,16 +275,18 @@ private const ALLOWED_COLUMNS = [
 	 * Coordinate bounds are validated; if invalid, the last known point's
 	 * coordinates for the same feed_id are used as a fallback.
 	 *
-	 * Stationary-deduplication: if the new point is within 25 m of the last
-	 * stored point for the same feed AND < 10 minutes later, the insert is
-	 * skipped (returns 0).  The first arrival point is always kept because
-	 * no prior point exists at that location yet.
+	 * Stationary-deduplication: if the new point is within the configured
+	 * import-min-distance of the last stored point for the same feed AND within
+	 * import-min-time seconds, the timestamp of the existing point is updated
+	 * and 0 is returned.  The first arrival point is always kept because no
+	 * prior point exists at that location yet.
 	 *
 	 * @param array<string, mixed> $data           Column → value pairs (DB column names).
 	 * @param bool                 $schedule_tz     Whether to schedule the timezone lookup event.
 	 * @return int|false Number of rows inserted, or false on error.
 	 */
 	public function insert_row( array $data, bool $schedule_tz = true ) {
+		global $wpdb;
 		$last_point = $this->get_last_point( $data['feed_id'] ?? null );
 
 		if ( ( $data['latitude'] ?? 0 ) > 90 || ( $data['latitude'] ?? 0 ) < -90 ) {
@@ -288,14 +306,24 @@ private const ALLOWED_COLUMNS = [
 					(float) $data['latitude'],
 					(float) $data['longitude']
 				);
-				$time_diff_s = abs( (int) $data['time'] - (int) $prev->time );
-				if ( $distance_m <= 25 && $time_diff_s < 600 ) {
-					return 0; // duplicate of a stationary point — skip
+				$time_diff_s  = abs( (int) $data['time'] - (int) $prev->time );
+				$min_distance = (int) Spotmap_Options::get_setting( 'import-min-distance', 25 );
+				$min_time     = (int) Spotmap_Options::get_setting( 'import-min-time', 60 );
+				if ( $distance_m <= $min_distance && $time_diff_s < $min_time ) {
+					// Stationary duplicate — update the existing point's timestamp so the
+					// map always reflects when the tracker last reported, even when parked.
+					$wpdb->update(
+						$wpdb->prefix . 'spotmap_points',
+						array( 'time' => $data['time'] ),
+						array( 'id' => $prev->id ),
+						array( '%s' ),
+						array( '%d' )
+					);
+					return 0;
 				}
 			}
 		}
 
-		global $wpdb;
 		$result = $wpdb->insert( $wpdb->prefix . 'spotmap_points', $data );
 
 		if ( $result && $schedule_tz ) {

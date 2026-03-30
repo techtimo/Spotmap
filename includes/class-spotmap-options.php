@@ -86,14 +86,16 @@ class Spotmap_Options {
 	 */
 	public static function get_settings_defaults() {
 		return [
-			'maps'          => 'openstreetmap,opentopomap',
-			'height'        => 500,
-			'mapcenter'     => 'all',
-			'width'         => 'normal',
-			'color'         => 'blue,red',
-			'splitlines'    => '12',
-			'filter-points' => 5,
-			'map-overlays'  => null,
+			'maps'               => 'openstreetmap,opentopomap',
+			'height'             => 500,
+			'mapcenter'          => 'all',
+			'width'              => 'normal',
+			'color'              => 'blue,red',
+			'splitlines'         => '12',
+			'filter-points'      => 5,
+			'map-overlays'       => null,
+			'import-min-distance' => 25,
+			'import-min-time'    => 60,
 		];
 	}
 

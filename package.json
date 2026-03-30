@@ -25,6 +25,7 @@
         "leaflet.fullscreen": "^5.3.0"
     },
     "devDependencies": {
+        "@jest/globals": "^29.7.0",
         "@playwright/test": "^1.52.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",

@@ -6,10 +6,14 @@
  * All routes are under /wp-json/spotmap/v1/ and require manage_options.
  *
  * Feeds:
- *   GET    /feeds           → list all feeds
- *   POST   /feeds           → create a feed
- *   PUT    /feeds/(?P<id>[\w.]+)  → update a feed
- *   DELETE /feeds/(?P<id>[\w.]+)  → delete a feed
+ *   GET    /feeds                      → list all feeds (configured)
+ *   POST   /feeds                      → create a feed
+ *   PUT    /feeds/(?P<id>[\w.]+)       → update a feed
+ *   DELETE /feeds/(?P<id>[\w.]+)       → delete a feed config (body: {delete_points: true} also purges DB rows)
+ *
+ * DB feeds (feed_name values that exist in the points table):
+ *   GET    /db-feeds                   → list all feed_names in DB with point counts
+ *   DELETE /db-feeds                   → delete all points for a feed_name (body: {feed_name: "..."})
  *
  * Providers:
  *   GET    /providers       → list provider type definitions
@@ -91,6 +95,24 @@ class Spotmap_Rest_Api {
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => [ __CLASS__, 'unpause_feed' ],
 				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+
+		// --- DB Feeds ---
+		register_rest_route(
+			self::NAMESPACE,
+			'/db-feeds',
+			[
+				[
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => [ __CLASS__, 'get_db_feeds' ],
+					'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				],
+				[
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => [ __CLASS__, 'delete_db_feed' ],
+					'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				],
 			]
 		);
 
@@ -223,9 +245,10 @@ class Spotmap_Rest_Api {
 			return $live;
 		}
 
-		// OsmAnd feeds authenticate via a per-feed pre-shared key in the URL.
+		// Push feeds authenticate via a per-feed pre-shared key in the URL.
 		// Use the client-generated key when provided; fall back to server generation.
-		if ( ( $data['type'] ?? '' ) === 'osmand' && empty( $data['key'] ) ) {
+		$push_types = [ 'osmand', 'teltonika' ];
+		if ( in_array( $data['type'] ?? '', $push_types, true ) && empty( $data['key'] ) ) {
 			$data['key'] = bin2hex( random_bytes( 16 ) );
 		}
 
@@ -279,13 +302,49 @@ class Spotmap_Rest_Api {
 	}
 
 	public static function delete_feed( WP_REST_Request $request ) {
-		$id = $request->get_param( 'id' );
+		$id   = $request->get_param( 'id' );
+		$body = $request->get_json_params() ?? [];
 
-		if ( ! Spotmap_Options::delete_feed( $id ) ) {
+		$feed = Spotmap_Options::get_feed( $id );
+		if ( ! $feed ) {
 			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
 		}
 
+		if ( ! empty( $body['delete_points'] ) ) {
+			$db = new Spotmap_Database();
+			$db->delete_points_by_feed_name( $feed['name'] ?? '' );
+		}
+
+		Spotmap_Options::delete_feed( $id );
+
 		return new WP_REST_Response( null, 204 );
+	}
+
+	public static function get_db_feeds( WP_REST_Request $request ) {
+		$db     = new Spotmap_Database();
+		$counts = $db->get_point_counts_by_feed();
+		$result = [];
+		foreach ( $counts as $feed_name => $count ) {
+			$result[] = [
+				'feed_name'   => $feed_name,
+				'point_count' => $count,
+			];
+		}
+		return rest_ensure_response( $result );
+	}
+
+	public static function delete_db_feed( WP_REST_Request $request ) {
+		$body      = $request->get_json_params() ?? [];
+		$feed_name = sanitize_text_field( $body['feed_name'] ?? '' );
+
+		if ( $feed_name === '' ) {
+			return new WP_Error( 'missing_feed_name', 'feed_name is required.', [ 'status' => 400 ] );
+		}
+
+		$db      = new Spotmap_Database();
+		$deleted = $db->delete_points_by_feed_name( $feed_name );
+
+		return rest_ensure_response( [ 'deleted' => $deleted ] );
 	}
 
 	public static function pause_feed( WP_REST_Request $request ) {
@@ -602,6 +661,10 @@ class Spotmap_Rest_Api {
 			$feed['tracking_url']  = $base
 				. '?key=' . rawurlencode( $feed['key'] )
 				. '&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}&bearing={6}&batproc={11}';
+		}
+		if ( ( $feed['type'] ?? '' ) === 'teltonika' && ! empty( $feed['key'] ) ) {
+			$base                 = rest_url( self::NAMESPACE . '/ingest/teltonika' );
+			$feed['tracking_url'] = $base . '?key=' . rawurlencode( $feed['key'] );
 		}
 		return $feed;
 	}

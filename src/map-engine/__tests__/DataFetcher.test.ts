@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { DataFetcher } from '../DataFetcher';
 import type { AjaxRequestBody, SpotPoint } from '../types';
 
@@ -7,13 +8,18 @@ import type { AjaxRequestBody, SpotPoint } from '../types';
 
 function mockFetch( data: unknown ): jest.Mock {
     const mock = jest.fn().mockResolvedValue( {
-        json: jest.fn().mockResolvedValue( data ),
-    } );
-    global.fetch = mock;
+        json: jest.fn().mockResolvedValue( data as never ),
+    } as never );
+    global.fetch = mock as unknown as typeof fetch;
     return mock;
 }
 
-const minimalBody: AjaxRequestBody = { action: 'spotmap' };
+const minimalBody: AjaxRequestBody = {
+    action: 'spotmap',
+    feeds: '',
+    orderBy: '',
+    groupBy: '',
+};
 
 function makePoint(
     lat: number,
@@ -108,6 +114,78 @@ describe( 'DataFetcher.removeClosePoints', () => {
 } );
 
 // ---------------------------------------------------------------------------
+// DataFetcher.rdpSimplify
+// ---------------------------------------------------------------------------
+
+describe( 'DataFetcher.rdpSimplify', () => {
+    it( 'returns empty array unchanged', () => {
+        expect( DataFetcher.rdpSimplify( [], 10 ) ).toEqual( [] );
+    } );
+
+    it( 'returns ≤2 points unchanged', () => {
+        const pts = [ makePoint( 47.0, 8.0 ), makePoint( 48.0, 9.0 ) ];
+        expect( DataFetcher.rdpSimplify( pts, 10 ) ).toHaveLength( 2 );
+    } );
+
+    it( 'removes collinear intermediate point', () => {
+        // Three collinear points along a lat line — middle is redundant
+        const pts = [
+            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ), // midpoint
+            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+        ];
+        const result = DataFetcher.rdpSimplify( pts, 1 );
+        expect( result ).toHaveLength( 2 );
+        expect( result[ 0 ].id ).toBe( 1 );
+        expect( result[ 1 ].id ).toBe( 3 );
+    } );
+
+    it( 'keeps a significantly deviated point', () => {
+        const pts = [
+            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+            makePoint( 47.5, 8.5, 'UNLIMITED-TRACK', 2 ), // large detour
+            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+        ];
+        const result = DataFetcher.rdpSimplify( pts, 1 );
+        expect( result ).toHaveLength( 3 );
+    } );
+
+    it( 'never removes non-track points (OK type)', () => {
+        const pts = [
+            makePoint( 47.0, 8.0, 'OK', 1 ),
+            makePoint( 47.0, 8.5, 'OK', 2 ),
+            makePoint( 47.0, 9.0, 'OK', 3 ),
+        ];
+        const result = DataFetcher.rdpSimplify( pts, 1_000_000 );
+        expect( result ).toHaveLength( 3 );
+    } );
+
+    it( 'keeps non-track points between simplified track runs', () => {
+        const pts = [
+            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ), // collinear — should be removed
+            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 9.0, 'OK', 4 ), // waypoint — always kept
+            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 5 ),
+            makePoint( 47.0, 9.5, 'UNLIMITED-TRACK', 6 ), // collinear — should be removed
+            makePoint( 47.0, 10.0, 'UNLIMITED-TRACK', 7 ),
+        ];
+        const result = DataFetcher.rdpSimplify( pts, 1 );
+        // IDs 1, 3 (first run simplified), 4 (OK kept), 5, 7 (second run simplified)
+        expect( result.map( ( p ) => p.id ) ).toEqual( [ 1, 3, 4, 5, 7 ] );
+    } );
+
+    it( 'epsilon=0 returns all points unchanged', () => {
+        const pts = [
+            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ),
+            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+        ];
+        expect( DataFetcher.rdpSimplify( pts, 0 ) ).toHaveLength( 3 );
+    } );
+} );
+
+// ---------------------------------------------------------------------------
 // Load test with sentiero_italia.json  (6 468 real GPS tracking points)
 // ---------------------------------------------------------------------------
 
@@ -116,7 +194,7 @@ describe( 'DataFetcher.removeClosePoints — sentiero_italia load test', () => {
     const raw: Record<
         string,
         string
-    >[] = require( '../../../examples/sentiero_italia.json' );
+    >[] = require( '../../../examples/sentiero_italia-transformed.json' );
     const points: SpotPoint[] = raw.map( ( p, i ) => ( {
         id: Number( p.id ) || i,
         feed_name: p.feed_name ?? 'spot',
@@ -162,6 +240,55 @@ describe( 'DataFetcher.removeClosePoints — sentiero_italia load test', () => {
         const r50 = DataFetcher.removeClosePoints( [ ...points ], 50 ).length;
         const r200 = DataFetcher.removeClosePoints( [ ...points ], 200 ).length;
         expect( r200 ).toBeLessThan( r50 );
+    } );
+} );
+
+// ---------------------------------------------------------------------------
+// RDP load test + combined pipeline (sentiero_italia)
+// ---------------------------------------------------------------------------
+
+describe( 'DataFetcher.rdpSimplify — sentiero_italia load test', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const raw: Record<
+        string,
+        string
+    >[] = require( '../../../examples/sentiero_italia-transformed.json' );
+    const points: SpotPoint[] = raw.map( ( p, i ) => ( {
+        id: Number( p.id ) || i,
+        feed_name: p.feed_name ?? 'spot',
+        latitude: Number( p.latitude ),
+        longitude: Number( p.longitude ),
+        altitude: Number( p.altitude ) || 0,
+        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'UNLIMITED-TRACK',
+        unixtime: Number( p.unixtime ) || 0,
+        time: p.time ?? '',
+        date: p.date ?? '',
+    } ) );
+
+    it( 'completes within 500 ms for the full dataset (epsilon 50 m)', () => {
+        const start = performance.now();
+        DataFetcher.rdpSimplify( [ ...points ], 50 );
+        expect( performance.now() - start ).toBeLessThan( 500 );
+    } );
+
+    it( 'reduces point count with epsilon 50 m', () => {
+        const result = DataFetcher.rdpSimplify( [ ...points ], 50 );
+        expect( result.length ).toBeLessThan( points.length );
+    } );
+
+    it( 'always keeps first and last point', () => {
+        const result = DataFetcher.rdpSimplify( [ ...points ], 50 );
+        expect( result[ 0 ].id ).toBe( points[ 0 ].id );
+        expect( result[ result.length - 1 ].id ).toBe(
+            points[ points.length - 1 ].id
+        );
+    } );
+
+    it( 'combined RDP + removeClosePoints yields fewer points than removeClosePoints alone', () => {
+        const rdpOnly = DataFetcher.rdpSimplify( [ ...points ], 50 );
+        const combined = DataFetcher.removeClosePoints( rdpOnly, 50 );
+        const removeOnly = DataFetcher.removeClosePoints( [ ...points ], 50 );
+        expect( combined.length ).toBeLessThanOrEqual( removeOnly.length );
     } );
 } );
 
@@ -249,7 +376,8 @@ describe( 'DataFetcher.fetchPoints', () => {
             feeds: [ 'f1', 'f2' ],
         } as AjaxRequestBody & { feeds: string[] } );
 
-        const body: string = mock.mock.calls[ 0 ][ 1 ].body;
+        const body: string = ( mock.mock.calls[ 0 ][ 1 ] as RequestInit )
+            .body as string;
         expect( body ).toContain( 'feeds%5B%5D=f1' );
         expect( body ).toContain( 'feeds%5B%5D=f2' );
     } );
@@ -269,7 +397,11 @@ describe( 'DataFetcher.abort', () => {
 
     it( 'cancels an in-flight request', async () => {
         // fetch never resolves — simulates a slow network
-        global.fetch = jest.fn().mockReturnValue( new Promise( () => {} ) );
+        global.fetch = jest
+            .fn()
+            .mockReturnValue(
+                new Promise( () => {} )
+            ) as unknown as typeof fetch;
 
         const fetcher = new DataFetcher(
             'https://example.com/wp-admin/admin-ajax.php'
@@ -280,9 +412,9 @@ describe( 'DataFetcher.abort', () => {
 
         // The AbortController abort signal is passed to fetch; the promise stays
         // pending but we can verify fetch was called with a signal.
-        const signal = ( global.fetch as jest.Mock ).mock.calls[ 0 ][ 1 ]
-            .signal;
-        expect( signal.aborted ).toBe( true );
+        const fetchMock = global.fetch as unknown as jest.Mock;
+        const signal = ( fetchMock.mock.calls[ 0 ][ 1 ] as RequestInit ).signal;
+        expect( signal!.aborted ).toBe( true );
 
         // Prevent unhandled promise rejection
         promise.catch( () => {} );

@@ -35,6 +35,15 @@ class Spotmap_Ingest {
 				'permission_callback' => '__return_true',
 			]
 		);
+		register_rest_route(
+			Spotmap_Rest_Api::NAMESPACE,
+			'/ingest/teltonika',
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ __CLASS__, 'handle_teltonika' ],
+				'permission_callback' => '__return_true',
+			]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -44,7 +53,7 @@ class Spotmap_Ingest {
 	public static function handle_osmand( WP_REST_Request $request ): WP_REST_Response {
 		// 1. Resolve feed by pre-shared key.
 		$key  = sanitize_text_field( $request->get_param( 'key' ) ?? '' );
-		$feed = self::find_feed_by_key( $key );
+		$feed = self::find_feed_by_key( 'osmand', $key );
 		if ( $feed === null ) {
 			return new WP_REST_Response( [ 'error' => 'Invalid key.' ], 401 );
 		}
@@ -118,21 +127,102 @@ class Spotmap_Ingest {
 	}
 
 	// -------------------------------------------------------------------------
+	// Teltonika handler
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Receives a Teltonika GPS push.
+	 *
+	 * Endpoint: POST /wp-json/spotmap/v1/ingest/teltonika?key=<auth_key>
+	 *
+	 * The JSON body is a single-key object; the key name is ignored — only the
+	 * nested values matter:
+	 *   {"<any>": {"latitude":…, "longitude":…, "timestamp":…, …}}
+	 *
+	 * Unlike OsmAnd, Teltonika sends timestamp in Unix seconds (not ms).
+	 */
+	public static function handle_teltonika( WP_REST_Request $request ): WP_REST_Response {
+		// 1. Resolve feed by pre-shared key.
+		$key  = sanitize_text_field( $request->get_param( 'key' ) ?? '' );
+		$feed = self::find_feed_by_key( 'teltonika', $key );
+		if ( $feed === null ) {
+			return new WP_REST_Response( [ 'error' => 'Invalid key.' ], 401 );
+		}
+
+		if ( ! empty( $feed['paused'] ) ) {
+			return new WP_REST_Response( [ 'error' => 'Feed is paused.' ], 400 );
+		}
+
+		// 2. Decode body — accept the first (and only) object in the payload.
+		$body = $request->get_json_params();
+		if ( ! is_array( $body ) || empty( $body ) ) {
+			return new WP_REST_Response( [ 'error' => 'Invalid JSON body.' ], 400 );
+		}
+		$payload = reset( $body ); // key name is ignored
+		if ( ! is_array( $payload ) ) {
+			return new WP_REST_Response( [ 'error' => 'Payload value must be an object.' ], 400 );
+		}
+
+		// 3. Validate required fields.
+		if ( ! isset( $payload['latitude'], $payload['longitude'], $payload['timestamp'] ) ) {
+			return new WP_REST_Response( [ 'error' => 'latitude, longitude, and timestamp are required.' ], 400 );
+		}
+
+		$lat     = (float) $payload['latitude'];
+		$lon     = (float) $payload['longitude'];
+		$unix_ts = (int) $payload['timestamp']; // already Unix seconds
+
+		// 4. Build the DB row.
+		$data = [
+			'feed_name' => $feed['name'],
+			'feed_id'   => $feed['id'],
+			'type'      => 'TRACK',
+			'time'      => $unix_ts,
+			'latitude'  => $lat,
+			'longitude' => $lon,
+		];
+
+		if ( isset( $payload['altitude'] ) ) {
+			$data['altitude'] = (int) round( (float) $payload['altitude'] );
+		}
+		if ( isset( $payload['speed'] ) ) {
+			$data['speed'] = (float) $payload['speed'];
+		}
+		if ( isset( $payload['angle'] ) ) {
+			$data['bearing'] = (float) $payload['angle'];
+		}
+		if ( isset( $payload['accuracy'] ) ) {
+			$data['hdop'] = (float) $payload['accuracy'];
+		}
+
+		// 5. Insert.
+		$db     = new Spotmap_Database();
+		$result = $db->insert_row( $data );
+
+		if ( $result === false ) {
+			return new WP_REST_Response( [ 'error' => 'Failed to store point.' ], 500 );
+		}
+
+		return new WP_REST_Response( [ 'ok' => true ], 200 );
+	}
+
+	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Finds an OsmAnd feed by its pre-shared key.
+	 * Finds a feed of the given type by its pre-shared key.
 	 *
-	 * @param string $key
+	 * @param string $type Feed type (e.g. 'osmand', 'teltonika').
+	 * @param string $key  Pre-shared key.
 	 * @return array<string, mixed>|null Feed array, or null if not found.
 	 */
-	private static function find_feed_by_key( string $key ): ?array {
+	private static function find_feed_by_key( string $type, string $key ): ?array {
 		if ( $key === '' ) {
 			return null;
 		}
 		foreach ( Spotmap_Options::get_feeds() as $feed ) {
-			if ( ( $feed['type'] ?? '' ) === 'osmand' && ( $feed['key'] ?? '' ) === $key ) {
+			if ( ( $feed['type'] ?? '' ) === $type && ( $feed['key'] ?? '' ) === $key ) {
 				return $feed;
 			}
 		}

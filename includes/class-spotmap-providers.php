@@ -67,11 +67,20 @@ class Spotmap_Providers {
 					],
 				],
 
+				'teltonika' => [
+					'label'  => 'Teltonika (Push)',
+					'fields' => [
+						[
+							'key'         => 'name',
+							'type'        => 'text',
+							'label'       => 'Feed Name',
+							'required'    => true,
+							'description' => 'A unique name used to identify this feed in the map block.',
+						],
+					],
+				],
+
 				// Future providers — add crawler implementation alongside each entry.
-				// 'teltonika' => [
-				//     'label'  => 'Teltonika',
-				//     'fields' => [ ... ],
-				// ],
 				// 'garmin' => [
 				//     'label'  => 'Garmin inReach',
 				//     'fields' => [ ... ],
