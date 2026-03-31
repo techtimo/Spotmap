@@ -1,6 +1,14 @@
 /* global navigator */
 import { useState } from '@wordpress/element';
-import { Modal, Button, TextControl, Notice } from '@wordpress/components';
+import {
+    Modal,
+    Button,
+    TextControl,
+    BaseControl,
+    Flex,
+    FlexItem,
+    Notice,
+} from '@wordpress/components';
 import { REDACTED } from '../api';
 import ProviderSelector from './ProviderSelector';
 
@@ -110,6 +118,26 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
     } );
     const [ saving, setSaving ] = useState( false );
     const [ error, setError ] = useState( null );
+    // Tracks which password fields are in edit mode (Set of field keys).
+    const [ passwordEditing, setPasswordEditing ] = useState( () => new Set() );
+    // Tracks which password fields are in "clear" mode.
+    const [ passwordClearing, setPasswordClearing ] = useState( () => new Set() );
+
+    const startPasswordEdit = ( key ) => {
+        setPasswordEditing( ( prev ) => new Set( [ ...prev, key ] ) );
+        setPasswordClearing( ( prev ) => {
+            const next = new Set( prev );
+            next.delete( key );
+            return next;
+        } );
+        setFields( ( prev ) => ( { ...prev, [ key ]: REDACTED } ) );
+    };
+
+    const startPasswordClear = ( key ) => {
+        setPasswordEditing( ( prev ) => new Set( [ ...prev, key ] ) );
+        setPasswordClearing( ( prev ) => new Set( [ ...prev, key ] ) );
+        setFields( ( prev ) => ( { ...prev, [ key ]: '' } ) );
+    };
 
     const provider = providers[ type ];
 
@@ -163,6 +191,7 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
             size="medium"
             onRequestClose={ onClose }
         >
+            <div style={ { display: 'flex', flexDirection: 'column', gap: '16px' } }>
             { error && (
                 <Notice status="error" onRemove={ () => setError( null ) }>
                     { error }
@@ -178,30 +207,86 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
             ) }
 
             { provider?.fields.map( ( field ) => {
-                const isRedacted =
+                const help = field.description
+                    ? field.description.replace( /<[^>]+>/g, '' )
+                    : undefined;
+                const isPasswordField = field.type === 'password';
+                const isStored =
                     isEdit &&
-                    field.type === 'password' &&
-                    fields[ field.key ] === REDACTED;
+                    isPasswordField &&
+                    fields[ field.key ] === REDACTED &&
+                    ! passwordEditing.has( field.key );
+
+                if ( isStored ) {
+                    return (
+                        <BaseControl
+                            key={ field.key }
+                            label={ field.label }
+                            id={ `password-${ field.key }` }
+                            __nextHasNoMarginBottom
+                        >
+                            <Flex align="center" gap={ 2 }>
+                                <FlexItem>
+                                    <span style={ { color: '#1d7e1d' } }>
+                                        &#10003; Password stored
+                                    </span>
+                                </FlexItem>
+                                <FlexItem>
+                                    <Button
+                                        variant="link"
+                                        onClick={ () =>
+                                            startPasswordEdit( field.key )
+                                        }
+                                    >
+                                        Change
+                                    </Button>
+                                </FlexItem>
+                                <FlexItem>
+                                    <Button
+                                        variant="link"
+                                        isDestructive
+                                        onClick={ () =>
+                                            startPasswordClear( field.key )
+                                        }
+                                    >
+                                        Clear
+                                    </Button>
+                                </FlexItem>
+                            </Flex>
+                        </BaseControl>
+                    );
+                }
+
+                const isClearing =
+                    isPasswordField && passwordClearing.has( field.key );
                 return (
                     <TextControl
                         key={ field.key }
                         label={ field.label }
-                        help={
-                            field.description
-                                ? // Strip HTML tags from description for plain-text help
-                                  field.description.replace( /<[^>]+>/g, '' )
-                                : undefined
-                        }
-                        type={ field.type === 'password' ? 'password' : 'text' }
-                        // Show empty when REDACTED - user must re-enter to change it.
-                        value={ isRedacted ? '' : fields[ field.key ] ?? '' }
-                        placeholder={
-                            isRedacted
-                                ? 'Leave blank to keep existing password'
-                                : undefined
+                        help={ help }
+                        type={ isPasswordField ? 'password' : 'text' }
+                        value={
+                            isPasswordField &&
+                            fields[ field.key ] === REDACTED
+                                ? ''
+                                : fields[ field.key ] ?? ''
                         }
                         autoComplete="off"
-                        onChange={ ( val ) => setField( field.key, val ) }
+                        onChange={ ( val ) => {
+                            if ( isPasswordField ) {
+                                if ( isClearing ) {
+                                    setField( field.key, val );
+                                } else {
+                                    // In change mode empty means "keep stored".
+                                    setField(
+                                        field.key,
+                                        val === '' ? REDACTED : val
+                                    );
+                                }
+                            } else {
+                                setField( field.key, val );
+                            }
+                        } }
                         __nextHasNoMarginBottom
                         __next40pxDefaultSize
                     />
@@ -239,7 +324,7 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                 />
             ) }
 
-            <div style={ { display: 'flex', gap: '8px', marginTop: '16px' } }>
+            <div style={ { display: 'flex', gap: '8px' } }>
                 <Button
                     variant="primary"
                     isBusy={ saving }
@@ -250,6 +335,7 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                 <Button variant="secondary" onClick={ onClose }>
                     Cancel
                 </Button>
+            </div>
             </div>
         </Modal>
     );
