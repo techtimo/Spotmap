@@ -1264,9 +1264,7 @@ export default function Edit( { attributes, setAttributes } ) {
                         } }
                     >
                         <strong>
-                            { __(
-                                'Map preview disabled — database contains'
-                            ) }{ ' ' }
+                            { __( 'Map preview disabled — database contains' ) }{ ' ' }
                             { totalPoints.toLocaleString() }{ ' ' }
                             { __( 'points (limit: 10,000).' ) }
                         </strong>

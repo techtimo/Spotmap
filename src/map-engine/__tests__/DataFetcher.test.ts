@@ -80,9 +80,17 @@ describe( 'DataFetcher.removeClosePoints', () => {
     it( 'does not collapse points of different feeds even when close and same type', () => {
         // Two feeds with their latest OK point at the same location (e.g. home base).
         // Without a feed-boundary guard, the second feed's point would be dropped.
-        const feedA = { ...makePoint( 47.0, 8.0, 'OK', 1 ), feed_name: 'feed-a' };
-        const feedB = { ...makePoint( 47.0, 8.0000001, 'OK', 2 ), feed_name: 'feed-b' };
-        expect( DataFetcher.removeClosePoints( [ feedA, feedB ], 50 ) ).toHaveLength( 2 );
+        const feedA = {
+            ...makePoint( 47.0, 8.0, 'OK', 1 ),
+            feed_name: 'feed-a',
+        };
+        const feedB = {
+            ...makePoint( 47.0, 8.0000001, 'OK', 2 ),
+            feed_name: 'feed-b',
+        };
+        expect(
+            DataFetcher.removeClosePoints( [ feedA, feedB ], 50 )
+        ).toHaveLength( 2 );
     } );
 
     it( 'annotates anchor with total hidden count for a run of close points', () => {
@@ -198,14 +206,32 @@ describe( 'DataFetcher.rdpSimplify', () => {
         // Without a feed-boundary guard, RDP treats all 6 as one run and removes inner points.
         // With the fix, A and B are simplified independently.
         const ptsA = [
-            { ...makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ), feed_name: 'feed-a' },
-            { ...makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ), feed_name: 'feed-a' }, // collinear within A
-            { ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ), feed_name: 'feed-a' },
+            {
+                ...makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+                feed_name: 'feed-a',
+            },
+            {
+                ...makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ),
+                feed_name: 'feed-a',
+            }, // collinear within A
+            {
+                ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+                feed_name: 'feed-a',
+            },
         ];
         const ptsB = [
-            { ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 4 ), feed_name: 'feed-b' },
-            { ...makePoint( 47.0, 9.5, 'UNLIMITED-TRACK', 5 ), feed_name: 'feed-b' }, // collinear within B
-            { ...makePoint( 47.0, 10.0, 'UNLIMITED-TRACK', 6 ), feed_name: 'feed-b' },
+            {
+                ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 4 ),
+                feed_name: 'feed-b',
+            },
+            {
+                ...makePoint( 47.0, 9.5, 'UNLIMITED-TRACK', 5 ),
+                feed_name: 'feed-b',
+            }, // collinear within B
+            {
+                ...makePoint( 47.0, 10.0, 'UNLIMITED-TRACK', 6 ),
+                feed_name: 'feed-b',
+            },
         ];
         const result = DataFetcher.rdpSimplify( [ ...ptsA, ...ptsB ], 1 );
         // Each feed's run simplified to endpoints: ids 1,3 from A and 4,6 from B — 4 points total.

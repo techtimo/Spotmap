@@ -269,7 +269,11 @@ export class DataFetcher {
                 point.longitude
             );
 
-            if ( distance <= radius && anchor.type === point.type && anchor.feed_name === point.feed_name ) {
+            if (
+                distance <= radius &&
+                anchor.type === point.type &&
+                anchor.feed_name === point.feed_name
+            ) {
                 // Too close — hide this point behind the anchor
                 hiddenCount++;
             } else {

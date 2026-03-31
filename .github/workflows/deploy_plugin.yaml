@@ -1,32 +1,32 @@
 name: Deploy and Release Plugin
 on:
-  push:
-    tags:
-    - "*"
+    push:
+        tags:
+            - '*'
 jobs:
-  tag:
-    name: New tag
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Build
-      run: |
-        npm ci
-        npm run build
-        composer install --no-dev --optimize-autoloader
-    - name: WordPress Plugin Deploy
-      id: deploy
-      uses: 10up/action-wordpress-plugin-deploy@stable
-      with:
-        generate-zip: true
-      env:
-        SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-        SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-    - name: Create GitHub release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: ${{github.workspace}}/${{ github.event.repository.name }}.zip
-        prerelease: ${{ contains(github.ref_name, '-') }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    tag:
+        name: New tag
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+            - name: Build
+              run: |
+                  npm ci
+                  npm run build
+                  composer install --no-dev --optimize-autoloader
+            - name: WordPress Plugin Deploy
+              id: deploy
+              uses: 10up/action-wordpress-plugin-deploy@stable
+              with:
+                  generate-zip: true
+              env:
+                  SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+                  SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+            - name: Create GitHub release
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: ${{github.workspace}}/${{ github.event.repository.name }}.zip
+                  prerelease: ${{ contains(github.ref_name, '-') }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
