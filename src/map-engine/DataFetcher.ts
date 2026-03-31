@@ -138,7 +138,12 @@ export class DataFetcher {
                 i++;
             } else {
                 const runStart = i;
-                while ( i < points.length && isTrack( points[ i ] ) ) {
+                const runFeed = points[ i ].feed_name;
+                while (
+                    i < points.length &&
+                    isTrack( points[ i ] ) &&
+                    points[ i ].feed_name === runFeed
+                ) {
                     i++;
                 }
                 const simplified = DataFetcher.rdpReduce(
@@ -264,7 +269,7 @@ export class DataFetcher {
                 point.longitude
             );
 
-            if ( distance <= radius && anchor.type === point.type ) {
+            if ( distance <= radius && anchor.type === point.type && anchor.feed_name === point.feed_name ) {
                 // Too close — hide this point behind the anchor
                 hiddenCount++;
             } else {

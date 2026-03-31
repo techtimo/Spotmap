@@ -21,11 +21,11 @@
         },
         "types": {
             "type": "array",
-            "default": []
+            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL", "SOS" ]
         },
         "groupBy": {
             "type": "string",
-            "default": "feed_name"
+            "default": "feed_name, type"
         },
         "autoReload": {
             "type": "boolean",
