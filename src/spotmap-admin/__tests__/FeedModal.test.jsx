@@ -260,10 +260,14 @@ describe( 'FeedModal — push feed URLs', () => {
             />
         );
 
-        await user.click( screen.getByRole( 'button', { name: /Teltonika/i } ) );
+        await user.click(
+            screen.getByRole( 'button', { name: /Teltonika/i } )
+        );
 
         expect(
-            screen.getByText( /index\.php\?rest_route=\/spotmap\/v1\/ingest\/teltonika&key=/i )
+            screen.getByText(
+                /index\.php\?rest_route=\/spotmap\/v1\/ingest\/teltonika&key=/i
+            )
         ).toBeInTheDocument();
     } );
 

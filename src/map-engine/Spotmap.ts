@@ -256,7 +256,10 @@ export class Spotmap {
             }
 
             if ( response.error ) {
-                this.debug( 'Feed error:', ( response as { title?: string } ).title );
+                this.debug(
+                    'Feed error:',
+                    ( response as { title?: string } ).title
+                );
             } else if ( ! response.empty ) {
                 for ( const entry of response as import('./types').SpotPoint[] ) {
                     this.ensureFeedLayer( entry.feed_name );
@@ -400,8 +403,14 @@ export class Spotmap {
 
             const track = new L.GPX( entry.url, gpxOptions )
                 .on( 'loaded', () => {
-                    if ( this.options.mapcenter === 'gpx' || response.empty || response.error ) {
-                        this.boundsManager.fitBounds( this.options.mapcenter === 'gpx' ? 'gpx' : 'all' );
+                    if (
+                        this.options.mapcenter === 'gpx' ||
+                        response.empty ||
+                        response.error
+                    ) {
+                        this.boundsManager.fitBounds(
+                            this.options.mapcenter === 'gpx' ? 'gpx' : 'all'
+                        );
                     }
                 } )
                 .on( 'addline', ( e: L.LeafletEvent ) => {

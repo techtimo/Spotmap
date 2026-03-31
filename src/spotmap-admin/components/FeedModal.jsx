@@ -92,7 +92,11 @@ function buildOsmAndUrl( key ) {
 }
 
 function buildTeltonikaUrl( key ) {
-    return appendQueryParam( `${ getIngestBase() }/ingest/teltonika`, 'key', key );
+    return appendQueryParam(
+        `${ getIngestBase() }/ingest/teltonika`,
+        'key',
+        key
+    );
 }
 
 export default function FeedModal( { providers, feed, onSave, onClose } ) {
@@ -121,7 +125,9 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
     // Tracks which password fields are in edit mode (Set of field keys).
     const [ passwordEditing, setPasswordEditing ] = useState( () => new Set() );
     // Tracks which password fields are in "clear" mode.
-    const [ passwordClearing, setPasswordClearing ] = useState( () => new Set() );
+    const [ passwordClearing, setPasswordClearing ] = useState(
+        () => new Set()
+    );
 
     const startPasswordEdit = ( key ) => {
         setPasswordEditing( ( prev ) => new Set( [ ...prev, key ] ) );
@@ -162,16 +168,16 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
     const osmandTrackingUrl =
         type === 'osmand'
             ? normalizeTrackingUrl(
-                feed?.tracking_url ??
-                    ( fields.key ? buildOsmAndUrl( fields.key ) : null )
-            )
+                  feed?.tracking_url ??
+                      ( fields.key ? buildOsmAndUrl( fields.key ) : null )
+              )
             : null;
     const teltonikaTrackingUrl =
         type === 'teltonika'
             ? normalizeTrackingUrl(
-                feed?.tracking_url ??
-                    ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
-            )
+                  feed?.tracking_url ??
+                      ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
+              )
             : null;
 
     const handleSave = async () => {
@@ -191,151 +197,157 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
             size="medium"
             onRequestClose={ onClose }
         >
-            <div style={ { display: 'flex', flexDirection: 'column', gap: '16px' } }>
-            { error && (
-                <Notice status="error" onRemove={ () => setError( null ) }>
-                    { error }
-                </Notice>
-            ) }
+            <div
+                style={ {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                } }
+            >
+                { error && (
+                    <Notice status="error" onRemove={ () => setError( null ) }>
+                        { error }
+                    </Notice>
+                ) }
 
-            { ! isEdit && (
-                <ProviderSelector
-                    providers={ providers }
-                    value={ type }
-                    onChange={ handleTypeChange }
-                />
-            ) }
+                { ! isEdit && (
+                    <ProviderSelector
+                        providers={ providers }
+                        value={ type }
+                        onChange={ handleTypeChange }
+                    />
+                ) }
 
-            { provider?.fields.map( ( field ) => {
-                const help = field.description
-                    ? field.description.replace( /<[^>]+>/g, '' )
-                    : undefined;
-                const isPasswordField = field.type === 'password';
-                const isStored =
-                    isEdit &&
-                    isPasswordField &&
-                    fields[ field.key ] === REDACTED &&
-                    ! passwordEditing.has( field.key );
+                { provider?.fields.map( ( field ) => {
+                    const help = field.description
+                        ? field.description.replace( /<[^>]+>/g, '' )
+                        : undefined;
+                    const isPasswordField = field.type === 'password';
+                    const isStored =
+                        isEdit &&
+                        isPasswordField &&
+                        fields[ field.key ] === REDACTED &&
+                        ! passwordEditing.has( field.key );
 
-                if ( isStored ) {
+                    if ( isStored ) {
+                        return (
+                            <BaseControl
+                                key={ field.key }
+                                label={ field.label }
+                                id={ `password-${ field.key }` }
+                                __nextHasNoMarginBottom
+                            >
+                                <Flex align="center" gap={ 2 }>
+                                    <FlexItem>
+                                        <span style={ { color: '#1d7e1d' } }>
+                                            &#10003; Password stored
+                                        </span>
+                                    </FlexItem>
+                                    <FlexItem>
+                                        <Button
+                                            variant="link"
+                                            onClick={ () =>
+                                                startPasswordEdit( field.key )
+                                            }
+                                        >
+                                            Change
+                                        </Button>
+                                    </FlexItem>
+                                    <FlexItem>
+                                        <Button
+                                            variant="link"
+                                            isDestructive
+                                            onClick={ () =>
+                                                startPasswordClear( field.key )
+                                            }
+                                        >
+                                            Clear
+                                        </Button>
+                                    </FlexItem>
+                                </Flex>
+                            </BaseControl>
+                        );
+                    }
+
+                    const isClearing =
+                        isPasswordField && passwordClearing.has( field.key );
                     return (
-                        <BaseControl
+                        <TextControl
                             key={ field.key }
                             label={ field.label }
-                            id={ `password-${ field.key }` }
-                            __nextHasNoMarginBottom
-                        >
-                            <Flex align="center" gap={ 2 }>
-                                <FlexItem>
-                                    <span style={ { color: '#1d7e1d' } }>
-                                        &#10003; Password stored
-                                    </span>
-                                </FlexItem>
-                                <FlexItem>
-                                    <Button
-                                        variant="link"
-                                        onClick={ () =>
-                                            startPasswordEdit( field.key )
-                                        }
-                                    >
-                                        Change
-                                    </Button>
-                                </FlexItem>
-                                <FlexItem>
-                                    <Button
-                                        variant="link"
-                                        isDestructive
-                                        onClick={ () =>
-                                            startPasswordClear( field.key )
-                                        }
-                                    >
-                                        Clear
-                                    </Button>
-                                </FlexItem>
-                            </Flex>
-                        </BaseControl>
-                    );
-                }
-
-                const isClearing =
-                    isPasswordField && passwordClearing.has( field.key );
-                return (
-                    <TextControl
-                        key={ field.key }
-                        label={ field.label }
-                        help={ help }
-                        type={ isPasswordField ? 'password' : 'text' }
-                        value={
-                            isPasswordField &&
-                            fields[ field.key ] === REDACTED
-                                ? ''
-                                : fields[ field.key ] ?? ''
-                        }
-                        autoComplete="off"
-                        onChange={ ( val ) => {
-                            if ( isPasswordField ) {
-                                if ( isClearing ) {
-                                    setField( field.key, val );
-                                } else {
-                                    // In change mode empty means "keep stored".
-                                    setField(
-                                        field.key,
-                                        val === '' ? REDACTED : val
-                                    );
-                                }
-                            } else {
-                                setField( field.key, val );
+                            help={ help }
+                            type={ isPasswordField ? 'password' : 'text' }
+                            value={
+                                isPasswordField &&
+                                fields[ field.key ] === REDACTED
+                                    ? ''
+                                    : fields[ field.key ] ?? ''
                             }
-                        } }
-                        __nextHasNoMarginBottom
-                        __next40pxDefaultSize
+                            autoComplete="off"
+                            onChange={ ( val ) => {
+                                if ( isPasswordField ) {
+                                    if ( isClearing ) {
+                                        setField( field.key, val );
+                                    } else {
+                                        // In change mode empty means "keep stored".
+                                        setField(
+                                            field.key,
+                                            val === '' ? REDACTED : val
+                                        );
+                                    }
+                                } else {
+                                    setField( field.key, val );
+                                }
+                            } }
+                            __nextHasNoMarginBottom
+                            __next40pxDefaultSize
+                        />
+                    );
+                } ) }
+
+                { osmandTrackingUrl && (
+                    <TrackingUrlBox
+                        title="OsmAnd Tracking URL"
+                        description={
+                            <>
+                                Enter this URL in OsmAnd:{ ' ' }
+                                <em>
+                                    Plugins → Trip Recording → Online tracking →
+                                    Web address
+                                </em>
+                                . Set Tracking interval to 10 s or more.{ ' ' }
+                                <a
+                                    href="https://osmand.net/docs/user/plugins/trip-recording/#required-setup-parameters"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    OsmAnd docs ↗
+                                </a>
+                            </>
+                        }
+                        url={ osmandTrackingUrl }
                     />
-                );
-            } ) }
+                ) }
+                { teltonikaTrackingUrl && (
+                    <TrackingUrlBox
+                        title="Teltonika Push URL"
+                        description="Configure this as the HTTP POST destination in your Teltonika device (Codec 8 / JSON over HTTP). The device should POST JSON with a single object key containing latitude, longitude, altitude, speed, angle, and timestamp fields."
+                        url={ teltonikaTrackingUrl }
+                    />
+                ) }
 
-            { osmandTrackingUrl && (
-                <TrackingUrlBox
-                    title="OsmAnd Tracking URL"
-                    description={
-                        <>
-                            Enter this URL in OsmAnd:{ ' ' }
-                            <em>
-                                Plugins → Trip Recording → Online tracking → Web
-                                address
-                            </em>
-                            . Set Tracking interval to 10 s or more.{ ' ' }
-                            <a
-                                href="https://osmand.net/docs/user/plugins/trip-recording/#required-setup-parameters"
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                OsmAnd docs ↗
-                            </a>
-                        </>
-                    }
-                    url={ osmandTrackingUrl }
-                />
-            ) }
-            { teltonikaTrackingUrl && (
-                <TrackingUrlBox
-                    title="Teltonika Push URL"
-                    description="Configure this as the HTTP POST destination in your Teltonika device (Codec 8 / JSON over HTTP). The device should POST JSON with a single object key containing latitude, longitude, altitude, speed, angle, and timestamp fields."
-                    url={ teltonikaTrackingUrl }
-                />
-            ) }
-
-            <div style={ { display: 'flex', gap: '8px' } }>
-                <Button
-                    variant="primary"
-                    isBusy={ saving }
-                    onClick={ handleSave }
-                >
-                    Save
-                </Button>
-                <Button variant="secondary" onClick={ onClose }>
-                    Cancel
-                </Button>
-            </div>
+                <div style={ { display: 'flex', gap: '8px' } }>
+                    <Button
+                        variant="primary"
+                        isBusy={ saving }
+                        onClick={ handleSave }
+                    >
+                        Save
+                    </Button>
+                    <Button variant="secondary" onClick={ onClose }>
+                        Cancel
+                    </Button>
+                </div>
             </div>
         </Modal>
     );

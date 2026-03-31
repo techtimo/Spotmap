@@ -79,12 +79,8 @@ function buildLeafletMock() {
         L: {
             map: jest.fn().mockReturnValue( mockMap ),
             control: {
-                layers: jest
-                    .fn()
-                    .mockReturnValue( mockLayerControl ),
-                scale: jest
-                    .fn()
-                    .mockReturnValue( { addTo: jest.fn() } ),
+                layers: jest.fn().mockReturnValue( mockLayerControl ),
+                scale: jest.fn().mockReturnValue( { addTo: jest.fn() } ),
             },
             Control: {
                 FullScreen: jest
@@ -96,9 +92,9 @@ function buildLeafletMock() {
                     .fn()
                     .mockReturnValue( { addTo: jest.fn().mockReturnThis() } ),
                 {
-                    wms: jest
-                        .fn()
-                        .mockReturnValue( { addTo: jest.fn().mockReturnThis() } ),
+                    wms: jest.fn().mockReturnValue( {
+                        addTo: jest.fn().mockReturnThis(),
+                    } ),
                 }
             ),
             featureGroup: jest.fn().mockReturnValue( mockFeatureGroup ),
@@ -150,7 +146,9 @@ function mockFetch( data: unknown ) {
     } ) as unknown as typeof fetch;
 }
 
-function makeOptions( overrides: Partial< SpotmapOptions > = {} ): SpotmapOptions {
+function makeOptions(
+    overrides: Partial< SpotmapOptions > = {}
+): SpotmapOptions {
     const el = document.createElement( 'div' );
     document.body.appendChild( el );
     return {
@@ -208,10 +206,7 @@ describe( 'Spotmap.initMap — error response handling', () => {
             message: "Change the 'devices' attribute of your Shortcode",
         } );
 
-        const fitBoundsSpy = jest.spyOn(
-            BoundsManager.prototype,
-            'fitBounds'
-        );
+        const fitBoundsSpy = jest.spyOn( BoundsManager.prototype, 'fitBounds' );
 
         const { Spotmap } = await import( '../Spotmap' );
         const s = new Spotmap(
