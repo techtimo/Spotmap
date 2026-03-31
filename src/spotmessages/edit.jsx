@@ -1,14 +1,19 @@
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { BlockControls, useBlockProps } from '@wordpress/block-editor';
 import {
-    PanelBody,
+    CheckboxControl,
+    Dropdown,
+    Flex,
+    FlexItem,
+    RangeControl,
     SelectControl,
     ToggleControl,
-    RangeControl,
-    CheckboxControl,
-    TextControl,
-    __experimentalText as Text,
+    ToolbarButton,
+    ToolbarGroup,
+    __experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
+import { settings } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
+import TimeToolbarGroup from '../spotmap/components/TimeToolbarGroup';
 
 const ALL_TYPES = [
     'OK',
@@ -24,8 +29,15 @@ const ALL_TYPES = [
 ];
 
 export default function Edit( { attributes, setAttributes } ) {
-    const { feeds, count, types, groupBy, autoReload, dateRange, filterPoints } =
-        attributes;
+    const {
+        feeds,
+        count,
+        types,
+        groupBy,
+        autoReload,
+        dateRange,
+        filterPoints,
+    } = attributes;
 
     const availableFeeds =
         typeof spotmapjsobj !== 'undefined' ? spotmapjsobj.feeds ?? [] : [];
@@ -35,162 +47,253 @@ export default function Edit( { attributes, setAttributes } ) {
     } );
 
     const toggleType = ( type, checked ) => {
-        if ( checked ) {
-            setAttributes( { types: [ ...types, type ] } );
-        } else {
-            setAttributes( { types: types.filter( ( t ) => t !== type ) } );
-        }
+        setAttributes( {
+            types: checked
+                ? [ ...types, type ]
+                : types.filter( ( t ) => t !== type ),
+        } );
     };
 
     const toggleFeed = ( feed, checked ) => {
-        if ( checked ) {
-            setAttributes( { feeds: [ ...feeds, feed ] } );
-        } else {
-            setAttributes( { feeds: feeds.filter( ( f ) => f !== feed ) } );
-        }
+        setAttributes( {
+            feeds: checked
+                ? [ ...feeds, feed ]
+                : feeds.filter( ( f ) => f !== feed ),
+        } );
     };
 
+    const GROUP_BY_LABELS = {
+        'feed_name, type': __( 'Latest per feed & type', 'spotmap' ),
+        feed_name: __( 'Latest per feed', 'spotmap' ),
+        type: __( 'Latest per type', 'spotmap' ),
+    };
+    const groupByLabel =
+        GROUP_BY_LABELS[ groupBy ] ?? __( 'No grouping', 'spotmap' );
+
     const activeFeedsLabel =
-        feeds.length === 0
-            ? __( 'All feeds', 'spotmap' )
-            : feeds.join( ', ' );
+        feeds.length === 0 ? __( 'All feeds', 'spotmap' ) : feeds.join( ', ' );
 
     const activeTypesLabel =
-        types.length === 0
-            ? __( 'All types', 'spotmap' )
-            : types.join( ', ' );
-
-    const groupByLabel =
-        groupBy === 'feed_name'
-            ? __( 'Latest per feed', 'spotmap' )
-            : groupBy === 'type'
-            ? __( 'Latest per type', 'spotmap' )
-            : __( 'No grouping', 'spotmap' );
+        types.length === 0 ? __( 'All types', 'spotmap' ) : types.join( ', ' );
 
     return (
         <>
-            <InspectorControls>
-                <PanelBody
-                    title={ __( 'Feeds', 'spotmap' ) }
-                    initialOpen={ true }
-                >
-                    { availableFeeds.length === 0 && (
-                        <Text isDestructive>
-                            { __(
-                                'No feeds found. Add feeds in the Spotmap settings.',
-                                'spotmap'
-                            ) }
-                        </Text>
-                    ) }
-                    { availableFeeds.map( ( feed ) => (
-                        <CheckboxControl
-                            key={ feed }
-                            label={ feed }
-                            checked={ feeds.includes( feed ) }
-                            onChange={ ( checked ) =>
-                                toggleFeed( feed, checked )
-                            }
-                            help={
-                                feeds.length === 0 &&
-                                __( '(all feeds shown when none selected)', 'spotmap' )
-                            }
-                        />
-                    ) ) }
-                </PanelBody>
-
-                <PanelBody
-                    title={ __( 'Display', 'spotmap' ) }
-                    initialOpen={ true }
-                >
-                    <SelectControl
-                        label={ __( 'Group by', 'spotmap' ) }
-                        value={ groupBy }
-                        options={ [
-                            {
-                                label: __( 'Latest per feed', 'spotmap' ),
-                                value: 'feed_name',
-                            },
-                            {
-                                label: __( 'Latest per type', 'spotmap' ),
-                                value: 'type',
-                            },
-                            {
-                                label: __( 'No grouping (list)', 'spotmap' ),
-                                value: '',
-                            },
-                        ] }
-                        onChange={ ( val ) =>
-                            setAttributes( { groupBy: val } )
-                        }
-                        help={ __(
-                            'Group by feed shows the latest message per tracker — ideal for a status overview.',
-                            'spotmap'
+            <BlockControls>
+                { /* Feeds */ }
+                <ToolbarGroup>
+                    <Dropdown
+                        popoverProps={ { placement: 'bottom-start' } }
+                        renderToggle={ ( { isOpen, onToggle } ) => (
+                            <ToolbarButton
+                                icon="rss"
+                                label={ __( 'Feeds', 'spotmap' ) }
+                                onClick={ onToggle }
+                                isPressed={ isOpen }
+                            >
+                                { __( 'Feeds', 'spotmap' ) }
+                            </ToolbarButton>
+                        ) }
+                        renderContent={ () => (
+                            <div
+                                style={ { padding: '8px', minWidth: '200px' } }
+                            >
+                                { availableFeeds.length === 0 && (
+                                    <p>{ __( 'No feeds yet.', 'spotmap' ) }</p>
+                                ) }
+                                { availableFeeds.map( ( feed ) => (
+                                    <Flex key={ feed } gap={ 2 } align="center">
+                                        <FlexItem isBlock>
+                                            <CheckboxControl
+                                                __nextHasNoMarginBottom
+                                                label={ feed }
+                                                checked={ feeds.includes(
+                                                    feed
+                                                ) }
+                                                onChange={ ( checked ) =>
+                                                    toggleFeed( feed, checked )
+                                                }
+                                            />
+                                        </FlexItem>
+                                    </Flex>
+                                ) ) }
+                                { availableFeeds.length > 0 &&
+                                    feeds.length === 0 && (
+                                        <p
+                                            style={ {
+                                                margin: '4px 0 0',
+                                                fontSize: '11px',
+                                                color: '#757575',
+                                            } }
+                                        >
+                                            { __(
+                                                'All feeds shown when none selected',
+                                                'spotmap'
+                                            ) }
+                                        </p>
+                                    ) }
+                            </div>
                         ) }
                     />
-                    <RangeControl
-                        label={ __( 'Max rows', 'spotmap' ) }
-                        value={ count }
-                        onChange={ ( val ) => setAttributes( { count: val } ) }
-                        min={ 1 }
-                        max={ 200 }
-                    />
-                    <ToggleControl
-                        label={ __( 'Auto-reload', 'spotmap' ) }
-                        checked={ autoReload }
-                        onChange={ ( val ) =>
-                            setAttributes( { autoReload: val } )
-                        }
-                    />
-                </PanelBody>
+                </ToolbarGroup>
 
-                <PanelBody
-                    title={ __( 'Filter by type', 'spotmap' ) }
-                    initialOpen={ false }
-                >
-                    <Text variant="muted">
-                        { __(
-                            'Leave all unchecked to show every message type.',
-                            'spotmap'
+                { /* Time filter */ }
+                <TimeToolbarGroup
+                    dateRange={ dateRange }
+                    onChangeDateRange={ ( next ) =>
+                        setAttributes( { dateRange: next } )
+                    }
+                />
+
+                { /* Table settings */ }
+                <ToolbarGroup>
+                    <Dropdown
+                        popoverProps={ { placement: 'bottom-start' } }
+                        renderToggle={ ( { isOpen, onToggle } ) => (
+                            <ToolbarButton
+                                label={ __( 'Table settings', 'spotmap' ) }
+                                icon={ settings }
+                                onClick={ onToggle }
+                                isPressed={ isOpen }
+                            >
+                                { __( 'Settings', 'spotmap' ) }
+                            </ToolbarButton>
                         ) }
-                    </Text>
-                    { ALL_TYPES.map( ( type ) => (
-                        <CheckboxControl
-                            key={ type }
-                            label={ type }
-                            checked={ types.includes( type ) }
-                            onChange={ ( checked ) =>
-                                toggleType( type, checked )
-                            }
-                        />
-                    ) ) }
-                </PanelBody>
-
-                <PanelBody
-                    title={ __( 'Date range', 'spotmap' ) }
-                    initialOpen={ false }
-                >
-                    <TextControl
-                        label={ __( 'From', 'spotmap' ) }
-                        value={ dateRange.from }
-                        placeholder="YYYY-MM-DD"
-                        onChange={ ( val ) =>
-                            setAttributes( {
-                                dateRange: { ...dateRange, from: val },
-                            } )
-                        }
+                        renderContent={ () => (
+                            <div
+                                style={ {
+                                    padding: '12px',
+                                    minWidth: '280px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                } }
+                            >
+                                <SelectControl
+                                    __nextHasNoMarginBottom
+                                    __next40pxDefaultSize
+                                    label={ __( 'Group by', 'spotmap' ) }
+                                    value={ groupBy }
+                                    options={ [
+                                        {
+                                            label: __(
+                                                'Latest per feed & type',
+                                                'spotmap'
+                                            ),
+                                            value: 'feed_name, type',
+                                        },
+                                        {
+                                            label: __(
+                                                'Latest per feed',
+                                                'spotmap'
+                                            ),
+                                            value: 'feed_name',
+                                        },
+                                        {
+                                            label: __(
+                                                'Latest per type',
+                                                'spotmap'
+                                            ),
+                                            value: 'type',
+                                        },
+                                        {
+                                            label: __(
+                                                'No grouping (list)',
+                                                'spotmap'
+                                            ),
+                                            value: '',
+                                        },
+                                    ] }
+                                    onChange={ ( val ) =>
+                                        setAttributes( { groupBy: val } )
+                                    }
+                                />
+                                <RangeControl
+                                    __nextHasNoMarginBottom
+                                    __next40pxDefaultSize
+                                    label={ __( 'Max rows', 'spotmap' ) }
+                                    value={ count }
+                                    onChange={ ( val ) =>
+                                        setAttributes( { count: val } )
+                                    }
+                                    min={ 1 }
+                                    max={ 200 }
+                                />
+                                <UnitControl
+                                    __nextHasNoMarginBottom
+                                    __next40pxDefaultSize
+                                    label={ __(
+                                        'Hide nearby points',
+                                        'spotmap'
+                                    ) }
+                                    value={ `${ filterPoints }m` }
+                                    units={ [
+                                        {
+                                            value: 'm',
+                                            label: 'Meter',
+                                            default: 5,
+                                        },
+                                    ] }
+                                    onChange={ ( val ) =>
+                                        setAttributes( {
+                                            filterPoints: parseInt( val ) || 0,
+                                        } )
+                                    }
+                                    help={ __(
+                                        'Hide duplicate points within this radius',
+                                        'spotmap'
+                                    ) }
+                                />
+                                <ToggleControl
+                                    __nextHasNoMarginBottom
+                                    label={ __( 'Auto-reload', 'spotmap' ) }
+                                    checked={ autoReload }
+                                    onChange={ ( val ) =>
+                                        setAttributes( { autoReload: val } )
+                                    }
+                                    help={ __(
+                                        'Refresh table data every 30 seconds',
+                                        'spotmap'
+                                    ) }
+                                />
+                                <p
+                                    style={ {
+                                        margin: '8px 0 4px',
+                                        fontWeight: 600,
+                                        fontSize: '11px',
+                                        textTransform: 'uppercase',
+                                        color: '#1e1e1e',
+                                    } }
+                                >
+                                    { __( 'Filter by type', 'spotmap' ) }
+                                </p>
+                                <p
+                                    style={ {
+                                        margin: '0 0 4px',
+                                        fontSize: '11px',
+                                        color: '#757575',
+                                    } }
+                                >
+                                    { __(
+                                        'Leave all unchecked to show every type.',
+                                        'spotmap'
+                                    ) }
+                                </p>
+                                { ALL_TYPES.map( ( type ) => (
+                                    <CheckboxControl
+                                        __nextHasNoMarginBottom
+                                        key={ type }
+                                        label={ type }
+                                        checked={ types.includes( type ) }
+                                        onChange={ ( checked ) =>
+                                            toggleType( type, checked )
+                                        }
+                                    />
+                                ) ) }
+                            </div>
+                        ) }
                     />
-                    <TextControl
-                        label={ __( 'To', 'spotmap' ) }
-                        value={ dateRange.to }
-                        placeholder="YYYY-MM-DD"
-                        onChange={ ( val ) =>
-                            setAttributes( {
-                                dateRange: { ...dateRange, to: val },
-                            } )
-                        }
-                    />
-                </PanelBody>
-            </InspectorControls>
+                </ToolbarGroup>
+            </BlockControls>
 
             <div { ...blockProps }>
                 <strong>{ __( 'Spot Messages', 'spotmap' ) }</strong>
@@ -250,9 +353,8 @@ export default function Edit( { attributes, setAttributes } ) {
                                     fontStyle: 'italic',
                                 } }
                             >
-                                { groupByLabel } &mdash; { activeFeedsLabel } &mdash;{ ' ' }
-                                { activeTypesLabel } &mdash;{ ' ' }
-                                { count }{ ' ' }
+                                { groupByLabel } &mdash; { activeFeedsLabel }{ ' ' }
+                                &mdash; { activeTypesLabel } &mdash; { count }{ ' ' }
                                 { __( 'rows', 'spotmap' ) }
                             </td>
                         </tr>

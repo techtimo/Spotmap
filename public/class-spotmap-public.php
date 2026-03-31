@@ -55,7 +55,11 @@ class Spotmap_Public{
 		$block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap';
 		register_block_type( $block_path );
 		$messages_block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmessages';
-		register_block_type( $messages_block_path );
+		if ( is_dir( $messages_block_path ) ) {
+			register_block_type( $messages_block_path );
+		} else {
+			error_log( 'Spotmap: build/spotmessages/ is missing — run npm run build.' );
+		}
 	}
 
 	public function enqueue_block_editor_assets(){

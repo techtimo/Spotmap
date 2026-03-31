@@ -32,6 +32,15 @@ private const ALLOWED_COLUMNS = [
 		return in_array( $value, self::ALLOWED_COLUMNS, true ) ? $value : null;
 	}
 
+	private static function sanitize_group_by( string $value ): ?string {
+		$cols = array_map( 'trim', explode( ',', $value ) );
+		$safe = array_filter( $cols, fn( $col ) => in_array( $col, self::ALLOWED_COLUMNS, true ) );
+		if ( count( $safe ) !== count( $cols ) ) {
+			return null;
+		}
+		return implode( ', ', $safe );
+	}
+
 	private static function sanitize_order( string $order_by ): string {
 		$safe = [];
 		foreach ( array_map( 'trim', explode( ',', $order_by ) ) as $part ) {
@@ -148,7 +157,7 @@ private const ALLOWED_COLUMNS = [
 		// error_log(print_r($filter,true));
 
 		$select   = self::sanitize_select( $filter['select'] ?? '*' );
-		$group_by = empty( $filter['groupBy'] ) ? null : self::sanitize_identifier( $filter['groupBy'] );
+		$group_by = empty( $filter['groupBy'] ) ? null : self::sanitize_group_by( $filter['groupBy'] );
 		$order    = empty( $filter['orderBy'] ) ? '' : self::sanitize_order( $filter['orderBy'] );
 		$limit    = 'LIMIT ' . ( empty( $filter['limit'] ) ? self::MAX_POINTS_PER_QUERY : absint( $filter['limit'] ) );
 		global $wpdb;
