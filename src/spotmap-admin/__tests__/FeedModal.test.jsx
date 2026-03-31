@@ -133,7 +133,7 @@ describe( 'FeedModal — edit mode', () => {
         expect( screen.queryByText( 'Provider Type' ) ).not.toBeInTheDocument();
     } );
 
-    it( 'shows empty password field with placeholder when value is REDACTED', () => {
+    it( 'shows "Password stored" with Change and Clear buttons when value is REDACTED', () => {
         render(
             <FeedModal
                 providers={ providers }
@@ -142,9 +142,44 @@ describe( 'FeedModal — edit mode', () => {
                 onClose={ noop }
             />
         );
-        const passwordInput = screen.getByLabelText( /Feed Password/i );
-        expect( passwordInput.value ).toBe( '' );
-        expect( passwordInput.placeholder ).toMatch( /keep existing/i );
+        expect( screen.getByText( /Password stored/i ) ).toBeInTheDocument();
+        expect(
+            screen.getByRole( 'button', { name: 'Change' } )
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole( 'button', { name: 'Clear' } )
+        ).toBeInTheDocument();
+        expect(
+            screen.queryByLabelText( /Feed Password/i )
+        ).not.toBeInTheDocument();
+    } );
+
+    it( 'shows password input after clicking Change', async () => {
+        const user = userEvent.setup();
+        render(
+            <FeedModal
+                providers={ providers }
+                feed={ feed }
+                onSave={ noop }
+                onClose={ noop }
+            />
+        );
+        await user.click( screen.getByRole( 'button', { name: 'Change' } ) );
+        expect( screen.getByLabelText( /Feed Password/i ) ).toBeInTheDocument();
+    } );
+
+    it( 'shows password input after clicking Clear', async () => {
+        const user = userEvent.setup();
+        render(
+            <FeedModal
+                providers={ providers }
+                feed={ feed }
+                onSave={ noop }
+                onClose={ noop }
+            />
+        );
+        await user.click( screen.getByRole( 'button', { name: 'Clear' } ) );
+        expect( screen.getByLabelText( /Feed Password/i ) ).toBeInTheDocument();
     } );
 
     it( 'passes feed id to onSave', async () => {
