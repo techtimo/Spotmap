@@ -6,9 +6,11 @@ import { REDACTED, providers } from './fixtures';
 jest.mock( '../api', () => ( {
     REDACTED: '__REDACTED__',
     getFeeds: jest.fn(),
+    getDbFeeds: jest.fn(),
     createFeed: jest.fn(),
     updateFeed: jest.fn(),
     deleteFeed: jest.fn(),
+    deleteDbFeedPoints: jest.fn(),
 } ) );
 
 // FeedModal imports icons — stub the module.
@@ -37,6 +39,9 @@ const sampleFeeds = [
 
 beforeEach( () => {
     api.getFeeds.mockResolvedValue( [ ...sampleFeeds ] );
+    api.getDbFeeds.mockResolvedValue( [
+        { feed_name: 'Timo', point_count: 42 },
+    ] );
     api.createFeed.mockResolvedValue( {
         id: 'f3',
         type: 'findmespot',
@@ -49,6 +54,7 @@ beforeEach( () => {
         name: 'Updated',
     } );
     api.deleteFeed.mockResolvedValue( {} );
+    api.deleteDbFeedPoints.mockResolvedValue( { deleted: 42 } );
 } );
 
 afterEach( () => {
@@ -82,10 +88,12 @@ describe( 'FeedsTab — loaded', () => {
         expect( cells.length ).toBe( 2 );
     } );
 
-    it( 'renders feed IDs as code elements', async () => {
+    it( 'renders action buttons for each feed row', async () => {
         render( <FeedsTab providers={ providers } /> );
-        await screen.findByText( '0XXu6' );
-        expect( screen.getByText( '0XXu6' ).tagName ).toBe( 'CODE' );
+        await screen.findByText( 'Timo' );
+        expect(
+            screen.getAllByRole( 'button', { name: /Edit/i } ).length
+        ).toBeGreaterThan( 0 );
     } );
 
     it( 'renders point count per feed', async () => {
@@ -106,11 +114,21 @@ describe( 'FeedsTab — empty state', () => {
 } );
 
 describe( 'FeedsTab — error state', () => {
-    it( 'shows error notice when getFeeds rejects', async () => {
+    it( 'calls onNoticeChange when getFeeds rejects', async () => {
+        const onNoticeChange = jest.fn();
         api.getFeeds.mockRejectedValue( new Error( 'Failed to fetch' ) );
-        render( <FeedsTab providers={ providers } /> );
-        const notices = await screen.findAllByText( 'Failed to fetch' );
-        expect( notices.length ).toBeGreaterThan( 0 );
+        render(
+            <FeedsTab
+                providers={ providers }
+                onNoticeChange={ onNoticeChange }
+            />
+        );
+        await waitFor( () => {
+            expect( onNoticeChange ).toHaveBeenCalledWith( {
+                status: 'error',
+                text: 'Failed to fetch',
+            } );
+        } );
     } );
 } );
 
@@ -129,47 +147,80 @@ describe( 'FeedsTab — add feed', () => {
     } );
 
     it( 'adds new feed to the list after save', async () => {
+        const onNoticeChange = jest.fn();
         const user = userEvent.setup();
-        render( <FeedsTab providers={ providers } /> );
+        render(
+            <FeedsTab
+                providers={ providers }
+                onNoticeChange={ onNoticeChange }
+            />
+        );
         await screen.findByText( 'Timo' );
 
         await user.click( screen.getByRole( 'button', { name: /Add Feed/i } ) );
         await user.type( screen.getByLabelText( /Feed Name/i ), 'New' );
         await user.click( screen.getByRole( 'button', { name: 'Save' } ) );
 
-        const saved = await screen.findAllByText( /Feed saved/i );
-        expect( saved.length ).toBeGreaterThan( 0 );
+        await waitFor( () => {
+            expect( onNoticeChange ).toHaveBeenCalledWith( {
+                status: 'success',
+                text: 'Feed saved.',
+            } );
+        } );
         expect( screen.getByText( 'New' ) ).toBeInTheDocument();
     } );
 } );
 
 describe( 'FeedsTab — delete feed', () => {
-    it( 'removes feed from list after confirmed delete', async () => {
+    it( 'removes feed from list after deleting config only', async () => {
+        const onNoticeChange = jest.fn();
         const user = userEvent.setup();
-        jest.spyOn( window, 'confirm' ).mockReturnValue( true );
 
-        render( <FeedsTab providers={ providers } /> );
+        render(
+            <FeedsTab
+                providers={ providers }
+                onNoticeChange={ onNoticeChange }
+            />
+        );
         await screen.findByText( 'Timo' );
 
-        const rows = screen.getAllByRole( 'row' );
-        const timoRow = rows.find( ( r ) => within( r ).queryByText( 'Timo' ) );
+        const initialRows = screen.getAllByRole( 'row' );
+        const initialTimoRow = initialRows.find( ( r ) =>
+            within( r ).queryByText( 'Timo' )
+        );
         await user.click(
-            within( timoRow ).getByRole( 'button', { name: /Delete/i } )
+            within( initialTimoRow ).getByRole( 'button', { name: /Delete/i } )
+        );
+        await user.click(
+            await screen.findByRole( 'button', { name: /Delete config only/i } )
         );
 
         await waitFor( () => {
-            expect( api.deleteFeed ).toHaveBeenCalledWith( 'f1' );
+            expect( api.deleteFeed ).toHaveBeenCalledWith( 'f1', false );
         } );
-        const deleted = await screen.findAllByText( /Feed deleted/i );
-        expect( deleted.length ).toBeGreaterThan( 0 );
-        expect( screen.queryByText( 'Timo' ) ).not.toBeInTheDocument();
+        const configuredRows = screen.getAllByRole( 'row' );
+        const configuredTimoRow = configuredRows.find(
+            ( row ) =>
+                within( row ).queryByText( 'Timo' ) &&
+                within( row ).queryByRole( 'button', { name: /Edit/i } )
+        );
+        expect( configuredTimoRow ).toBeUndefined();
+        expect( onNoticeChange ).toHaveBeenCalledWith( {
+            status: 'success',
+            text: 'Feed "Timo" deleted.',
+        } );
     } );
 
-    it( 'does not delete when confirm is cancelled', async () => {
+    it( 'deletes points but keeps config from delete modal', async () => {
+        const onNoticeChange = jest.fn();
         const user = userEvent.setup();
-        jest.spyOn( window, 'confirm' ).mockReturnValue( false );
 
-        render( <FeedsTab providers={ providers } /> );
+        render(
+            <FeedsTab
+                providers={ providers }
+                onNoticeChange={ onNoticeChange }
+            />
+        );
         await screen.findByText( 'Timo' );
 
         const rows = screen.getAllByRole( 'row' );
@@ -177,8 +228,27 @@ describe( 'FeedsTab — delete feed', () => {
         await user.click(
             within( timoRow ).getByRole( 'button', { name: /Delete/i } )
         );
+        await user.click(
+            await screen.findByRole( 'button', {
+                name: /Delete all 42 points only/i,
+            } )
+        );
 
+        await waitFor( () => {
+            expect( api.deleteDbFeedPoints ).toHaveBeenCalledWith( 'Timo' );
+        } );
         expect( api.deleteFeed ).not.toHaveBeenCalled();
-        expect( screen.getByText( 'Timo' ) ).toBeInTheDocument();
+        const updatedRows = screen.getAllByRole( 'row' );
+        const updatedTimoRow = updatedRows.find(
+            ( row ) =>
+                within( row ).queryByText( 'Timo' ) &&
+                within( row ).queryByRole( 'button', { name: /Edit/i } )
+        );
+        expect( updatedTimoRow ).toBeDefined();
+        expect( within( updatedTimoRow ).getByText( '0' ) ).toBeInTheDocument();
+        expect( onNoticeChange ).toHaveBeenCalledWith( {
+            status: 'success',
+            text: 'All points for "Timo" deleted. Feed configuration kept.',
+        } );
     } );
 } );

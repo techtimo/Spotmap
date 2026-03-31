@@ -8,7 +8,7 @@ const isMediaFeed = ( type ) => type === 'media';
 export default function FeedsTab( {
     providers,
     openAddModal,
-    onNoticeChange,
+    onNoticeChange = () => {},
 } ) {
     const [ feeds, setFeeds ] = useState( null );
     const [ dbFeeds, setDbFeeds ] = useState( null );
@@ -128,6 +128,27 @@ export default function FeedsTab( {
                 text: deletePoints
                     ? `Feed "${ feed.name }" and all its points deleted.`
                     : `Feed "${ feed.name }" deleted.`,
+            } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        }
+    };
+
+    const handleDeletePointsOnly = async ( feed ) => {
+        setConfirmDelete( null );
+        try {
+            await api.deleteDbFeedPoints( feed.name );
+            setDbFeeds( ( prev ) =>
+                prev.filter( ( d ) => d.feed_name !== feed.name )
+            );
+            setFeeds( ( prev ) =>
+                prev.map( ( f ) =>
+                    f.id === feed.id ? { ...f, point_count: 0 } : f
+                )
+            );
+            onNoticeChange( {
+                status: 'success',
+                text: `All points for "${ feed.name }" deleted. Feed configuration kept.`,
             } );
         } catch ( err ) {
             onNoticeChange( { status: 'error', text: err.message } );
@@ -347,6 +368,16 @@ export default function FeedsTab( {
                             }
                         >
                             Delete config only
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            isDestructive
+                            onClick={ () =>
+                                handleDeletePointsOnly( confirmDelete )
+                            }
+                        >
+                            Delete all { confirmDelete.point_count ?? 0 } points
+                            only
                         </Button>
                         <Button
                             variant="primary"
