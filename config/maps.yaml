@@ -199,11 +199,12 @@ baseLayers:
             attribution: "<a href='https://www.usgs.gov/'>U.S. Geological Survey</a> | <a href='https://www.usgs.gov/laws/policies_notices.html'>Policies</a>"
 
 overlays:
-    marine-traffic:
-        label: Marine Traffic
-        url: 'https://tiles.marinetraffic.com/ais_helpers/shiptilesingle.aspx?output=png&sat=1&grouping=shiptype&tile_size=256&legends=1&zoom={z}&X={x}&Y={y}'
+    waymarkedtrails-hiking:
+        label: Hiking Trails
+        url: 'https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png'
         options:
-            attribution: "© <a href='https://www.marinetraffic.com'>MarineTraffic</a>"
+            maxZoom: 19
+            attribution: "© <a href='https://hiking.waymarkedtrails.org'>Waymarked Trails</a> | © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
 
     openseamap-seamarks:
         label: OpenSeaMap Seamarks
