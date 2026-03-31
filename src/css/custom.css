@@ -1,3 +1,9 @@
+/* Neutralize themes that set html { font-size: 62.5% } (e.g. Twenty Twenty).
+   Leaflet uses rem internally, so we pin it to an absolute px value. */
+.leaflet-container {
+    font-size: 12px;
+}
+
 /* map toggle work with twenty twenty template */
 
 /* .leaflet-control-layers-list {
