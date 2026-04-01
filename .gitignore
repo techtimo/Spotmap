@@ -20,3 +20,6 @@ coverage/
 tests/e2e/.inject.php
 playwright-report/
 test-results/
+
+#`npm run plugin-zip` shouldn't be commited
+spotmap.zip
