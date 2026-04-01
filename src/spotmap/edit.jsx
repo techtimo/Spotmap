@@ -708,12 +708,18 @@ export default function Edit( { attributes, setAttributes } ) {
                 ? window.spotmapjsobj.feeds
                 : Object.keys( window.spotmapjsobj.feeds );
 
-            const defaultStyles = {};
-            feedNames.forEach( ( name ) => {
-                defaultStyles[ name ] = { ...DEFAULT_FEED_STYLE };
-            } );
-
             const dv = window.spotmapjsobj?.defaultValues ?? {};
+            const adminColors = ( dv.color || '' )
+                .split( ',' )
+                .map( ( c ) => c.trim() )
+                .filter( Boolean );
+            const numColors = adminColors.length || 1;
+            const defaultStyles = {};
+            feedNames.forEach( ( name, i ) => {
+                const color =
+                    adminColors[ i % numColors ] || DEFAULT_FEED_STYLE.color;
+                defaultStyles[ name ] = { ...DEFAULT_FEED_STYLE, color };
+            } );
             const defaultMaps = dv.maps
                 ? dv.maps
                       .split( ',' )

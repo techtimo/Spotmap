@@ -135,6 +135,7 @@ export interface FeedLayer {
     markers: L.Marker[];
     points: SpotPoint[];
     featureGroup: L.FeatureGroup;
+    lastPointMarker?: L.Marker;
 }
 
 /** Internal structure for a GPX track's map layers */
