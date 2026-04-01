@@ -11,7 +11,7 @@ Spotmap is a WordPress plugin that displays GPS tracking data from SPOT devices 
 - This project uses **4 spaces** for indentation throughout — never tabs.
 - When using the Edit tool, use 4-space indentation in `old_string`/`new_string`.
 - Run `npm run format` (JS/TS/CSS) and `npm run format:php` (PHP) to auto-format code.
-- add phpunit test with sample data to rename a feed - what happens if the feedname already exists? (this might wanted but on the UI we should get a warning that must be accepted)
+
 
 ## Build Commands
 
@@ -117,7 +117,7 @@ Table `wp_spotmap_points`:
 - **[perf T1] Server-side point decimation**: When the queried range returns too many rows, reduce to a target (e.g. 5,000 pts) before sending JSON. Simple approaches (MOD timestamp, N-th row, time-bucket) all have flaws for GPS tracks with irregular density — they can drop geometrically significant points on sparse stretches. **Douglas-Peucker** (simplify by perpendicular deviation, ε configurable) is the right algorithm: it preserves shape-defining points regardless of time distribution. Needs PHP implementation since MySQL has no native DP. Consider running DP per feed per query, or as a pre-simplification pass stored back to DB.
 - **[perf T2] Block-level `maxPoints` attribute**: Add a `maxPoints` block attribute (default e.g. 5000). The server decimates to that count using time-based sampling before responding. Let editors tune the trade-off between detail and load time per map.
 - **[perf T2] Admin: DB pruning action**: Add an admin button that previews how many points would be removed per feed by a Douglas-Peucker simplification pass (ε configurable), then executes the prune on confirmation. Run against points older than N days to preserve recent full-resolution data.
-
+- add phpunit test with sample data to rename a feed - what happens if the feedname already exists? (this might wanted but on the UI we should get a warning that must be accepted)
 
 ## Key Conventions
 

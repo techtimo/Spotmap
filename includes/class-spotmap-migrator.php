@@ -24,6 +24,7 @@ class Spotmap_Migrator {
 	 */
 	private static $migrations = [
 		'1.0.0' => 'migrate_to_1_0_0',
+		'1.1.0' => 'migrate_to_1_1_0',
 	];
 
 	/**
@@ -109,6 +110,23 @@ class Spotmap_Migrator {
 		delete_option( 'spotmap_findmespot_id' );
 		delete_option( 'spotmap_findmespot_password' );
 		delete_option( 'spotmap_api_providers' );
+	}
+
+	/**
+	 * 1.0.x → 1.1.0
+	 *
+	 * EXTREME-TRACK is an alias for UNLIMITED-TRACK — both represent the same
+	 * SPOT device message type. Normalize all existing EXTREME-TRACK rows to
+	 * UNLIMITED-TRACK so the frontend only needs to handle one track type.
+	 *
+	 * @return void
+	 */
+	private static function migrate_to_1_1_0(): void {
+		global $wpdb;
+		$table = $wpdb->prefix . 'spotmap_points';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "UPDATE `{$table}` SET `type` = 'UNLIMITED-TRACK' WHERE `type` = 'EXTREME-TRACK'" );
 	}
 
 	/**

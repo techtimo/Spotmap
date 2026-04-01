@@ -3,7 +3,6 @@ import type { PointType } from './types';
 /** Point types that represent tracking positions (rendered as small dots) */
 export const TRACK_TYPES: PointType[] = [
     'UNLIMITED-TRACK',
-    'EXTREME-TRACK',
     'TRACK',
 ];
 
