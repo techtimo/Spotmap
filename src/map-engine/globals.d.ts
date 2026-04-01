@@ -23,6 +23,8 @@ declare global {
             iconAnchor?: [ number, number ];
             iconSize?: [ number, number ];
             borderWith?: number; // note: typo in upstream lib ("borderWith" not "borderWidth")
+            className?: string;
+            customClasses?: string;
         }
 
         class GPX extends L.FeatureGroup {

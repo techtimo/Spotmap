@@ -433,30 +433,48 @@ export class Spotmap {
         }
     }
 
+    private refreshLastPointMarkerForFeed( feedName: string ): void {
+        const feed = this.layers.feeds[ feedName ];
+        if ( ! feed ) {
+            return;
+        }
+
+        // Remove old pin marker if one was previously placed.
+        if ( feed.lastPointMarker ) {
+            feed.featureGroup.removeLayer( feed.lastPointMarker );
+            feed.lastPointMarker = undefined;
+        }
+
+        const lp = feed.points.at( -1 );
+        if ( ! lp ) {
+            return;
+        }
+
+        // Replace the regular circle-dot marker for the last point with the pin.
+        const lastMarker = feed.markers.at( -1 );
+        if ( lastMarker ) {
+            feed.featureGroup.removeLayer( lastMarker );
+            feed.markers.pop();
+        }
+
+        const icon = this.markerManager.getMarkerIcon( lp, {
+            iconShape: 'marker',
+            customClasses: 'spotmap_last_marker',
+        } );
+        feed.lastPointMarker = L.marker( [ lp.latitude, lp.longitude ], {
+            icon,
+            zIndexOffset: 1000,
+        } )
+            .bindPopup( MarkerManager.getPopupHtml( lp ) )
+            .addTo( feed.featureGroup );
+    }
+
     private addLastPointMarkers(): void {
-        for ( const [ feedName, feed ] of Object.entries(
-            this.layers.feeds
-        ) ) {
+        for ( const feedName of Object.keys( this.layers.feeds ) ) {
             if ( ! this.options.styles?.[ feedName ]?.lastPoint ) {
                 continue;
             }
-            const lp = feed.points.at( -1 );
-            if ( ! lp ) {
-                continue;
-            }
-            const color = this.layerManager.getFeedColor( feedName );
-            const icon = L.BeautifyIcon.icon( {
-                iconShape: 'marker',
-                icon: 'circle',
-                textColor: color,
-                borderColor: color,
-            } );
-            L.marker( [ lp.latitude, lp.longitude ], {
-                icon,
-                zIndexOffset: 1000,
-            } )
-                .bindPopup( MarkerManager.getPopupHtml( lp ) )
-                .addTo( feed.featureGroup );
+            this.refreshLastPointMarkerForFeed( feedName );
         }
     }
 
@@ -507,6 +525,13 @@ export class Spotmap {
                                 );
                                 this.markerManager.addPoint( entry );
                                 this.lineManager.addPointToLine( entry );
+                                if (
+                                    this.options.styles?.[ feedName ]?.lastPoint
+                                ) {
+                                    this.refreshLastPointMarkerForFeed(
+                                        feedName
+                                    );
+                                }
 
                                 if ( this.options.mapcenter === 'last' ) {
                                     this.map.setView(

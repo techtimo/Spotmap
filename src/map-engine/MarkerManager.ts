@@ -108,9 +108,11 @@ export class MarkerManager {
      * Create a BeautifyIcon for a point or a GPX waypoint.
      *
      * @param point - Either a SpotPoint (has feed_name/type) or a simple {color} object for GPX.
+     * @param extraOptions - Additional BeautifyIcon options merged on top (e.g. className).
      */
     getMarkerIcon(
-        point: SpotPoint | { color: string; feed_name?: string; type?: string }
+        point: SpotPoint | { color: string; feed_name?: string; type?: string },
+        extraOptions: Partial< L.BeautifyIconOptions > = {}
     ): L.Icon {
         const color =
             ( 'color' in point ? point.color : undefined ) ??
@@ -157,7 +159,15 @@ export class MarkerManager {
             iconOptions.icon = 'circle';
         }
 
-        return L.BeautifyIcon.icon( iconOptions );
+        // If the caller overrides iconShape, remove circle-dot-specific sizing
+        // so it doesn't bleed through and affect the overridden shape.
+        if ( extraOptions.iconShape && extraOptions.iconShape !== iconOptions.iconShape ) {
+            delete iconOptions.iconAnchor;
+            delete iconOptions.iconSize;
+            delete iconOptions.borderWith;
+        }
+
+        return L.BeautifyIcon.icon( { ...iconOptions, ...extraOptions } );
     }
 
     /**
