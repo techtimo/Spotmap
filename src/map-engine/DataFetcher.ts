@@ -3,7 +3,6 @@ import { debug as debugLog } from './utils';
 
 const TRACK_TYPES = new Set< SpotPoint[ 'type' ] >( [
     'TRACK',
-    'EXTREME-TRACK',
     'UNLIMITED-TRACK',
 ] );
 

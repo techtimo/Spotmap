@@ -121,7 +121,6 @@ export type PointType =
     | 'OK'
     | 'CUSTOM'
     | 'TRACK'
-    | 'EXTREME-TRACK'
     | 'UNLIMITED-TRACK'
     | 'HELP'
     | 'HELP-CANCEL'
