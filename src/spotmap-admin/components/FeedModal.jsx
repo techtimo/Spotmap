@@ -331,7 +331,8 @@ export default function FeedModal( {
                             <>
                                 Enter this URL in OsmAnd:{ ' ' }
                                 <em>
-                                    Plugins → Trip Recording → Online tracking → Web address
+                                    Plugins → Trip Recording → Online tracking →
+                                    Web address
                                 </em>
                                 . Set Tracking interval to 10 s or more.{ ' ' }
                                 <a
@@ -385,7 +386,8 @@ export default function FeedModal( {
                         >
                             Override the popup message text for specific point
                             types on this feed. Leave blank to use the device
-                            message. This is to protect phone numbers from being exposed.
+                            message. This is to protect phone numbers from being
+                            exposed.
                         </p>
                         { SPOT_CUSTOM_MESSAGE_TYPES.map( ( { key, label } ) => (
                             <TextControl

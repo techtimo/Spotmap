@@ -31,14 +31,16 @@ import MapsToolbarGroup from './components/MapsToolbarGroup';
 import TimeToolbarGroup from './components/TimeToolbarGroup';
 
 const COLORS = [
-    { name: 'black', color: 'black' },
-    { name: 'blue', color: 'blue' },
-    { name: 'gold', color: 'gold' },
-    { name: 'green', color: 'green' },
-    { name: 'grey', color: 'grey' },
-    { name: 'red', color: 'red' },
-    { name: 'violet', color: 'violet' },
-    { name: 'yellow', color: 'yellow' },
+    { name: 'crimson', color: '#DC143C' },
+    { name: 'blue', color: '#0000FF' },
+    { name: 'lime green', color: '#32CD32' },
+    { name: 'orange', color: '#FF8C00' },
+    { name: 'magenta', color: '#FF00FF' },
+    { name: 'cyan', color: '#00CED1' },
+    { name: 'gold', color: '#FFD700' },
+    { name: 'coral', color: '#FF6347' },
+    { name: 'medium purple', color: '#9370DB' },
+    { name: 'white', color: '#FFFFFF' },
 ];
 
 // Satellite icon (inline SVG)
@@ -267,7 +269,9 @@ function GpxManagerModal( {
                         <ColorPalette
                             colors={ COLORS }
                             value={ styleTrack?.color || 'gold' }
-                            onChange={ ( v ) => updateGpxProp( 'color', v ) }
+                            onChange={ ( v ) =>
+                                v && updateGpxProp( 'color', v )
+                            }
                             disableCustomColors={ false }
                             clearable={ false }
                         />
@@ -574,7 +578,9 @@ function FeedStyleModal( { feed, style, onUpdate, onClose } ) {
                     <ColorPalette
                         colors={ COLORS }
                         value={ s.color || 'blue' }
-                        onChange={ ( value ) => onUpdate( 'color', value ) }
+                        onChange={ ( value ) =>
+                            value && onUpdate( 'color', value )
+                        }
                         disableCustomColors={ false }
                         clearable={ false }
                     />
@@ -649,21 +655,39 @@ export default function Edit( { attributes, setAttributes } ) {
     const [ feedStyleModal, setFeedStyleModal ] = useState( null );
     // GPX manager modal
     const [ gpxManagerOpen, setGpxManagerOpen ] = useState( false );
-    // Total DB point count: null = loading, number = loaded
-    const [ totalPoints, setTotalPoints ] = useState( null );
+    // Per-feed point counts: null = loading, Map<feedName, count> = loaded
+    const [ feedPointCounts, setFeedPointCounts ] = useState( null );
 
-    // Fetch total point count once on mount to guard against loading huge datasets in the editor.
+    // Fetch per-feed point counts once on mount to guard against loading huge datasets in the editor.
     useEffect( () => {
         apiFetch( { path: '/spotmap/v1/db-feeds' } )
             .then( ( feeds ) => {
-                const total = feeds.reduce(
-                    ( sum, f ) => sum + ( f.point_count || 0 ),
-                    0
+                const counts = new Map();
+                feeds.forEach( ( f ) =>
+                    counts.set( f.feed_name, f.point_count || 0 )
                 );
-                setTotalPoints( total );
+                setFeedPointCounts( counts );
             } )
-            .catch( () => setTotalPoints( 0 ) );
+            .catch( () => setFeedPointCounts( new Map() ) );
     }, [] );
+
+    // Total points across all DB feeds (null while loading)
+    const totalPoints =
+        feedPointCounts === null
+            ? null
+            : Array.from( feedPointCounts.values() ).reduce(
+                  ( s, c ) => s + c,
+                  0
+              );
+
+    // Points for the currently selected feeds only (null while loading)
+    const selectedPoints =
+        feedPointCounts === null
+            ? null
+            : attributes.feeds.reduce(
+                  ( s, f ) => s + ( feedPointCounts.get( f ) || 0 ),
+                  0
+              );
 
     // Inject Leaflet CSS into the editor document (handles iframe rendering)
     useEffect( () => {
@@ -698,7 +722,12 @@ export default function Edit( { attributes, setAttributes } ) {
 
     // On first insert (when styles is empty, meaning never initialized), populate from admin-configured defaults.
     // We intentionally do NOT re-trigger when feeds is empty, so the user can choose to show no feeds.
+    // Waits for feedPointCounts to load so we can decide whether to default to all feeds or none.
     useEffect( () => {
+        // Wait until point counts are loaded before initialising defaults.
+        if ( feedPointCounts === null ) {
+            return;
+        }
         if (
             ( Object.keys( attributes.styles ).length === 0 ||
                 attributes.maps.length === 0 ) &&
@@ -734,8 +763,12 @@ export default function Edit( { attributes, setAttributes } ) {
                 ? parseInt( dv[ 'filter-points' ], 10 )
                 : attributes.filterPoints;
 
+            // If the DB already holds more than 10 000 points, default to no feeds
+            // so the editor doesn't immediately try to render a huge dataset.
+            const defaultFeeds = totalPoints > 10000 ? [] : feedNames;
+
             setAttributes( {
-                feeds: feedNames,
+                feeds: defaultFeeds,
                 styles: defaultStyles,
                 maps: defaultMaps,
                 height: defaultHeight,
@@ -745,6 +778,7 @@ export default function Edit( { attributes, setAttributes } ) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
+        feedPointCounts,
         attributes.maps.length,
         attributes.filterPoints,
         attributes.height,
@@ -759,8 +793,8 @@ export default function Edit( { attributes, setAttributes } ) {
             return;
         }
 
-        // Skip map init while point count is still loading, or if it exceeds the editor threshold.
-        if ( totalPoints === null || totalPoints > 10000 ) {
+        // Skip map init while point count is still loading, or if selected feeds exceed the editor threshold.
+        if ( selectedPoints === null || selectedPoints > 10000 ) {
             return;
         }
 
@@ -806,7 +840,7 @@ export default function Edit( { attributes, setAttributes } ) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         mapId,
-        totalPoints,
+        selectedPoints,
         attributes.feeds,
         attributes.styles,
         attributes.mapcenter,
@@ -1008,6 +1042,55 @@ export default function Edit( { attributes, setAttributes } ) {
                                             { __( 'Add a feed' ) }
                                         </ExternalLink>
                                     </p>
+                                ) }
+                                { availableFeeds.length > 0 && (
+                                    <Flex
+                                        gap={ 2 }
+                                        style={ {
+                                            marginBottom: '8px',
+                                            paddingBottom: '8px',
+                                            borderBottom: '1px solid #ddd',
+                                        } }
+                                    >
+                                        <Button
+                                            size="small"
+                                            variant="secondary"
+                                            onClick={ () => {
+                                                const newStyles = {
+                                                    ...attributes.styles,
+                                                };
+                                                availableFeeds.forEach(
+                                                    ( feed ) => {
+                                                        if (
+                                                            ! newStyles[ feed ]
+                                                        ) {
+                                                            newStyles[ feed ] =
+                                                                {
+                                                                    ...DEFAULT_FEED_STYLE,
+                                                                };
+                                                        }
+                                                    }
+                                                );
+                                                setAttributes( {
+                                                    feeds: [
+                                                        ...availableFeeds,
+                                                    ],
+                                                    styles: newStyles,
+                                                } );
+                                            } }
+                                        >
+                                            { __( 'Select all' ) }
+                                        </Button>
+                                        <Button
+                                            size="small"
+                                            variant="secondary"
+                                            onClick={ () =>
+                                                setAttributes( { feeds: [] } )
+                                            }
+                                        >
+                                            { __( 'Select none' ) }
+                                        </Button>
+                                    </Flex>
                                 ) }
                                 { availableFeeds.map( ( feed ) => (
                                     <Flex key={ feed } gap={ 2 } align="center">
@@ -1253,7 +1336,7 @@ export default function Edit( { attributes, setAttributes } ) {
                     },
                 } ) }
             >
-                { totalPoints !== null && totalPoints > 10000 ? (
+                { selectedPoints !== null && selectedPoints > 10000 ? (
                     <div
                         style={ {
                             height: '100%',
@@ -1270,13 +1353,15 @@ export default function Edit( { attributes, setAttributes } ) {
                         } }
                     >
                         <strong>
-                            { __( 'Map preview disabled — database contains' ) }{ ' ' }
-                            { totalPoints.toLocaleString() }{ ' ' }
+                            { __(
+                                'Map preview disabled — selected feeds contain'
+                            ) }{ ' ' }
+                            { selectedPoints.toLocaleString() }{ ' ' }
                             { __( 'points (limit: 10,000).' ) }
                         </strong>
                         <span>
                             { __(
-                                'The map will load normally for site visitors.'
+                                'Deselect some feeds to enable the preview. The map loads normally for visitors.'
                             ) }
                         </span>
                     </div>

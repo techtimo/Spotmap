@@ -81,18 +81,14 @@ export class DataFetcher {
 
         if ( filter && ! response.empty ) {
             const before = ( response as SpotPoint[] ).length;
-            const rdp = DataFetcher.rdpSimplify(
-                response as SpotPoint[],
-                filter
-            );
             const filtered = DataFetcher.removeClosePoints(
-                rdp,
+                response as SpotPoint[],
                 filter
             ) as AjaxResponse;
             this.dbg(
-                `DataFetcher: filterPoints=${ filter }m — ${ before } → rdp ${
-                    rdp.length
-                } → ${ ( filtered as SpotPoint[] ).length } points`
+                `DataFetcher: filterPoints=${ filter }m — ${ before } → ${
+                    ( filtered as SpotPoint[] ).length
+                } points`
             );
             return filtered;
         }
@@ -268,7 +264,8 @@ export class DataFetcher {
             if (
                 distance <= radius &&
                 anchor.type === point.type &&
-                anchor.feed_name === point.feed_name
+                anchor.feed_name === point.feed_name &&
+                point.type !== 'MEDIA'
             ) {
                 // Too close — hide this point behind the anchor
                 hiddenCount++;

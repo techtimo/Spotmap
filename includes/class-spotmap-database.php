@@ -174,6 +174,11 @@ private const ALLOWED_COLUMNS = [
 			$where .= $wpdb->prepare( "AND feed_name IN ($placeholders) ", ...$filter['feeds'] );
 		}
 		if(!empty($filter['type'])){
+			$track_aliases = ['UNLIMITED-TRACK', 'EXTREME-TRACK'];
+			$filter['type'] = array_values(array_unique(array_map(
+				fn($t) => in_array($t, $track_aliases, true) ? 'TRACK' : $t,
+				$filter['type']
+			)));
 			$types_on_db = $this->get_all_types();
 			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','TRACK','HELP']);
 			foreach ($filter['type'] as $value) {

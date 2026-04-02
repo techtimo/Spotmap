@@ -1,9 +1,5 @@
 import { useState, useEffect } from '@wordpress/element';
-import {
-    Button,
-    SelectControl,
-    Spinner,
-} from '@wordpress/components';
+import { Button, SelectControl, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import IconPicker from '../components/IconPicker';
 
@@ -104,7 +100,7 @@ export default function MarkersTab( { onNoticeChange } ) {
                                     </Button>
                                 </div>
                             </td>
-                            </tr>
+                        </tr>
                     ) ) }
                 </tbody>
             </table>

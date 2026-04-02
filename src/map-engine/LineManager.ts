@@ -4,7 +4,6 @@ import {
     LINE_ARROW_CHAR,
     LINE_ARROW_FONT_SIZE,
     LINE_ARROW_OFFSET,
-    MEDIA_FEED_NAME,
 } from './constants';
 import type { LayerManager } from './LayerManager';
 
@@ -35,7 +34,7 @@ export class LineManager {
     addPointToLine( point: SpotPoint ): boolean {
         const feedName = point.feed_name;
 
-        if ( feedName === MEDIA_FEED_NAME ) {
+        if ( point.type === 'MEDIA' ) {
             return false;
         }
 
