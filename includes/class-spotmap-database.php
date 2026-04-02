@@ -106,14 +106,43 @@ private const ALLOWED_COLUMNS = [
 	}
 
 	/**
-	 * Returns a map of feed_name => point count for all feeds in the DB.
+	 * Returns a map of feed_name => point count for all feeds in the DB,
+	 * optionally restricted to a date range.
 	 *
+	 * $from and $to accept the same formats as get_points() date-range:
+	 * a date/datetime string (e.g. "2024-01-01") or a relative "last-7-days" string.
+	 *
+	 * @param string $from Optional lower bound (inclusive).
+	 * @param string $to   Optional upper bound (inclusive).
 	 * @return array<string, int>
 	 */
-	public function get_point_counts_by_feed(): array {
+	public function get_point_counts_by_feed( string $from = '', string $to = '' ): array {
 		global $wpdb;
+		$where = '';
+		if ( ! empty( $to ) ) {
+			if ( substr( $to, 0, 5 ) === 'last-' ) {
+				$rel_string = str_replace( '-', ' ', substr( $to, 5 ) );
+				$date       = date_create( '@' . strtotime( '-' . $rel_string ) );
+			} else {
+				$date = date_create( $to );
+			}
+			if ( $date !== null && $date !== false ) {
+				$where .= "AND FROM_UNIXTIME(time) <= '" . date_format( $date, 'Y-m-d H:i:s' ) . "' ";
+			}
+		}
+		if ( ! empty( $from ) ) {
+			if ( substr( $from, 0, 5 ) === 'last-' ) {
+				$rel_string = str_replace( '-', ' ', substr( $from, 5 ) );
+				$date       = date_create( '@' . strtotime( '-' . $rel_string ) );
+			} else {
+				$date = date_create( $from );
+			}
+			if ( $date !== null && $date !== false ) {
+				$where .= "AND FROM_UNIXTIME(time) >= '" . date_format( $date, 'Y-m-d H:i:s' ) . "' ";
+			}
+		}
 		$rows = $wpdb->get_results(
-			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
+			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL {$where}GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
 			ARRAY_A
 		);
 		$counts = [];

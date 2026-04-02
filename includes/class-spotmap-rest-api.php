@@ -347,8 +347,10 @@ class Spotmap_Rest_Api {
 	}
 
 	public static function get_db_feeds( WP_REST_Request $request ) {
+		$from   = sanitize_text_field( $request->get_param( 'from' ) ?? '' );
+		$to     = sanitize_text_field( $request->get_param( 'to' ) ?? '' );
 		$db     = new Spotmap_Database();
-		$counts = $db->get_point_counts_by_feed();
+		$counts = $db->get_point_counts_by_feed( $from, $to );
 		$result = [];
 		foreach ( $counts as $feed_name => $count ) {
 			$result[] = [
