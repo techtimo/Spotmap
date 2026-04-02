@@ -658,9 +658,21 @@ export default function Edit( { attributes, setAttributes } ) {
     // Per-feed point counts: null = loading, Map<feedName, count> = loaded
     const [ feedPointCounts, setFeedPointCounts ] = useState( null );
 
-    // Fetch per-feed point counts once on mount to guard against loading huge datasets in the editor.
+    // Fetch per-feed point counts, respecting the block's dateRange filter.
+    // Re-runs whenever dateRange changes so the threshold check stays accurate.
     useEffect( () => {
-        apiFetch( { path: '/spotmap/v1/db-feeds' } )
+        setFeedPointCounts( null );
+        const params = new URLSearchParams();
+        if ( attributes.dateRange?.from ) {
+            params.set( 'from', attributes.dateRange.from );
+        }
+        if ( attributes.dateRange?.to ) {
+            params.set( 'to', attributes.dateRange.to );
+        }
+        const query = params.toString();
+        apiFetch( {
+            path: '/spotmap/v1/db-feeds' + ( query ? '?' + query : '' ),
+        } )
             .then( ( feeds ) => {
                 const counts = new Map();
                 feeds.forEach( ( f ) =>
@@ -669,7 +681,7 @@ export default function Edit( { attributes, setAttributes } ) {
                 setFeedPointCounts( counts );
             } )
             .catch( () => setFeedPointCounts( new Map() ) );
-    }, [] );
+    }, [ attributes.dateRange?.from, attributes.dateRange?.to ] );
 
     // Total points across all DB feeds (null while loading)
     const totalPoints =
