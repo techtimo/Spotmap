@@ -63,7 +63,28 @@ class Spotmap_Public{
 	}
 
 	public function enqueue_block_editor_assets(){
-		$this->enqueue_scripts();
+		// Always enqueue map-engine scripts in the editor regardless of whether
+		// the block is already saved in the post — new blocks need them too.
+		$map_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap-map.asset.php';
+		$map_asset = file_exists( $map_asset_file ) ? include $map_asset_file : [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_script(
+			'spotmap-handler',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
+			array_merge(
+				$map_asset['dependencies'],
+				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
+			),
+			$map_asset['version'],
+			true
+		);
+		wp_enqueue_script( 'leaflet',               plugins_url( 'leaflet/leaflet.js', __FILE__ ) );
+		wp_enqueue_script( 'leaflet-fullscreen',    plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js', [ 'leaflet' ] );
+		wp_enqueue_script( 'leaflet-gpx',           plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js' );
+		wp_enqueue_script( 'leaflet-easybutton',    plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js' );
+		wp_enqueue_script( 'leaflet-swisstopo',     plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js' );
+		wp_enqueue_script( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js' );
+		wp_enqueue_script( 'leaflet-text-path',     plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js' );
+		$this->localize_js_script( 'spotmap-handler' );
 		$this->enqueue_styles();
 		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
 		$this->localize_js_script( 'spotmap-spotmessages-editor-script' );
