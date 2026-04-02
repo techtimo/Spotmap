@@ -81,6 +81,12 @@ class Spotmap_Migrator {
     private static function migrate_to_1_0_0() {
         self::migrate_table_to_1_0_0();
 
+        // If feeds are already in the new format, this migration already ran
+        // (or feeds were configured directly in 1.0.x). Don't overwrite them.
+        if ( ! empty( Spotmap_Options::get_feeds() ) ) {
+            return;
+        }
+
         $names     = get_option( 'spotmap_findmespot_name', [] );
         $ids       = get_option( 'spotmap_findmespot_id', [] );
         $passwords = get_option( 'spotmap_findmespot_password', [] );
@@ -103,7 +109,12 @@ class Spotmap_Migrator {
             ];
         }
 
-        Spotmap_Options::save_feeds( $feeds );
+        // Only save if there are legacy feeds to migrate. Calling save_feeds([])
+        // when no legacy options exist would wipe feeds already configured via
+        // the 1.0.x admin UI (e.g. if OPTION_VERSION was never persisted).
+        if ( ! empty( $feeds ) ) {
+            Spotmap_Options::save_feeds( $feeds );
+        }
 
         // Remove legacy options.
         delete_option( 'spotmap_findmespot_name' );
