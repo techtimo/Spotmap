@@ -30,9 +30,6 @@ export const Z_INDEX_STATUS = 1000;
 export const Z_INDEX_HELP = -2000;
 export const Z_INDEX_EMERGENCY = -3000;
 
-/** Feed name that contains media points (excluded from line drawing) */
-export const MEDIA_FEED_NAME = 'media';
-
 /** Arrow character used on polylines */
 export const LINE_ARROW_CHAR = '  \u25BA  ';
 export const LINE_ARROW_FONT_SIZE = 7;

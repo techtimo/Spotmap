@@ -49,8 +49,11 @@ export default function MapsToolbarGroup( {
         : [];
 
     const toggleMap = ( mapKey, checked ) => {
+        if ( ! checked && maps.length <= 1 ) {
+            return;
+        }
         const next = checked
-            ? [ ...maps, mapKey ]
+            ? [ mapKey, ...maps ]
             : maps.filter( ( m ) => m !== mapKey );
         onChangeMaps( next );
     };
@@ -92,6 +95,10 @@ export default function MapsToolbarGroup( {
                                                 ?.label ?? mapKey
                                         }
                                         checked={ maps.includes( mapKey ) }
+                                        disabled={
+                                            maps.includes( mapKey ) &&
+                                            maps.length <= 1
+                                        }
                                         onChange={ ( checked ) =>
                                             toggleMap( mapKey, checked )
                                         }
