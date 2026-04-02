@@ -106,7 +106,7 @@ Table `wp_spotmap_points`:
 `config/maps.yaml` defines 25+ tile layer providers. Loaded server-side, passed to the block editor and frontend via `spotmapjsobj`.
 
 ## Known TODOs
-
+- tablerender - change layout to not have the first td clickable but actualy make a new row with botton pan to location/ zoom to location
 - **`latestUnixtimeByFeed` redundant state** (`Spotmap.ts`): The `Map<string, number>` tracking the latest unixtime per feed duplicates `feed.points.at(-1)?.unixtime`, since `MarkerManager.addPoint()` already pushes to `feed.points`. Refactor the auto-reload polling loop to read `feed.points` directly and remove the Map.
 - **Duplicated polling pattern**: `Spotmap.ts` and `TableRenderer.ts` share ~70 lines of identical timeout/visibility-change polling logic. Consider extracting a `VisibilityAwarePoller` utility class into `utils.ts`.
 - **Feed style defaults should move to the map engine**: `render-block.php` and the shortcode both pre-populate per-feed `styles` (color, splitLines) from WP admin defaults in PHP. Ideally `LayerManager.getFeedColor()` and `getFeedSplitLines()` would fall back to `spotmapjsobj.defaultValues` (already available at runtime) and cycle colors by feed index from `options.feeds`, allowing both renderers to pass a sparse/empty `styles`. The PHP pre-population in `render-block.php` was added to match shortcode behaviour for now.
