@@ -96,12 +96,9 @@ export default function FeedsTab( {
             );
             onNoticeChange( {
                 status: 'success',
-                text:
-                    count > 0
-                        ? `Imported ${ count } photo${
-                              count === 1 ? '' : 's'
-                          }.`
-                        : 'No new photos found to import.',
+                text: count > 0
+                    ? `Imported ${ count } photo${ count === 1 ? '' : 's' }.`
+                    : 'No new photos found to import.',
             } );
         } catch ( err ) {
             onNoticeChange( { status: 'error', text: err.message } );
@@ -211,93 +208,83 @@ export default function FeedsTab( {
                         </tr>
                     </thead>
                     <tbody>
-                        { [ ...feeds ]
-                            .sort( ( a, b ) =>
-                                ( a.name ?? '' ).localeCompare( b.name ?? '' )
-                            )
-                            .map( ( feed ) => (
-                                <tr key={ feed.id }>
-                                    <td>{ feed.name }</td>
-                                    <td>
-                                        { providers[ feed.type ]?.label ??
-                                            feed.type }
-                                    </td>
-                                    <td>{ feed.point_count ?? 0 }</td>
-                                    <td>
-                                        <Button
-                                            variant="secondary"
-                                            size="small"
-                                            onClick={ () =>
-                                                setEditingFeed( feed )
-                                            }
-                                        >
-                                            Edit
-                                        </Button>{ ' ' }
-                                        { isMediaFeed( feed.type ) && (
-                                            <>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="small"
-                                                    isBusy={
-                                                        importingFeedId ===
-                                                        feed.id
-                                                    }
-                                                    disabled={
-                                                        importingFeedId ===
-                                                        feed.id
-                                                    }
-                                                    onClick={ () =>
-                                                        handleImportPhotos(
-                                                            feed
-                                                        )
-                                                    }
-                                                >
-                                                    Check Photos
-                                                </Button>{ ' ' }
-                                            </>
-                                        ) }
-                                        { feed.paused ? (
+                        { feeds.map( ( feed ) => (
+                            <tr key={ feed.id }>
+                                <td>{ feed.name }</td>
+                                <td>
+                                    { providers[ feed.type ]?.label ??
+                                        feed.type }
+                                </td>
+                                <td>{ feed.point_count ?? 0 }</td>
+                                <td>
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={ () => setEditingFeed( feed ) }
+                                    >
+                                        Edit
+                                    </Button>{ ' ' }
+                                    { isMediaFeed( feed.type ) && (
+                                        <>
                                             <Button
                                                 variant="secondary"
                                                 size="small"
-                                                style={ {
-                                                    color: '#996600',
-                                                    borderColor: '#996600',
-                                                } }
+                                                isBusy={
+                                                    importingFeedId === feed.id
+                                                }
+                                                disabled={
+                                                    importingFeedId === feed.id
+                                                }
                                                 onClick={ () =>
-                                                    handleTogglePause( feed )
+                                                    handleImportPhotos( feed )
                                                 }
                                             >
-                                                Unpause
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                variant="secondary"
-                                                size="small"
-                                                style={ {
-                                                    color: '#0073aa',
-                                                    borderColor: '#0073aa',
-                                                } }
-                                                onClick={ () =>
-                                                    handleTogglePause( feed )
-                                                }
-                                            >
-                                                Pause
-                                            </Button>
-                                        ) }{ ' ' }
+                                                Check Photos
+                                            </Button>{ ' ' }
+                                        </>
+                                    ) }
+                                    { feed.paused ? (
                                         <Button
                                             variant="secondary"
                                             size="small"
-                                            isDestructive
+                                            style={ {
+                                                color: '#996600',
+                                                borderColor: '#996600',
+                                            } }
                                             onClick={ () =>
-                                                handleDeleteClick( feed )
+                                                handleTogglePause( feed )
                                             }
                                         >
-                                            Delete
+                                            Unpause
                                         </Button>
-                                    </td>
-                                </tr>
-                            ) ) }
+                                    ) : (
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            style={ {
+                                                color: '#0073aa',
+                                                borderColor: '#0073aa',
+                                            } }
+                                            onClick={ () =>
+                                                handleTogglePause( feed )
+                                            }
+                                        >
+                                            Pause
+                                        </Button>
+                                    ) }{ ' ' }
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        isDestructive
+                                        onClick={ () =>
+                                            handleDeleteClick( feed )
+                                        }
+                                    >
+                                        Delete
+                                    </Button>
+                                </td>
+                            </tr>
+                        ) ) }
                     </tbody>
                 </table>
             ) }
@@ -322,34 +309,27 @@ export default function FeedsTab( {
                             </tr>
                         </thead>
                         <tbody>
-                            { [ ...orphanedDbFeeds ]
-                                .sort( ( a, b ) =>
-                                    ( a.feed_name ?? '' ).localeCompare(
-                                        b.feed_name ?? ''
-                                    )
-                                )
-                                .map( ( d ) => (
-                                    <tr key={ d.feed_name }>
-                                        <td>{ d.feed_name }</td>
-                                        <td>{ d.point_count }</td>
-                                        <td>
-                                            <Button
-                                                variant="secondary"
-                                                size="small"
-                                                isDestructive
-                                                onClick={ () =>
-                                                    setConfirmDeleteDbFeed( {
-                                                        feedName: d.feed_name,
-                                                        pointCount:
-                                                            d.point_count,
-                                                    } )
-                                                }
-                                            >
-                                                Delete points
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ) ) }
+                            { orphanedDbFeeds.map( ( d ) => (
+                                <tr key={ d.feed_name }>
+                                    <td>{ d.feed_name }</td>
+                                    <td>{ d.point_count }</td>
+                                    <td>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            isDestructive
+                                            onClick={ () =>
+                                                setConfirmDeleteDbFeed( {
+                                                    feedName: d.feed_name,
+                                                    pointCount: d.point_count,
+                                                } )
+                                            }
+                                        >
+                                            Delete points
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ) ) }
                         </tbody>
                     </table>
                 </div>
