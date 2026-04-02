@@ -441,9 +441,8 @@ class Spotmap_Rest_Api {
 				continue;
 			}
 			$sanitized[ $type ] = [
-				'iconShape'     => sanitize_text_field( $config['iconShape'] ?? '' ),
-				'icon'          => sanitize_text_field( $config['icon'] ?? '' ),
-				'customMessage' => sanitize_text_field( $config['customMessage'] ?? '' ),
+				'iconShape' => sanitize_text_field( $config['iconShape'] ?? '' ),
+				'icon'      => sanitize_text_field( $config['icon'] ?? '' ),
 			];
 		}
 
@@ -595,6 +594,25 @@ class Spotmap_Rest_Api {
 					? $raw  // passwords are not run through sanitize_text_field
 					: sanitize_text_field( $raw );
 			}
+		}
+
+		// For push-type feeds the pre-shared key is generated client-side and must
+		// be round-tripped so the URL shown before save matches what is stored.
+		$push_types = [ 'osmand', 'teltonika' ];
+		if ( in_array( $type, $push_types, true ) && ! empty( $body['key'] ) ) {
+			$data['key'] = sanitize_text_field( $body['key'] );
+		}
+
+		// Per-feed custom message overrides (findmespot only).
+		if ( $type === 'findmespot' && isset( $body['custom_messages'] ) && is_array( $body['custom_messages'] ) ) {
+			$allowed_msg_types = [ 'OK', 'HELP', 'CUSTOM' ];
+			$messages          = [];
+			foreach ( $allowed_msg_types as $msg_type ) {
+				if ( array_key_exists( $msg_type, $body['custom_messages'] ) ) {
+					$messages[ $msg_type ] = sanitize_text_field( $body['custom_messages'][ $msg_type ] );
+				}
+			}
+			$data['custom_messages'] = $messages;
 		}
 
 		return $data;

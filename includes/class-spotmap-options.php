@@ -11,9 +11,8 @@
  */
 class Spotmap_Options {
 
-	const OPTION_FEEDS           = 'spotmap_feeds';
-	const OPTION_CUSTOM_MESSAGES = 'spotmap_custom_messages';
-	const OPTION_MARKER          = 'spotmap_marker';
+	const OPTION_FEEDS          = 'spotmap_feeds';
+	const OPTION_MARKER         = 'spotmap_marker';
 	const OPTION_DEFAULT_VALUES  = 'spotmap_default_values';
 	const OPTION_API_TOKENS      = 'spotmap_api_tokens';
 	const OPTION_VERSION         = 'spotmap_version';
@@ -32,49 +31,40 @@ class Spotmap_Options {
 	public static function get_marker_defaults() {
 		return [
 			'HELP' => [
-				'iconShape'     => 'marker',
-				'icon'          => 'life-ring',
-				'customMessage' => '',
+				'iconShape' => 'marker',
+				'icon'      => 'life-ring',
 			],
 			'HELP-CANCEL' => [
-				'iconShape'     => 'marker',
-				'icon'          => 'check-double',
-				'customMessage' => '',
+				'iconShape' => 'marker',
+				'icon'      => 'check-double',
 			],
 			'CUSTOM' => [
-				'iconShape'     => 'marker',
-				'icon'          => 'comment-dots',
-				'customMessage' => '',
+				'iconShape' => 'marker',
+				'icon'      => 'comment-dots',
 			],
 			'OK' => [
-				'iconShape'     => 'marker',
-				'icon'          => 'thumbs-up',
-				'customMessage' => '',
+				'iconShape' => 'marker',
+				'icon'      => 'thumbs-up',
 			],
 			'STATUS' => [
-				'iconShape'     => 'circle',
-				'icon'          => 'check-circle',
-				'customMessage' => '',
+				'iconShape' => 'circle',
+				'icon'      => 'check-circle',
 			],
-			'UNLIMITED-TRACK' => [
-				'iconShape'     => 'circle-dot',
-				'icon'          => 'user',
-				'customMessage' => '',
+			'TRACK' => [
+				'iconShape' => 'circle-dot',
+				'icon'      => 'user',
 			],
 			'NEWMOVEMENT' => [
-				'iconShape'     => 'circle',
-				'icon'          => 'play-circle',
-				'customMessage' => '',
+				'iconShape' => 'circle',
+				'icon'      => 'play-circle',
 			],
 			'STOP' => [
-				'iconShape'     => 'circle',
-				'icon'          => 'stop-circle',
-				'customMessage' => '',
+				'iconShape' => 'circle',
+				'icon'      => 'stop-circle',
 			],
 			'MEDIA' => [
-				'iconShape'     => 'marker',
-				'icon'          => 'camera-retro',
-				'customMessage' => '',
+				'iconShape' => 'marker',
+				'icon'      => 'camera-retro',
 			],
 		];
 	}
@@ -127,9 +117,8 @@ class Spotmap_Options {
 	 * @return void
 	 */
 	public static function seed_defaults() {
-		add_option( self::OPTION_FEEDS,          [] );
-		add_option( self::OPTION_CUSTOM_MESSAGES, [] );
-		add_option( self::OPTION_MARKER,          self::get_marker_defaults() );
+		add_option( self::OPTION_FEEDS,  [] );
+		add_option( self::OPTION_MARKER, self::get_marker_defaults() );
 		add_option( self::OPTION_DEFAULT_VALUES,  self::get_settings_defaults() );
 		add_option( self::OPTION_API_TOKENS,      self::get_api_token_defaults() );
 	}
@@ -378,33 +367,6 @@ class Spotmap_Options {
 	}
 
 	// -------------------------------------------------------------------------
-	// Custom messages
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Returns custom message overrides by message type.
-	 *
-	 * @return array<string, string>
-	 */
-	public static function get_custom_messages() {
-		return self::get_array_option( self::OPTION_CUSTOM_MESSAGES, [] );
-	}
-
-	/**
-	 * Returns a custom message override for one message type.
-	 *
-	 * @param string $type
-	 * @param mixed  $fallback
-	 * @return mixed
-	 */
-	public static function get_custom_message( $type, $fallback = null ) {
-		$messages = self::get_custom_messages();
-		if ( ! isset( $messages[ $type ] ) || $messages[ $type ] === '' ) {
-			return $fallback;
-		}
-		return $messages[ $type ];
-	}
-
 	// -------------------------------------------------------------------------
 	// Internal helpers
 	// -------------------------------------------------------------------------

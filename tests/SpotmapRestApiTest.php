@@ -405,14 +405,14 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 
 	public function test_update_markers_returns_200(): void {
 		$response = $this->request( 'PUT', '/markers', [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 		$this->assertSame( 200, $response->get_status() );
 	}
 
 	public function test_update_markers_persists_changes(): void {
 		$this->request( 'PUT', '/markers', [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 		self::$cache_prop->setValue( null, [] );
 		$this->assertSame( 'star', Spotmap_Options::get_marker_setting( 'OK', 'icon' ) );
@@ -420,7 +420,7 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 
 	public function test_update_markers_ignores_unknown_types(): void {
 		$this->request( 'PUT', '/markers', [
-			'UNKNOWN_TYPE' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'UNKNOWN_TYPE' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 		self::$cache_prop->setValue( null, [] );
 		// The unknown type must not be stored.
@@ -430,7 +430,7 @@ class SpotmapRestApiTest extends WP_UnitTestCase {
 
 	public function test_update_markers_returns_merged_result(): void {
 		$response = $this->request( 'PUT', '/markers', [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 		$data = $response->get_data();
 		// Response includes all default types, not just what was sent.

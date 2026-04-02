@@ -57,7 +57,6 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_FEEDS ) );
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_MARKER ) );
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_DEFAULT_VALUES ) );
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES ) );
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_API_TOKENS ) );
 	}
 
@@ -70,7 +69,7 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 	public function test_seed_defaults_does_not_overwrite_existing_options(): void {
 		// Simulate an existing install where the user already has a custom marker.
 		update_option( Spotmap_Options::OPTION_MARKER, [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => 'On the way!' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 
 		Spotmap_Options::seed_defaults();
@@ -215,7 +214,7 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 
 	public function test_save_marker_options_persists(): void {
 		$custom = [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		];
 		Spotmap_Options::save_marker_options( $custom );
 		self::$cache_prop->setValue( null, [] );
@@ -244,7 +243,7 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 
 	public function test_get_marker_options_merges_with_defaults(): void {
 		update_option( Spotmap_Options::OPTION_MARKER, [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'custom-icon', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'custom-icon' ],
 		] );
 
 		$options = Spotmap_Options::get_marker_options();
@@ -260,7 +259,7 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 
 	public function test_get_marker_setting_returns_custom_value(): void {
 		update_option( Spotmap_Options::OPTION_MARKER, [
-			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star', 'customMessage' => '' ],
+			'OK' => [ 'iconShape' => 'circle', 'icon' => 'star' ],
 		] );
 
 		$this->assertSame( 'circle', Spotmap_Options::get_marker_setting( 'OK', 'iconShape' ) );
@@ -328,27 +327,4 @@ class SpotmapOptionsTest extends WP_UnitTestCase {
 		$this->assertSame( 'pk.abc123', Spotmap_Options::get_api_tokens()['mapbox'] );
 	}
 
-	// -------------------------------------------------------------------------
-	// Custom messages
-	// -------------------------------------------------------------------------
-
-	public function test_get_custom_messages_returns_empty_array_by_default(): void {
-		$this->assertSame( [], Spotmap_Options::get_custom_messages() );
-	}
-
-	public function test_get_custom_messages_returns_stored_values(): void {
-		update_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES, [ 'OK' => 'All good!' ] );
-
-		$this->assertSame( 'All good!', Spotmap_Options::get_custom_messages()['OK'] );
-	}
-
-	public function test_get_custom_message_returns_fallback_when_unset(): void {
-		$this->assertSame( 'default', Spotmap_Options::get_custom_message( 'OK', 'default' ) );
-	}
-
-	public function test_get_custom_message_returns_stored_value(): void {
-		update_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES, [ 'HELP' => 'SOS triggered!' ] );
-
-		$this->assertSame( 'SOS triggered!', Spotmap_Options::get_custom_message( 'HELP' ) );
-	}
 }

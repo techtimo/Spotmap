@@ -2,6 +2,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { Button, Modal, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
+import ProviderSelector from '../components/ProviderSelector';
 
 const isMediaFeed = ( type ) => type === 'media';
 
@@ -13,9 +14,10 @@ export default function FeedsTab( {
     const [ feeds, setFeeds ] = useState( null );
     const [ dbFeeds, setDbFeeds ] = useState( null );
     const [ loading, setLoading ] = useState( true );
-    const [ editingFeed, setEditingFeed ] = useState(
-        openAddModal ? {} : null
-    ); // null=closed, {}=new, feed=edit
+    // showPicker: true = provider picker modal open
+    const [ showPicker, setShowPicker ] = useState( openAddModal );
+    // editingFeed: null=closed, { type } = new feed settings, full feed object = edit
+    const [ editingFeed, setEditingFeed ] = useState( null );
     const [ confirmDelete, setConfirmDelete ] = useState( null ); // feed object or null
     const [ confirmDeleteDbFeed, setConfirmDeleteDbFeed ] = useState( null ); // { feedName, pointCount }
     const [ importingFeedId, setImportingFeedId ] = useState( null );
@@ -300,7 +302,7 @@ export default function FeedsTab( {
                 </table>
             ) }
 
-            <Button variant="primary" onClick={ () => setEditingFeed( {} ) }>
+            <Button variant="primary" onClick={ () => setShowPicker( true ) }>
                 Add Feed
             </Button>
 
@@ -353,12 +355,39 @@ export default function FeedsTab( {
                 </div>
             ) }
 
+            { /* Step 1: pick a provider type */ }
+            { showPicker && (
+                <Modal
+                    title="Add Feed"
+                    size="medium"
+                    onRequestClose={ () => setShowPicker( false ) }
+                >
+                    <ProviderSelector
+                        providers={ providers }
+                        value=""
+                        onChange={ ( type ) => {
+                            setShowPicker( false );
+                            setEditingFeed( { type } );
+                        } }
+                    />
+                </Modal>
+            ) }
+
+            { /* Step 2: fill in settings (also used for Edit) */ }
             { editingFeed !== null && (
                 <FeedModal
                     providers={ providers }
-                    feed={ editingFeed.id ? editingFeed : null }
+                    feed={ editingFeed }
                     onSave={ handleSave }
                     onClose={ () => setEditingFeed( null ) }
+                    onBack={
+                        ! editingFeed.id
+                            ? () => {
+                                  setEditingFeed( null );
+                                  setShowPicker( true );
+                              }
+                            : undefined
+                    }
                 />
             ) }
 

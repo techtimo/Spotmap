@@ -24,7 +24,7 @@ const minimalBody: AjaxRequestBody = {
 function makePoint(
     lat: number,
     lng: number,
-    type: SpotPoint[ 'type' ] = 'UNLIMITED-TRACK',
+    type: SpotPoint[ 'type' ] = 'TRACK',
     id = 1
 ): SpotPoint {
     return {
@@ -52,8 +52,8 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
     it( 'keeps both points when they are far apart', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 48.0, 9.0, 'UNLIMITED-TRACK', 2 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 48.0, 9.0, 'TRACK', 2 ),
         ];
         expect( DataFetcher.removeClosePoints( pts, 50 ) ).toHaveLength( 2 );
     } );
@@ -61,8 +61,8 @@ describe( 'DataFetcher.removeClosePoints', () => {
     it( 'collapses two points within the radius into one', () => {
         // ~0.01 m apart — well within any practical radius
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.0000001, 'UNLIMITED-TRACK', 2 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.0000001, 'TRACK', 2 ),
         ];
         const result = DataFetcher.removeClosePoints( pts, 50 );
         expect( result ).toHaveLength( 1 );
@@ -71,7 +71,7 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
     it( 'does not collapse points of different types even when close', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
             makePoint( 47.0, 8.0000001, 'OK', 2 ),
         ];
         expect( DataFetcher.removeClosePoints( pts, 50 ) ).toHaveLength( 2 );
@@ -95,9 +95,9 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
     it( 'annotates anchor with total hidden count for a run of close points', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.0000001, 'UNLIMITED-TRACK', 2 ),
-            makePoint( 47.0, 8.0000002, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.0000001, 'TRACK', 2 ),
+            makePoint( 47.0, 8.0000002, 'TRACK', 3 ),
         ];
         const result = DataFetcher.removeClosePoints( pts, 50 );
         expect( result ).toHaveLength( 1 );
@@ -106,10 +106,10 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
     it( 'resets hidden count after a sufficiently distant point', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.0000001, 'UNLIMITED-TRACK', 2 ), // close
-            makePoint( 48.0, 9.0, 'UNLIMITED-TRACK', 3 ), // far — new anchor
-            makePoint( 48.0, 9.0000001, 'UNLIMITED-TRACK', 4 ), // close to new anchor
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.0000001, 'TRACK', 2 ), // close
+            makePoint( 48.0, 9.0, 'TRACK', 3 ), // far — new anchor
+            makePoint( 48.0, 9.0000001, 'TRACK', 4 ), // close to new anchor
         ];
         const result = DataFetcher.removeClosePoints( pts, 50 );
         expect( result ).toHaveLength( 2 );
@@ -119,8 +119,8 @@ describe( 'DataFetcher.removeClosePoints', () => {
 
     it( 'with radius 0 keeps all points', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 2 ), // identical coords
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.0, 'TRACK', 2 ), // identical coords
         ];
         // haversine of identical coords = 0; radius 0 means distance <= 0 collapses it
         // (edge case: exactly on boundary — both points same location, distance = 0 <= 0)
@@ -146,9 +146,9 @@ describe( 'DataFetcher.rdpSimplify', () => {
     it( 'removes collinear intermediate point', () => {
         // Three collinear points along a lat line — middle is redundant
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ), // midpoint
-            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'TRACK', 2 ), // midpoint
+            makePoint( 47.0, 9.0, 'TRACK', 3 ),
         ];
         const result = DataFetcher.rdpSimplify( pts, 1 );
         expect( result ).toHaveLength( 2 );
@@ -158,9 +158,9 @@ describe( 'DataFetcher.rdpSimplify', () => {
 
     it( 'keeps a significantly deviated point', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.5, 8.5, 'UNLIMITED-TRACK', 2 ), // large detour
-            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.5, 8.5, 'TRACK', 2 ), // large detour
+            makePoint( 47.0, 9.0, 'TRACK', 3 ),
         ];
         const result = DataFetcher.rdpSimplify( pts, 1 );
         expect( result ).toHaveLength( 3 );
@@ -178,13 +178,13 @@ describe( 'DataFetcher.rdpSimplify', () => {
 
     it( 'keeps non-track points between simplified track runs', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ), // collinear — should be removed
-            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'TRACK', 2 ), // collinear — should be removed
+            makePoint( 47.0, 9.0, 'TRACK', 3 ),
             makePoint( 47.0, 9.0, 'OK', 4 ), // waypoint — always kept
-            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 5 ),
-            makePoint( 47.0, 9.5, 'UNLIMITED-TRACK', 6 ), // collinear — should be removed
-            makePoint( 47.0, 10.0, 'UNLIMITED-TRACK', 7 ),
+            makePoint( 47.0, 9.0, 'TRACK', 5 ),
+            makePoint( 47.0, 9.5, 'TRACK', 6 ), // collinear — should be removed
+            makePoint( 47.0, 10.0, 'TRACK', 7 ),
         ];
         const result = DataFetcher.rdpSimplify( pts, 1 );
         // IDs 1, 3 (first run simplified), 4 (OK kept), 5, 7 (second run simplified)
@@ -193,9 +193,9 @@ describe( 'DataFetcher.rdpSimplify', () => {
 
     it( 'epsilon=0 returns all points unchanged', () => {
         const pts = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ),
-            makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.5, 'TRACK', 2 ),
+            makePoint( 47.0, 9.0, 'TRACK', 3 ),
         ];
         expect( DataFetcher.rdpSimplify( pts, 0 ) ).toHaveLength( 3 );
     } );
@@ -207,29 +207,29 @@ describe( 'DataFetcher.rdpSimplify', () => {
         // With the fix, A and B are simplified independently.
         const ptsA = [
             {
-                ...makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
+                ...makePoint( 47.0, 8.0, 'TRACK', 1 ),
                 feed_name: 'feed-a',
             },
             {
-                ...makePoint( 47.0, 8.5, 'UNLIMITED-TRACK', 2 ),
+                ...makePoint( 47.0, 8.5, 'TRACK', 2 ),
                 feed_name: 'feed-a',
             }, // collinear within A
             {
-                ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 3 ),
+                ...makePoint( 47.0, 9.0, 'TRACK', 3 ),
                 feed_name: 'feed-a',
             },
         ];
         const ptsB = [
             {
-                ...makePoint( 47.0, 9.0, 'UNLIMITED-TRACK', 4 ),
+                ...makePoint( 47.0, 9.0, 'TRACK', 4 ),
                 feed_name: 'feed-b',
             },
             {
-                ...makePoint( 47.0, 9.5, 'UNLIMITED-TRACK', 5 ),
+                ...makePoint( 47.0, 9.5, 'TRACK', 5 ),
                 feed_name: 'feed-b',
             }, // collinear within B
             {
-                ...makePoint( 47.0, 10.0, 'UNLIMITED-TRACK', 6 ),
+                ...makePoint( 47.0, 10.0, 'TRACK', 6 ),
                 feed_name: 'feed-b',
             },
         ];
@@ -255,7 +255,7 @@ describe( 'DataFetcher.removeClosePoints — sentiero_italia load test', () => {
         latitude: Number( p.latitude ),
         longitude: Number( p.longitude ),
         altitude: Number( p.altitude ) || 0,
-        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'UNLIMITED-TRACK',
+        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'TRACK',
         unixtime: Number( p.unixtime ) || 0,
         time: p.time ?? '',
         date: p.date ?? '',
@@ -313,7 +313,7 @@ describe( 'DataFetcher.rdpSimplify — sentiero_italia load test', () => {
         latitude: Number( p.latitude ),
         longitude: Number( p.longitude ),
         altitude: Number( p.altitude ) || 0,
-        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'UNLIMITED-TRACK',
+        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'TRACK',
         unixtime: Number( p.unixtime ) || 0,
         time: p.time ?? '',
         date: p.date ?? '',
@@ -392,8 +392,8 @@ describe( 'DataFetcher.fetchPoints', () => {
     it( 'applies removeClosePoints when filter is given', async () => {
         // Two points ~0.01 m apart — both within radius 50
         const serverPoints = [
-            makePoint( 47.0, 8.0, 'UNLIMITED-TRACK', 1 ),
-            makePoint( 47.0, 8.0000001, 'UNLIMITED-TRACK', 2 ),
+            makePoint( 47.0, 8.0, 'TRACK', 1 ),
+            makePoint( 47.0, 8.0000001, 'TRACK', 2 ),
         ];
         mockFetch( serverPoints );
 

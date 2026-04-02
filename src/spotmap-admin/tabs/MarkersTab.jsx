@@ -2,7 +2,6 @@ import { useState, useEffect } from '@wordpress/element';
 import {
     Button,
     SelectControl,
-    TextControl,
     Spinner,
 } from '@wordpress/components';
 import * as api from '../api';
@@ -61,7 +60,6 @@ export default function MarkersTab( { onNoticeChange } ) {
                         <th style={ { width: '140px' } }>Type</th>
                         <th style={ { width: '160px' } }>Shape</th>
                         <th style={ { width: '200px' } }>Icon</th>
-                        <th>Custom Message</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,18 +104,7 @@ export default function MarkersTab( { onNoticeChange } ) {
                                     </Button>
                                 </div>
                             </td>
-                            <td>
-                                <TextControl
-                                    value={ config.customMessage }
-                                    onChange={ ( val ) =>
-                                        update( type, 'customMessage', val )
-                                    }
-                                    placeholder="Optional custom message…"
-                                    __nextHasNoMarginBottom
-                                    __next40pxDefaultSize
-                                />
-                            </td>
-                        </tr>
+                            </tr>
                     ) ) }
                 </tbody>
             </table>

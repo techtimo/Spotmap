@@ -107,7 +107,7 @@ export class MarkerManager {
     /**
      * Create a BeautifyIcon for a point or a GPX waypoint.
      *
-     * @param point - Either a SpotPoint (has feed_name/type) or a simple {color} object for GPX.
+     * @param point        - Either a SpotPoint (has feed_name/type) or a simple {color} object for GPX.
      * @param extraOptions - Additional BeautifyIcon options merged on top (e.g. className).
      */
     getMarkerIcon(
@@ -142,8 +142,7 @@ export class MarkerManager {
             pointType &&
             TRACK_TYPES.includes( pointType as SpotPoint[ 'type' ] )
         ) {
-            // Track types fall back to the UNLIMITED-TRACK circle-dot shape
-            const trackMarker = spotmapjsobj.marker[ 'UNLIMITED-TRACK' ];
+            const trackMarker = spotmapjsobj.marker.TRACK;
             iconOptions.iconShape = trackMarker?.iconShape;
             iconOptions.icon = trackMarker?.icon;
             iconOptions.iconAnchor = CIRCLE_DOT_ICON_ANCHOR;
@@ -161,7 +160,10 @@ export class MarkerManager {
 
         // If the caller overrides iconShape, remove circle-dot-specific sizing
         // so it doesn't bleed through and affect the overridden shape.
-        if ( extraOptions.iconShape && extraOptions.iconShape !== iconOptions.iconShape ) {
+        if (
+            extraOptions.iconShape &&
+            extraOptions.iconShape !== iconOptions.iconShape
+        ) {
             delete iconOptions.iconAnchor;
             delete iconOptions.iconSize;
             delete iconOptions.borderWith;
