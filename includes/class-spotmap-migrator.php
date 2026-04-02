@@ -118,9 +118,9 @@ class Spotmap_Migrator {
      * 1. EXTREME-TRACK and UNLIMITED-TRACK are aliases for TRACK — normalize
      *    all existing rows so the frontend only needs to handle one track type.
      *
-     * 2. Global custom messages (spotmap_custom_messages) are replaced by
-     *    per-feed custom_messages stored inside each feed in spotmap_feeds.
-     *    The customMessage key is removed from spotmap_marker entries.
+     * 2. Global custom messages (spotmap_custom_messages) are copied into every
+     *    findmespot feed's custom_messages field, then the global option is
+     *    dropped. The customMessage key is removed from spotmap_marker entries.
      *
      * 3. The spotmap_marker option key 'UNLIMITED-TRACK' is renamed to 'TRACK'.
      *
@@ -133,7 +133,25 @@ class Spotmap_Migrator {
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $wpdb->query( "UPDATE `{$table}` SET `type` = 'TRACK' WHERE `type` IN ('EXTREME-TRACK', 'UNLIMITED-TRACK')" );
 
-        // Drop the now-unused global custom messages option.
+        // Migrate global custom messages into each feed, then drop the option.
+        $global_messages = get_option( 'spotmap_custom_messages', [] );
+        if ( is_array( $global_messages ) && ! empty( $global_messages ) ) {
+            $feeds   = Spotmap_Options::get_feeds();
+            $changed = false;
+            foreach ( $feeds as &$feed ) {
+                if ( ! isset( $feed['type'] ) || $feed['type'] !== 'findmespot' ) {
+                    continue;
+                }
+                if ( empty( $feed['custom_messages'] ) ) {
+                    $feed['custom_messages'] = $global_messages;
+                    $changed                 = true;
+                }
+            }
+            unset( $feed );
+            if ( $changed ) {
+                Spotmap_Options::save_feeds( $feeds );
+            }
+        }
         delete_option( 'spotmap_custom_messages' );
 
         // Update spotmap_marker: rename UNLIMITED-TRACK key to TRACK, drop customMessage.
