@@ -9,8 +9,15 @@ import {
     FlexItem,
     Notice,
 } from '@wordpress/components';
+import { arrowLeft, chevronDown, chevronUp } from '@wordpress/icons';
 import { REDACTED } from '../api';
-import ProviderSelector from './ProviderSelector';
+
+// Message types that can have per-feed custom overrides (SPOT only).
+const SPOT_CUSTOM_MESSAGE_TYPES = [
+    { key: 'OK', label: 'OK' },
+    { key: 'HELP', label: 'HELP' },
+    { key: 'CUSTOM', label: 'CUSTOM' },
+];
 
 function TrackingUrlBox( { title, description, url } ) {
     const [ copied, setCopied ] = useState( false );
@@ -79,7 +86,6 @@ function normalizeTrackingUrl( url ) {
     if ( ! url ) {
         return url;
     }
-
     return url.replace( /(rest_route=[^&?]+)\?/, '$1&' );
 }
 
@@ -99,32 +105,47 @@ function buildTeltonikaUrl( key ) {
     );
 }
 
-export default function FeedModal( { providers, feed, onSave, onClose } ) {
-    const isEdit = !! feed;
-    const providerKeys = Object.keys( providers );
+/**
+ * Feed settings modal — used for both Add (with type pre-selected by
+ * ProviderPickerModal) and Edit (feed prop has a full feed object).
+ */
+export default function FeedModal( {
+    providers,
+    feed,
+    onSave,
+    onClose,
+    onBack,
+} ) {
+    const isEdit = !! feed?.id;
+    const type = feed?.type ?? '';
+    const provider = providers[ type ];
 
-    const [ type, setType ] = useState( feed?.type ?? providerKeys[ 0 ] ?? '' );
     const [ fields, setFields ] = useState( () => {
-        const initialType = feed?.type ?? providerKeys[ 0 ] ?? '';
-        const provider = providers[ initialType ];
         const initial = {};
         provider?.fields.forEach( ( f ) => {
             initial[ f.key ] = feed?.[ f.key ] ?? '';
         } );
-        // For new OsmAnd/Teltonika feeds, generate the key upfront so the URL is visible immediately.
-        if (
-            ! feed &&
-            ( initialType === 'osmand' || initialType === 'teltonika' )
-        ) {
+        // Generate the ingest key upfront for new push-type feeds so the URL
+        // is visible before the user hits Save.
+        if ( ! isEdit && ( type === 'osmand' || type === 'teltonika' ) ) {
             initial.key = generateFeedKey();
         }
         return initial;
     } );
+
+    const [ customMessages, setCustomMessages ] = useState( () => {
+        const stored = feed?.custom_messages ?? {};
+        const result = {};
+        SPOT_CUSTOM_MESSAGE_TYPES.forEach( ( { key } ) => {
+            result[ key ] = stored[ key ] ?? '';
+        } );
+        return result;
+    } );
+    const [ showAdvanced, setShowAdvanced ] = useState( false );
+
     const [ saving, setSaving ] = useState( false );
     const [ error, setError ] = useState( null );
-    // Tracks which password fields are in edit mode (Set of field keys).
     const [ passwordEditing, setPasswordEditing ] = useState( () => new Set() );
-    // Tracks which password fields are in "clear" mode.
     const [ passwordClearing, setPasswordClearing ] = useState(
         () => new Set()
     );
@@ -145,46 +166,30 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
         setFields( ( prev ) => ( { ...prev, [ key ]: '' } ) );
     };
 
-    const provider = providers[ type ];
-
     const setField = ( key, value ) =>
         setFields( ( prev ) => ( { ...prev, [ key ]: value } ) );
 
-    const handleTypeChange = ( newType ) => {
-        setType( newType );
-        const newProvider = providers[ newType ];
-        const reset = {};
-        newProvider?.fields.forEach( ( f ) => {
-            reset[ f.key ] = '';
-        } );
-        if ( newType === 'osmand' || newType === 'teltonika' ) {
-            reset.key = generateFeedKey();
-        }
-        setFields( reset );
-    };
-
-    // For new OsmAnd/Teltonika feeds the URL is built from the browser-generated key so it's
-    // visible immediately. For existing feeds the server-provided URL is used.
+    // Always build the ingest URL client-side from the key so it stays
+    // consistent between add and edit regardless of server URL formatting.
+    const ingestKey = feed?.key ?? fields.key;
     const osmandTrackingUrl =
-        type === 'osmand'
-            ? normalizeTrackingUrl(
-                  feed?.tracking_url ??
-                      ( fields.key ? buildOsmAndUrl( fields.key ) : null )
-              )
+        type === 'osmand' && ingestKey
+            ? normalizeTrackingUrl( buildOsmAndUrl( ingestKey ) )
             : null;
     const teltonikaTrackingUrl =
-        type === 'teltonika'
-            ? normalizeTrackingUrl(
-                  feed?.tracking_url ??
-                      ( fields.key ? buildTeltonikaUrl( fields.key ) : null )
-              )
+        type === 'teltonika' && ingestKey
+            ? normalizeTrackingUrl( buildTeltonikaUrl( ingestKey ) )
             : null;
 
     const handleSave = async () => {
         setSaving( true );
         setError( null );
         try {
-            await onSave( { type, ...fields }, feed?.id );
+            const data = { type, ...fields };
+            if ( type === 'findmespot' ) {
+                data.custom_messages = customMessages;
+            }
+            await onSave( data, feed?.id );
         } catch ( err ) {
             setError( err.message );
             setSaving( false );
@@ -193,9 +198,20 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
 
     return (
         <Modal
-            title={ isEdit ? 'Edit Feed' : 'Add Feed' }
+            title={
+                isEdit ? 'Edit Feed' : `Add ${ provider?.label ?? type } Feed`
+            }
             size="medium"
             onRequestClose={ onClose }
+            headerActions={
+                onBack && (
+                    <Button
+                        icon={ arrowLeft }
+                        label="Back to provider selection"
+                        onClick={ onBack }
+                    />
+                )
+            }
         >
             <div
                 style={ {
@@ -210,12 +226,16 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                     </Notice>
                 ) }
 
-                { ! isEdit && (
-                    <ProviderSelector
-                        providers={ providers }
-                        value={ type }
-                        onChange={ handleTypeChange }
-                    />
+                { isEdit && (
+                    <BaseControl
+                        label="Provider"
+                        id="feed-provider-label"
+                        __nextHasNoMarginBottom
+                    >
+                        <p style={ { margin: '4px 0 0', fontWeight: 500 } }>
+                            { provider?.label ?? type }
+                        </p>
+                    </BaseControl>
                 ) }
 
                 { provider?.fields.map( ( field ) => {
@@ -289,7 +309,6 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                                     if ( isClearing ) {
                                         setField( field.key, val );
                                     } else {
-                                        // In change mode empty means "keep stored".
                                         setField(
                                             field.key,
                                             val === '' ? REDACTED : val
@@ -312,8 +331,7 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                             <>
                                 Enter this URL in OsmAnd:{ ' ' }
                                 <em>
-                                    Plugins → Trip Recording → Online tracking →
-                                    Web address
+                                    Plugins → Trip Recording → Online tracking → Web address
                                 </em>
                                 . Set Tracking interval to 10 s or more.{ ' ' }
                                 <a
@@ -334,6 +352,58 @@ export default function FeedModal( { providers, feed, onSave, onClose } ) {
                         description="Configure this as the HTTP POST destination in your Teltonika device (Codec 8 / JSON over HTTP). The device should POST JSON with a single object key containing latitude, longitude, altitude, speed, angle, and timestamp fields."
                         url={ teltonikaTrackingUrl }
                     />
+                ) }
+
+                { type === 'findmespot' && (
+                    <Button
+                        variant="link"
+                        icon={ showAdvanced ? chevronUp : chevronDown }
+                        onClick={ () => setShowAdvanced( ( v ) => ! v ) }
+                        style={ { padding: 0 } }
+                    >
+                        Advanced settings
+                    </Button>
+                ) }
+                { type === 'findmespot' && showAdvanced && (
+                    <div
+                        style={ {
+                            padding: '12px',
+                            background: '#f9f9f9',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                        } }
+                    >
+                        <p
+                            style={ {
+                                margin: 0,
+                                fontSize: '0.85em',
+                                color: '#555',
+                            } }
+                        >
+                            Override the popup message text for specific point
+                            types on this feed. Leave blank to use the device
+                            message. This is to protect phone numbers from being exposed.
+                        </p>
+                        { SPOT_CUSTOM_MESSAGE_TYPES.map( ( { key, label } ) => (
+                            <TextControl
+                                key={ key }
+                                label={ `${ label } message override` }
+                                value={ customMessages[ key ] ?? '' }
+                                placeholder="Leave blank to use default…"
+                                onChange={ ( val ) =>
+                                    setCustomMessages( ( prev ) => ( {
+                                        ...prev,
+                                        [ key ]: val,
+                                    } ) )
+                                }
+                                __nextHasNoMarginBottom
+                                __next40pxDefaultSize
+                            />
+                        ) ) }
+                    </div>
                 ) }
 
                 <div style={ { display: 'flex', gap: '8px' } }>

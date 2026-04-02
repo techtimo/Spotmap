@@ -1,10 +1,7 @@
 import type { AjaxRequestBody, AjaxResponse, SpotPoint } from './types';
 import { debug as debugLog } from './utils';
 
-const TRACK_TYPES = new Set< SpotPoint[ 'type' ] >( [
-    'TRACK',
-    'UNLIMITED-TRACK',
-] );
+const TRACK_TYPES = new Set< SpotPoint[ 'type' ] >( [ 'TRACK' ] );
 
 /**
  * Handles AJAX communication with the WordPress backend.
@@ -112,7 +109,7 @@ export class DataFetcher {
      * Simplify a polyline using the Ramer-Douglas-Peucker algorithm.
      *
      * Non-track points (OK, HELP, SOS, etc.) are always kept; only consecutive
-     * runs of TRACK / EXTREME-TRACK / UNLIMITED-TRACK points are simplified.
+     * runs of TRACK points are simplified.
      * Removed points are not annotated — this is purely a render optimisation.
      *
      * @param points        - Input array in time order.

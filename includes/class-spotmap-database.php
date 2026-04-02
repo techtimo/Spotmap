@@ -113,7 +113,7 @@ private const ALLOWED_COLUMNS = [
 	public function get_point_counts_by_feed(): array {
 		global $wpdb;
 		$rows = $wpdb->get_results(
-			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL GROUP BY feed_name",
+			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
 			ARRAY_A
 		);
 		$counts = [];
@@ -175,8 +175,7 @@ private const ALLOWED_COLUMNS = [
 		}
 		if(!empty($filter['type'])){
 			$types_on_db = $this->get_all_types();
-			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','UNLIMITED-TRACK','TRACK','HELP']);
-				$allowed_types = array_diff($allowed_types, ['EXTREME-TRACK']);
+			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','TRACK','HELP']);
 			foreach ($filter['type'] as $value) {
 				if(!in_array($value,$allowed_types)){
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
@@ -244,14 +243,10 @@ private const ALLOWED_COLUMNS = [
 				$point->localdate = wp_date(get_option('date_format'),$point->unixtime,$timezone);
 				$point->localtime = wp_date(get_option('time_format'),$point->unixtime,$timezone);
 			}
-
-			if(!empty($point->custom_message)){
+			if ( ! empty( $point->custom_message ) ) {
 				$point->message = $point->custom_message;
 			}
-			$custom_message = Spotmap_Options::get_custom_message($point->type);
-			if(!empty($custom_message)){
-				$point->message = $custom_message;
-			}
+			unset( $point->custom_message );
 		}
 		return $points;
 	}
@@ -349,23 +344,41 @@ private const ALLOWED_COLUMNS = [
 		return $result;
 	}
 
+	/**
+	 * Returns the per-feed custom message override for a given message type, or null if none set.
+	 *
+	 * @param string $feed_name
+	 * @param string $msg_type
+	 * @return string|null
+	 */
+	private function resolve_feed_custom_message( string $feed_name, string $msg_type ): ?string {
+		foreach ( Spotmap_Options::get_feeds() as $feed ) {
+			if ( ( $feed['name'] ?? '' ) === $feed_name ) {
+				$override = $feed['custom_messages'][ $msg_type ] ?? '';
+				return $override !== '' ? $override : null;
+			}
+		}
+		return null;
+	}
+
 	public function insert_point($point,$multiple = false){
 		// error_log(print_r($point,true));
 		if($point['unixTime'] == 1){
 			return 0;
 		}
-		$custom_message = Spotmap_Options::get_custom_message($point['messageType']);
+		$msg_type       = in_array( $point['messageType'], [ 'EXTREME-TRACK', 'UNLIMITED-TRACK' ], true ) ? 'TRACK' : $point['messageType'];
+		$custom_message = $this->resolve_feed_custom_message( $point['feedName'], $msg_type );
 		$data = [
-			'feed_name'    => $point['feedName'],
-			'type'         => $point['messageType'] === 'EXTREME-TRACK' ? 'UNLIMITED-TRACK' : $point['messageType'],
-			'time'         => $point['unixTime'],
-			'latitude'     => $point['latitude'],
-			'longitude'    => $point['longitude'],
-			'model'        => $point['modelId'],
-			'device_name'  => $point['messengerName'],
-			'message'      => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
-			'custom_message' => !empty($custom_message) ? $custom_message : NULL,
-			'feed_id'      => $point['feedId'],
+			'feed_name'      => $point['feedName'],
+			'type'           => $msg_type,
+			'time'           => $point['unixTime'],
+			'latitude'       => $point['latitude'],
+			'longitude'      => $point['longitude'],
+			'model'          => $point['modelId'],
+			'device_name'    => $point['messengerName'],
+			'message'        => !empty($point['messageContent']) ? $point['messageContent'] : NULL,
+			'custom_message' => $custom_message,
+			'feed_id'        => $point['feedId'],
 		];
 		if (array_key_exists('id', $point)){
 			$data['id'] = $point['id'];

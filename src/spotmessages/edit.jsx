@@ -22,8 +22,6 @@ const ALL_TYPES = [
     'HELP-CANCEL',
     'SOS',
     'TRACK',
-    'EXTREME-TRACK',
-    'UNLIMITED-TRACK',
     'MEDIA',
     'NEWMOVEMENT',
 ];

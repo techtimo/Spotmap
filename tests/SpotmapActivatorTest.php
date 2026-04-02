@@ -54,7 +54,6 @@ class SpotmapActivatorTest extends WP_UnitTestCase {
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_MARKER ) );
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_DEFAULT_VALUES ) );
 		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_API_TOKENS ) );
-		$this->assertNotFalse( get_option( Spotmap_Options::OPTION_CUSTOM_MESSAGES ) );
 	}
 
 	public function test_activate_schedules_cron_hooks(): void {
