@@ -19,7 +19,8 @@ export class MarkerManager {
     private readonly map: L.Map;
     private readonly layers: SpotmapLayers;
     private readonly layerManager: LayerManager;
-    private readonly tableCellControllers: AbortController[] = [];
+    private readonly markerById = new Map< number, L.Marker >();
+    private readonly abortController = new AbortController();
     private readonly dbg: ( ...args: unknown[] ) => void;
 
     constructor(
@@ -32,6 +33,32 @@ export class MarkerManager {
         this.layers = layers;
         this.layerManager = layerManager;
         this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
+
+        const { signal } = this.abortController;
+        document.addEventListener(
+            'spotmap:click-point',
+            ( e: Event ) => {
+                const { id, lat, lng } = ( e as CustomEvent ).detail;
+                const marker = this.markerById.get( id );
+                if ( marker ) {
+                    marker.togglePopup();
+                    this.map.panTo( [ lat, lng ] );
+                }
+            },
+            { signal }
+        );
+        document.addEventListener(
+            'spotmap:dblclick-point',
+            ( e: Event ) => {
+                const { id, lat, lng } = ( e as CustomEvent ).detail;
+                const marker = this.markerById.get( id );
+                if ( marker ) {
+                    marker.togglePopup();
+                    this.map.setView( [ lat, lng ], SINGLE_POINT_ZOOM );
+                }
+            },
+            { signal }
+        );
     }
 
     /**
@@ -58,31 +85,7 @@ export class MarkerManager {
         feed.points.push( point );
         feed.markers.push( marker );
         feed.featureGroup.addLayer( marker );
-
-        // Bind click handlers for the corresponding table row (if it exists).
-        // Use an AbortController so all listeners can be removed on destroy().
-        const tableCell = document.getElementById( `spotmap_${ point.id }` );
-        if ( tableCell ) {
-            const controller = new AbortController();
-            this.tableCellControllers.push( controller );
-            const { signal } = controller;
-            tableCell.addEventListener(
-                'click',
-                () => {
-                    marker.togglePopup();
-                    this.map.panTo( coordinates );
-                },
-                { signal }
-            );
-            tableCell.addEventListener(
-                'dblclick',
-                () => {
-                    marker.togglePopup();
-                    this.map.setView( coordinates, SINGLE_POINT_ZOOM );
-                },
-                { signal }
-            );
-        }
+        this.markerById.set( point.id, marker );
     }
 
     /**
@@ -173,13 +176,11 @@ export class MarkerManager {
     }
 
     /**
-     * Remove all table-cell event listeners added by addPoint().
+     * Remove all document event listeners registered by this instance.
      */
     destroy(): void {
-        for ( const controller of this.tableCellControllers ) {
-            controller.abort();
-        }
-        this.tableCellControllers.length = 0;
+        this.abortController.abort();
+        this.markerById.clear();
     }
 
     /**

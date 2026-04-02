@@ -106,6 +106,14 @@ export class TableRenderer {
         typeCell.textContent = entry.type;
         row.appendChild( typeCell );
 
+        const detail = { id: entry.id, lat: entry.latitude, lng: entry.longitude };
+        row.addEventListener( 'click', () =>
+            document.dispatchEvent( new CustomEvent( 'spotmap:click-point', { detail } ) )
+        );
+        row.addEventListener( 'dblclick', () =>
+            document.dispatchEvent( new CustomEvent( 'spotmap:dblclick-point', { detail } ) )
+        );
+
         const messageCell = document.createElement( 'td' );
         messageCell.textContent = entry.message ?? '';
         row.appendChild( messageCell );
