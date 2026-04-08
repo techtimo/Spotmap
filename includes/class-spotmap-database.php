@@ -153,6 +153,96 @@ private const ALLOWED_COLUMNS = [
 	}
 
 	/**
+	 * Returns aggregate statistics for a feed: point count, date range, avg altitude,
+	 * busiest day, and the day with the highest cumulative GPS distance.
+	 *
+	 * @param string $feed_name
+	 * @return array<string, mixed>
+	 */
+	public function get_feed_stats( string $feed_name ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'spotmap_points';
+
+		$agg = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT
+					COUNT(*)            AS point_count,
+					MIN(time)           AS first_point,
+					MAX(time)           AS last_point,
+					AVG(altitude)       AS avg_altitude
+				FROM {$table}
+				WHERE feed_name = %s",
+				$feed_name
+			),
+			ARRAY_A
+		);
+
+		$busiest = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT DATE(FROM_UNIXTIME(time)) AS day, COUNT(*) AS cnt
+				FROM {$table}
+				WHERE feed_name = %s
+				GROUP BY day
+				ORDER BY cnt DESC
+				LIMIT 1",
+				$feed_name
+			),
+			ARRAY_A
+		);
+
+		$points = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT time, latitude, longitude
+				FROM {$table}
+				WHERE feed_name = %s
+				ORDER BY time ASC",
+				$feed_name
+			),
+			ARRAY_A
+		);
+
+		// Accumulate GPS distance per calendar day (UTC).
+		$distance_by_day = [];
+		$prev            = null;
+		$prev_day        = null;
+		foreach ( $points as $pt ) {
+			$day = gmdate( 'Y-m-d', (int) $pt['time'] );
+			if ( $prev !== null && $prev_day === $day ) {
+				$distance_by_day[ $day ] = ( $distance_by_day[ $day ] ?? 0.0 )
+					+ self::haversine_distance(
+						(float) $prev['latitude'],
+						(float) $prev['longitude'],
+						(float) $pt['latitude'],
+						(float) $pt['longitude']
+					) / 1000.0;
+			}
+			$prev     = $pt;
+			$prev_day = $day;
+		}
+
+		$max_distance_day  = null;
+		$max_distance_km   = 0.0;
+		foreach ( $distance_by_day as $day => $km ) {
+			if ( $km > $max_distance_km ) {
+				$max_distance_km  = $km;
+				$max_distance_day = $day;
+			}
+		}
+
+		return [
+			'point_count'          => (int) ( $agg['point_count'] ?? 0 ),
+			'first_point'          => isset( $agg['first_point'] ) ? (int) $agg['first_point'] : null,
+			'last_point'           => isset( $agg['last_point'] )  ? (int) $agg['last_point']  : null,
+			'avg_altitude'         => isset( $agg['avg_altitude'] ) ? (float) round( $agg['avg_altitude'] ) : null,
+			'busiest_day_date'     => $busiest['day']  ?? null,
+			'busiest_day_count'    => isset( $busiest['cnt'] ) ? (int) $busiest['cnt'] : null,
+			'max_distance_day_date'=> $max_distance_day,
+			'max_distance_day_km'  => $max_distance_day !== null ? round( $max_distance_km, 1 ) : null,
+		];
+	}
+
+	/**
 	 * Deletes all points for a given feed_name.
 	 *
 	 * @param string $feed_name

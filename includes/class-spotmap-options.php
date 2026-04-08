@@ -175,9 +175,11 @@ class Spotmap_Options {
 	 * @return array<string, mixed> The feed with 'id' set.
 	 */
 	public static function add_feed( array $feed ) {
-		$feed['id'] = uniqid( 'feed_', true );
-		$feeds      = self::get_feeds();
-		$feeds[]    = $feed;
+		$feed['id']         = uniqid( 'feed_', true );
+		$feed['created_at'] = time();
+		$feed['updated_at'] = time();
+		$feeds              = self::get_feeds();
+		$feeds[]            = $feed;
 		self::save_feeds( $feeds );
 		return $feed;
 	}
@@ -194,9 +196,11 @@ class Spotmap_Options {
 		$found = false;
 		foreach ( $feeds as &$feed ) {
 			if ( isset( $feed['id'] ) && $feed['id'] === $id ) {
-				$data['id'] = $id;
-				$feed       = $data;
-				$found      = true;
+				$data['id']         = $id;
+				$data['created_at'] = $feed['created_at'] ?? null;
+				$data['updated_at'] = time();
+				$feed               = $data;
+				$found              = true;
 				break;
 			}
 		}
