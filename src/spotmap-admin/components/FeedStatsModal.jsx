@@ -69,10 +69,13 @@ export default function FeedStatsModal( { feed, onClose } ) {
     const [ error, setError ]   = useState( null );
 
     useEffect( () => {
-        api.getFeedStats( feed.id )
+        const fetch = feed.id
+            ? api.getFeedStats( feed.id )
+            : api.getDbFeedStats( feed.name );
+        fetch
             .then( setStats )
             .catch( ( err ) => setError( err.message ) );
-    }, [ feed.id ] );
+    }, [ feed.id, feed.name ] );
 
     return (
         <Modal

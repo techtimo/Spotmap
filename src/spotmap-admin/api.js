@@ -23,12 +23,25 @@ export const deleteFeed = ( id, deletePoints = false ) =>
 
 export const getDbFeeds = () => apiFetch( { url: url( 'db-feeds' ) } );
 
+export const renameDbFeed = ( feedName, newName ) =>
+    apiFetch( {
+        url: url( 'db-feeds' ),
+        method: 'PATCH',
+        data: { feed_name: feedName, new_name: newName },
+    } );
+
 export const deleteDbFeedPoints = ( feedName ) =>
     apiFetch( {
         url: url( 'db-feeds' ),
         method: 'DELETE',
         data: { feed_name: feedName },
     } );
+
+export const getDbFeedStats = ( feedName ) => {
+    const params = new URLSearchParams( { feed_name: feedName } );
+    const base = url( 'db-feeds/stats' );
+    return apiFetch( { url: base + ( base.includes( '?' ) ? '&' : '?' ) + params } );
+};
 
 export const importPhotos = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/import-photos` ), method: 'POST' } );
@@ -68,7 +81,11 @@ export const getPoints = ( { feed, from, to } = {} ) => {
         params.set( 'to', to );
     }
     const qs = params.toString();
-    return apiFetch( { url: url( 'points' ) + ( qs ? '?' + qs : '' ) } );
+    if ( ! qs ) {
+        return apiFetch( { url: url( 'points' ) } );
+    }
+    const base = url( 'points' );
+    return apiFetch( { url: base + ( base.includes( '?' ) ? '&' : '?' ) + qs } );
 };
 
 export const updatePoint = ( id, { latitude, longitude } ) =>
