@@ -109,14 +109,6 @@ export default function FeedsTab( {
         }
     };
 
-    const handleDeleteClick = ( feed ) => {
-        if ( ( feed.point_count ?? 0 ) === 0 ) {
-            handleDeleteConfirmWith( feed, false );
-            return;
-        }
-        setConfirmDelete( feed );
-    };
-
     const handleDeleteConfirmWith = async ( feed, deletePoints ) => {
         setConfirmDelete( null );
         try {
@@ -286,7 +278,7 @@ export default function FeedsTab( {
                                         size="small"
                                         isDestructive
                                         onClick={ () =>
-                                            handleDeleteClick( feed )
+                                            setConfirmDelete( feed )
                                         }
                                     >
                                         Delete
