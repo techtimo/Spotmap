@@ -153,6 +153,34 @@ class Spotmap_Rest_Api {
 			]
 		);
 
+		register_rest_route(
+			self::NAMESPACE,
+			'/db-feeds/export-gpx',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ __CLASS__, 'export_gpx' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				'args'                => [
+					'feed_name'   => [
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'split_hours' => [
+						'type'    => 'number',
+						'required' => false,
+						'default' => 0,
+					],
+					'format'      => [
+						'type'    => 'string',
+						'required' => false,
+						'default' => 'single',
+						'enum'    => [ 'single', 'multi-track', 'zip' ],
+					],
+				],
+			]
+		);
+
 		// --- Providers ---
 		register_rest_route(
 			self::NAMESPACE,
@@ -443,6 +471,146 @@ class Spotmap_Rest_Api {
 		$stats = $db->get_feed_stats( $feed_name );
 
 		return rest_ensure_response( $stats );
+	}
+
+	public static function export_gpx( WP_REST_Request $request ) {
+		$feed_name   = $request->get_param( 'feed_name' );
+		$split_hours = (float) ( $request->get_param( 'split_hours' ) ?? 0 );
+		$format      = $request->get_param( 'format' ) ?? 'single';
+
+		$db     = new Spotmap_Database();
+		$filter = [
+			'select'  => 'time, latitude, longitude, altitude',
+			'feeds'   => [ $feed_name ],
+			'orderBy' => 'time ASC',
+		];
+		$points = $db->get_points( $filter );
+
+		if ( isset( $points['error'] ) ) {
+			return new WP_Error( 'points_error', $points['title'] ?? 'Error fetching points.', [ 'status' => 422 ] );
+		}
+
+		if ( empty( $points ) ) {
+			return new WP_Error( 'no_points', 'No GPS points found for this feed.', [ 'status' => 404 ] );
+		}
+
+		// Split points into segments by time gap.
+		$segments = [];
+		if ( $split_hours > 0 ) {
+			$gap_seconds = (int) round( $split_hours * 3600 );
+			$current_seg = [];
+			$prev_time   = null;
+			foreach ( $points as $point ) {
+				$t = (int) $point->unixtime;
+				if ( $prev_time !== null && ( $t - $prev_time ) > $gap_seconds ) {
+					$segments[]  = $current_seg;
+					$current_seg = [];
+				}
+				$current_seg[] = $point;
+				$prev_time     = $t;
+			}
+			if ( ! empty( $current_seg ) ) {
+				$segments[] = $current_seg;
+			}
+		} else {
+			$segments = [ $points ];
+		}
+
+		$safe_name = self::sanitize_gpx_filename( $feed_name );
+
+		if ( $format === 'zip' ) {
+			if ( ! class_exists( 'ZipArchive' ) ) {
+				return new WP_Error( 'zip_unavailable', 'ZIP export requires the ZipArchive PHP extension.', [ 'status' => 500 ] );
+			}
+			$tmp_file = wp_tempnam( 'spotmap_gpx' );
+			$zip      = new ZipArchive();
+			$zip->open( $tmp_file, ZipArchive::OVERWRITE );
+			foreach ( $segments as $idx => $segment ) {
+				$gpx_content  = self::build_gpx( $feed_name, [ $segment ] );
+				$first_date   = isset( $segment[0] ) ? gmdate( 'Y-m-d', (int) $segment[0]->unixtime ) : ( $idx + 1 );
+				$gpx_filename = $safe_name . '_track_' . ( $idx + 1 ) . '_' . $first_date . '.gpx';
+				$zip->addFromString( $gpx_filename, $gpx_content );
+			}
+			$zip->close();
+			$zip_content  = file_get_contents( $tmp_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			unlink( $tmp_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			$zip_filename = $safe_name . '.zip';
+
+			add_filter(
+				'rest_pre_serve_request',
+				static function () use ( $zip_content, $zip_filename ) {
+					header( 'Content-Type: application/zip' );
+					header( 'Content-Disposition: attachment; filename="' . $zip_filename . '"' );
+					header( 'Content-Length: ' . strlen( $zip_content ) );
+					echo $zip_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					return true;
+				}
+			);
+		} else {
+			$gpx_content  = self::build_gpx( $feed_name, $segments );
+			$gpx_filename = $safe_name . '.gpx';
+
+			add_filter(
+				'rest_pre_serve_request',
+				static function () use ( $gpx_content, $gpx_filename ) {
+					header( 'Content-Type: application/gpx+xml; charset=UTF-8' );
+					header( 'Content-Disposition: attachment; filename="' . $gpx_filename . '"' );
+					header( 'Content-Length: ' . strlen( $gpx_content ) );
+					echo $gpx_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					return true;
+				}
+			);
+		}
+
+		return new WP_REST_Response( null, 200 );
+	}
+
+	/**
+	 * Build a GPX 1.1 XML string from an array of point segments.
+	 *
+	 * @param string   $feed_name  Track name.
+	 * @param array[]  $segments   Each element is an array of point objects
+	 *                             with latitude, longitude, altitude, unixtime.
+	 * @return string
+	 */
+	private static function build_gpx( string $feed_name, array $segments ): string {
+		$track_name = htmlspecialchars( $feed_name, ENT_XML1, 'UTF-8' );
+		$out        = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		$out       .= '<gpx version="1.1" creator="Spotmap"' . "\n";
+		$out       .= '  xmlns="http://www.topografix.com/GPX/1/1"' . "\n";
+		$out       .= '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' . "\n";
+		$out       .= '  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">' . "\n";
+		$out       .= '  <trk>' . "\n";
+		$out       .= '    <name>' . $track_name . '</name>' . "\n";
+
+		foreach ( $segments as $segment ) {
+			$out .= '    <trkseg>' . "\n";
+			foreach ( $segment as $point ) {
+				$lat  = number_format( (float) $point->latitude, 7, '.', '' );
+				$lon  = number_format( (float) $point->longitude, 7, '.', '' );
+				$time = gmdate( 'Y-m-d\TH:i:s\Z', (int) $point->unixtime );
+				$out .= '      <trkpt lat="' . $lat . '" lon="' . $lon . '">' . "\n";
+				if ( isset( $point->altitude ) && $point->altitude !== null && $point->altitude !== '' ) {
+					$out .= '        <ele>' . (int) $point->altitude . '</ele>' . "\n";
+				}
+				$out .= '        <time>' . $time . '</time>' . "\n";
+				$out .= '      </trkpt>' . "\n";
+			}
+			$out .= '    </trkseg>' . "\n";
+		}
+
+		$out .= '  </trk>' . "\n";
+		$out .= '</gpx>' . "\n";
+
+		return $out;
+	}
+
+	/**
+	 * Sanitize a feed name for use as a filename (letters, numbers, hyphens, underscores only).
+	 */
+	private static function sanitize_gpx_filename( string $name ): string {
+		$safe = preg_replace( '/[^a-zA-Z0-9_\-]/', '_', $name );
+		return ( $safe !== '' && $safe !== null ) ? $safe : 'gpx_export';
 	}
 
 	public static function import_photos( WP_REST_Request $request ) {
