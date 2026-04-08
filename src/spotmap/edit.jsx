@@ -818,10 +818,7 @@ export default function Edit( { attributes, setAttributes } ) {
         };
 
         if ( spotmapRef.current ) {
-            spotmapRef.current._destroyed = true;
-            if ( spotmapRef.current.map?.remove ) {
-                spotmapRef.current.map.remove();
-            }
+            spotmapRef.current.destroy();
             spotmapRef.current = null;
         }
 
@@ -842,10 +839,7 @@ export default function Edit( { attributes, setAttributes } ) {
         return () => {
             clearTimeout( timer );
             if ( spotmapRef.current ) {
-                spotmapRef.current._destroyed = true;
-                if ( spotmapRef.current.map?.remove ) {
-                    spotmapRef.current.map.remove();
-                }
+                spotmapRef.current.destroy();
                 spotmapRef.current = null;
             }
         };

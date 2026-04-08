@@ -40,6 +40,20 @@ export class LineManager {
         this.initialLoadComplete = true;
     }
 
+    /**
+     * Clear all textpath text from every line. Call before map.remove() so the
+     * textpath plugin's _textRedraw no-ops during the removal's _updatePaths.
+     */
+    clearArrows(): void {
+        for ( const feed of Object.values( this.layers.feeds ) ) {
+            for ( const line of feed.lines ) {
+                ( line as unknown as { setText: ( t: null ) => void } ).setText(
+                    null
+                );
+            }
+        }
+    }
+
     private applyTextPath( line: L.Polyline ): void {
         (
             line as unknown as {

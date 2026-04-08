@@ -12,6 +12,7 @@ import {
     AUTO_RELOAD_INTERVAL_MS,
     MAX_RELOAD_BACKOFF_MS,
     SINGLE_POINT_ZOOM,
+    Z_INDEX_LAST_POINT,
 } from './constants';
 import { debug as debugLog, getColorDot } from './utils';
 
@@ -51,9 +52,6 @@ export class Spotmap {
     private reloadBody: AjaxRequestBody | null = null;
 
     constructor( options: SpotmapOptions ) {
-        if ( ! options.maps ) {
-            console.error( 'Missing important options!!' ); // eslint-disable-line no-console
-        }
         this.options = options;
         this.debug( 'Spotmap obj created.' );
         this.debug( this.options );
@@ -139,6 +137,13 @@ export class Spotmap {
      * Initialize the Leaflet map and load data.
      */
     async initMap(): Promise< void > {
+        if ( ! this.options.maps ) {
+            console.error( // eslint-disable-line no-console
+                'Spotmap: missing required "maps" option. options:',
+                JSON.stringify( this.options )
+            );
+        }
+
         const el =
             this.options.mapElement ??
             document.getElementById( this.options.mapId ?? '' );
@@ -328,6 +333,12 @@ export class Spotmap {
             } ),
         };
 
+        if ( ( this.options as unknown as TableOptions ).tableElement ) {
+            tableOptions.tableElement = (
+                this.options as unknown as TableOptions
+            ).tableElement;
+        }
+
         this.dataFetcher = new DataFetcher( spotmapjsobj.ajaxUrl );
         this.tableRenderer = new TableRenderer(
             tableOptions,
@@ -360,6 +371,11 @@ export class Spotmap {
         this.dataFetcher?.abort();
 
         if ( this.map ) {
+            // Clear textpath text before removal: map.remove() internally calls
+            // _stop() which fires _updatePaths, which invokes textpath's setText
+            // during teardown and crashes. Setting text to null first makes
+            // _textRedraw a no-op for that final render pass.
+            this.lineManager?.clearArrows();
             this.map.remove();
         }
     }
@@ -466,7 +482,7 @@ export class Spotmap {
         } );
         feed.lastPointMarker = L.marker( [ lp.latitude, lp.longitude ], {
             icon,
-            zIndexOffset: 1000,
+            zIndexOffset: Z_INDEX_LAST_POINT,
         } )
             .bindPopup( MarkerManager.getPopupHtml( lp ) )
             .addTo( feed.featureGroup );
