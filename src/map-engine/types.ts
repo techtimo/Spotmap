@@ -130,7 +130,7 @@ export type PointType =
 /** Internal structure for a feed's map layers */
 export interface FeedLayer {
     lines: L.Polyline[];
-    markers: L.Marker[];
+    markers: ( L.Marker | L.CircleMarker )[];
     points: SpotPoint[];
     featureGroup: L.FeatureGroup;
     lastPointMarker?: L.Marker;

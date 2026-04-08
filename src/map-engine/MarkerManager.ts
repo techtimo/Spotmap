@@ -5,6 +5,8 @@ import {
     CIRCLE_DOT_ICON_SIZE,
     CIRCLE_DOT_ICON_ANCHOR,
     CIRCLE_DOT_BORDER_WIDTH,
+    CIRCLE_DOT_RADIUS,
+    CIRCLE_DOT_WEIGHT,
     Z_INDEX_TRACK,
     Z_INDEX_STATUS,
     Z_INDEX_HELP,
@@ -19,7 +21,9 @@ export class MarkerManager {
     private readonly map: L.Map;
     private readonly layers: SpotmapLayers;
     private readonly layerManager: LayerManager;
-    private readonly markerById = new Map< number, L.Marker >();
+    private readonly canvasRenderer: L.Canvas;
+    private readonly markerById = new Map< number, L.Marker | L.CircleMarker >();
+    private readonly iconCache = new Map< string, L.Icon >();
     private readonly abortController = new AbortController();
     private readonly dbg: ( ...args: unknown[] ) => void;
 
@@ -27,8 +31,10 @@ export class MarkerManager {
         map: L.Map,
         layers: SpotmapLayers,
         layerManager: LayerManager,
+        canvasRenderer: L.Canvas,
         debugEnabled = false
     ) {
+        this.canvasRenderer = canvasRenderer;
         this.map = map;
         this.layers = layers;
         this.layerManager = layerManager;
@@ -63,6 +69,9 @@ export class MarkerManager {
 
     /**
      * Add a point to the map as a marker.
+     * Points whose admin-configured iconShape is 'circle-dot' are rendered as
+     * canvas L.circleMarker (white fill, feed-color stroke) — all others use
+     * the BeautifyIcon DOM marker path.
      */
     addPoint( point: SpotPoint ): void {
         const feedName = point.feed_name;
@@ -76,16 +85,45 @@ export class MarkerManager {
             return;
         }
 
-        const markerOptions = this.getMarkerOptions( point );
+        const iconShape = this.getIconShape( point );
         const popupHtml = MarkerManager.getPopupHtml( point );
-        const marker = L.marker( coordinates, markerOptions ).bindPopup(
-            popupHtml
-        );
+        let marker: L.Marker | L.CircleMarker;
+
+        if ( iconShape === 'circle-dot' ) {
+            const color = this.layerManager.getFeedColor( feedName );
+            marker = L.circleMarker( coordinates, {
+                renderer: this.canvasRenderer,
+                radius: CIRCLE_DOT_RADIUS,
+                weight: CIRCLE_DOT_WEIGHT,
+                color,
+                fillColor: 'white',
+                fillOpacity: 1,
+            } ).bindPopup( popupHtml );
+        } else {
+            const markerOptions = this.getMarkerOptions( point );
+            marker = L.marker( coordinates, markerOptions ).bindPopup(
+                popupHtml
+            );
+        }
 
         feed.points.push( point );
         feed.markers.push( marker );
         feed.featureGroup.addLayer( marker );
         this.markerById.set( point.id, marker );
+    }
+
+    /**
+     * Resolve the iconShape for a point from admin config.
+     */
+    private getIconShape( point: SpotPoint ): string {
+        const pointType = point.type;
+        if ( pointType && spotmapjsobj.marker[ pointType ] ) {
+            return spotmapjsobj.marker[ pointType ].iconShape;
+        }
+        if ( pointType && TRACK_TYPES.includes( pointType ) ) {
+            return spotmapjsobj.marker.TRACK?.iconShape ?? 'circle-dot';
+        }
+        return 'marker';
     }
 
     /**
@@ -172,7 +210,15 @@ export class MarkerManager {
             delete iconOptions.borderWith;
         }
 
-        return L.BeautifyIcon.icon( { ...iconOptions, ...extraOptions } );
+        const merged = { ...iconOptions, ...extraOptions };
+        const cacheKey = JSON.stringify( merged );
+        const cached = this.iconCache.get( cacheKey );
+        if ( cached ) {
+            return cached;
+        }
+        const icon = L.BeautifyIcon.icon( merged );
+        this.iconCache.set( cacheKey, icon );
+        return icon;
     }
 
     /**

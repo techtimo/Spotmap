@@ -21,6 +21,10 @@ export const CIRCLE_DOT_ICON_SIZE: [ number, number ] = [ 8, 8 ];
 export const CIRCLE_DOT_ICON_ANCHOR: [ number, number ] = [ 4, 4 ];
 export const CIRCLE_DOT_BORDER_WIDTH = 8;
 
+/** Canvas circleMarker dimensions (used when iconShape === 'circle-dot') */
+export const CIRCLE_DOT_RADIUS = 4;
+export const CIRCLE_DOT_WEIGHT = 2;
+
 /** Zoom level when centering on a single point */
 export const SINGLE_POINT_ZOOM = 14;
 
