@@ -260,7 +260,10 @@ class Spotmap_Rest_Api {
 		$feeds  = array_map(
 			function ( $feed ) use ( $counts ) {
 				$decorated                = self::decorate_feed( $feed );
-				$decorated['point_count'] = $counts[ $feed['name'] ?? '' ] ?? 0;
+				$feed_counts              = $counts[ $feed['name'] ?? '' ] ?? [];
+				$decorated['point_count'] = $feed_counts['count'] ?? 0;
+				$decorated['first_point'] = $feed_counts['first_point'] ?? null;
+				$decorated['last_point']  = $feed_counts['last_point']  ?? null;
 				$decorated['paused']      = (bool) ( $feed['paused'] ?? false );
 				return $decorated;
 			},
@@ -379,10 +382,12 @@ class Spotmap_Rest_Api {
 		$db     = new Spotmap_Database();
 		$counts = $db->get_point_counts_by_feed( $from, $to );
 		$result = [];
-		foreach ( $counts as $feed_name => $count ) {
+		foreach ( $counts as $feed_name => $data ) {
 			$result[] = [
 				'feed_name'   => $feed_name,
-				'point_count' => $count,
+				'point_count' => $data['count'],
+				'first_point' => $data['first_point'],
+				'last_point'  => $data['last_point'],
 			];
 		}
 		return rest_ensure_response( $result );
