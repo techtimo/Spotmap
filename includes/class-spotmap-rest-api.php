@@ -13,7 +13,9 @@
  *
  * DB feeds (feed_name values that exist in the points table):
  *   GET    /db-feeds                   → list all feed_names in DB with point counts
+ *   PATCH  /db-feeds                   → rename a feed_name in DB (body: {feed_name: "old", new_name: "new"})
  *   DELETE /db-feeds                   → delete all points for a feed_name (body: {feed_name: "..."})
+ *   GET    /db-feeds/stats             → statistics for a feed_name (?feed_name=...)
  *
  * Providers:
  *   GET    /providers       → list provider type definitions
@@ -129,10 +131,25 @@ class Spotmap_Rest_Api {
 					'permission_callback' => [ __CLASS__, 'admin_permission' ],
 				],
 				[
+					'methods'             => 'PATCH',
+					'callback'            => [ __CLASS__, 'rename_db_feed' ],
+					'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				],
+				[
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => [ __CLASS__, 'delete_db_feed' ],
 					'permission_callback' => [ __CLASS__, 'admin_permission' ],
 				],
+			]
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/db-feeds/stats',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ __CLASS__, 'get_db_feed_stats' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
 			]
 		);
 
@@ -371,6 +388,31 @@ class Spotmap_Rest_Api {
 		return rest_ensure_response( $result );
 	}
 
+	public static function rename_db_feed( WP_REST_Request $request ) {
+		$body      = $request->get_json_params() ?? [];
+		$feed_name = sanitize_text_field( $body['feed_name'] ?? '' );
+		$new_name  = sanitize_text_field( $body['new_name'] ?? '' );
+
+		if ( $feed_name === '' || $new_name === '' ) {
+			return new WP_Error( 'missing_fields', 'feed_name and new_name are required.', [ 'status' => 400 ] );
+		}
+
+		global $wpdb;
+		$db = new Spotmap_Database();
+		$db->rename_feed_name( $feed_name, $new_name );
+
+		$count = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM ' . $wpdb->prefix . 'spotmap_points WHERE feed_name = %s',
+				$new_name
+			)
+		);
+		return rest_ensure_response( [
+			'feed_name'   => $new_name,
+			'point_count' => $count,
+		] );
+	}
+
 	public static function delete_db_feed( WP_REST_Request $request ) {
 		$body      = $request->get_json_params() ?? [];
 		$feed_name = sanitize_text_field( $body['feed_name'] ?? '' );
@@ -383,6 +425,19 @@ class Spotmap_Rest_Api {
 		$deleted = $db->delete_points_by_feed_name( $feed_name );
 
 		return rest_ensure_response( [ 'deleted' => $deleted ] );
+	}
+
+	public static function get_db_feed_stats( WP_REST_Request $request ) {
+		$feed_name = sanitize_text_field( $request->get_param( 'feed_name' ) ?? '' );
+
+		if ( $feed_name === '' ) {
+			return new WP_Error( 'missing_feed_name', 'feed_name is required.', [ 'status' => 400 ] );
+		}
+
+		$db    = new Spotmap_Database();
+		$stats = $db->get_feed_stats( $feed_name );
+
+		return rest_ensure_response( $stats );
 	}
 
 	public static function import_photos( WP_REST_Request $request ) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Button, Modal, Spinner } from '@wordpress/components';
+import { Button, Modal, Spinner, TextControl } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
 import FeedStatsModal from '../components/FeedStatsModal';
@@ -23,6 +23,8 @@ export default function FeedsTab( {
     const [ confirmDeleteDbFeed, setConfirmDeleteDbFeed ] = useState( null ); // { feedName, pointCount }
     const [ importingFeedId, setImportingFeedId ] = useState( null );
     const [ statsFeed, setStatsFeed ] = useState( null ); // feed object or null
+    const [ renamingDbFeed, setRenamingDbFeed ] = useState( null ); // { feedName, newName } or null
+    const [ renameSaving, setRenameSaving ] = useState( false );
 
     useEffect( () => {
         let cancelled = false;
@@ -173,20 +175,46 @@ export default function FeedsTab( {
         }
     };
 
+    const handleRenameDbFeed = async () => {
+        const { feedName, newName } = renamingDbFeed;
+        setRenameSaving( true );
+        try {
+            const updated = await api.renameDbFeed( feedName, newName.trim() );
+            setDbFeeds( ( prev ) =>
+                prev.map( ( d ) =>
+                    d.feed_name === feedName ? updated : d
+                )
+            );
+            setRenamingDbFeed( null );
+            onNoticeChange( {
+                status: 'success',
+                text: `Feed renamed from "${ feedName }" to "${ updated.feed_name }".`,
+            } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        } finally {
+            setRenameSaving( false );
+        }
+    };
+
     if ( loading ) {
         return <Spinner />;
     }
 
-    const configuredNames = new Set( ( feeds ?? [] ).map( ( f ) => f.name ) );
+    const feedList = feeds ?? [];
+    const configuredNames = new Set( feedList.map( ( f ) => f.name ) );
     const orphanedDbFeeds = ( dbFeeds ?? [] ).filter(
         ( d ) => ! configuredNames.has( d.feed_name )
     );
 
+    const allRows = [
+        ...feedList.map( ( feed ) => ( { kind: 'configured', feed } ) ),
+        ...orphanedDbFeeds.map( ( dbFeed ) => ( { kind: 'orphaned', dbFeed } ) ),
+    ];
+
     return (
         <div style={ { marginTop: '1rem' } }>
-            <h3 style={ { marginTop: 0 } }>Configured feeds</h3>
-
-            { feeds.length === 0 ? (
+            { allRows.length === 0 ? (
                 <p>No feeds configured yet.</p>
             ) : (
                 <table
@@ -197,124 +225,138 @@ export default function FeedsTab( {
                         <tr>
                             <th>Name</th>
                             <th>Type</th>
-                            <th style={ { width: '80px' } }>Points</th>
+                            <th style={ { width: '80px' } }>Points in DB</th>
                             <th style={ { width: '300px' } }>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        { feeds.map( ( feed ) => (
-                            <tr key={ feed.id }>
-                                <td>{ feed.name }</td>
-                                <td>
-                                    { providers[ feed.type ]?.label ??
-                                        feed.type }
-                                </td>
-                                <td>{ feed.point_count ?? 0 }</td>
-                                <td>
-                                    <Button
-                                        variant="secondary"
-                                        size="small"
-                                        onClick={ () => setStatsFeed( feed ) }
-                                    >
-                                        Statistics
-                                    </Button>{ ' ' }
-                                    <Button
-                                        variant="secondary"
-                                        size="small"
-                                        onClick={ () => setEditingFeed( feed ) }
-                                    >
-                                        Edit
-                                    </Button>{ ' ' }
-                                    { isMediaFeed( feed.type ) && (
-                                        <>
+                        { allRows.map( ( row ) => {
+                            if ( row.kind === 'configured' ) {
+                                const feed = row.feed;
+                                return (
+                                    <tr key={ `feed-${ feed.id }` }>
+                                        <td>{ feed.name }</td>
+                                        <td>
+                                            { providers[ feed.type ]?.label ??
+                                                feed.type }
+                                        </td>
+                                        <td>{ feed.point_count ?? 0 }</td>
+                                        <td>
                                             <Button
                                                 variant="secondary"
                                                 size="small"
-                                                isBusy={
-                                                    importingFeedId === feed.id
-                                                }
-                                                disabled={
-                                                    importingFeedId === feed.id
-                                                }
                                                 onClick={ () =>
-                                                    handleImportPhotos( feed )
+                                                    setStatsFeed( feed )
                                                 }
                                             >
-                                                Check Photos
+                                                Statistics
                                             </Button>{ ' ' }
-                                        </>
-                                    ) }
-                                    { feed.paused ? (
-                                        <Button
-                                            variant="secondary"
-                                            size="small"
-                                            style={ {
-                                                color: '#996600',
-                                                borderColor: '#996600',
-                                            } }
-                                            onClick={ () =>
-                                                handleTogglePause( feed )
-                                            }
-                                        >
-                                            Unpause
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            variant="secondary"
-                                            size="small"
-                                            style={ {
-                                                color: '#0073aa',
-                                                borderColor: '#0073aa',
-                                            } }
-                                            onClick={ () =>
-                                                handleTogglePause( feed )
-                                            }
-                                        >
-                                            Pause
-                                        </Button>
-                                    ) }{ ' ' }
-                                    <Button
-                                        variant="secondary"
-                                        size="small"
-                                        isDestructive
-                                        onClick={ () =>
-                                            setConfirmDelete( feed )
-                                        }
-                                    >
-                                        Delete
-                                    </Button>
-                                </td>
-                            </tr>
-                        ) ) }
-                    </tbody>
-                </table>
-            ) }
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={ () =>
+                                                    setEditingFeed( feed )
+                                                }
+                                            >
+                                                Edit
+                                            </Button>{ ' ' }
+                                            { isMediaFeed( feed.type ) && (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="small"
+                                                    isBusy={
+                                                        importingFeedId ===
+                                                        feed.id
+                                                    }
+                                                    disabled={
+                                                        importingFeedId ===
+                                                        feed.id
+                                                    }
+                                                    onClick={ () =>
+                                                        handleImportPhotos(
+                                                            feed
+                                                        )
+                                                    }
+                                                >
+                                                    Check Photos
+                                                </Button>
+                                            ) }{ ' ' }
+                                            { feed.paused ? (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="small"
+                                                    style={ {
+                                                        color: '#996600',
+                                                        borderColor: '#996600',
+                                                    } }
+                                                    onClick={ () =>
+                                                        handleTogglePause( feed )
+                                                    }
+                                                >
+                                                    Unpause
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="small"
+                                                    style={ {
+                                                        color: '#0073aa',
+                                                        borderColor: '#0073aa',
+                                                    } }
+                                                    onClick={ () =>
+                                                        handleTogglePause( feed )
+                                                    }
+                                                >
+                                                    Pause
+                                                </Button>
+                                            ) }{ ' ' }
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                isDestructive
+                                                onClick={ () =>
+                                                    setConfirmDelete( feed )
+                                                }
+                                            >
+                                                Delete
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                );
+                            }
 
-            <Button variant="primary" onClick={ () => setShowPicker( true ) }>
-                Add Feed
-            </Button>
-
-            { orphanedDbFeeds.length > 0 && (
-                <div style={ { marginTop: '2rem' } }>
-                    <h3>Feeds in database</h3>
-                    <p style={ { color: '#666' } }>
-                        These feeds have data in the database but are no longer
-                        configured. You can delete their points here.
-                    </p>
-                    <table className="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th>Feed name</th>
-                                <th style={ { width: '80px' } }>Points</th>
-                                <th style={ { width: '160px' } }>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            { orphanedDbFeeds.map( ( d ) => (
-                                <tr key={ d.feed_name }>
+                            const d = row.dbFeed;
+                            return (
+                                <tr key={ `db-${ d.feed_name }` }>
                                     <td>{ d.feed_name }</td>
+                                    <td style={ { color: '#999', fontStyle: 'italic' } }>
+                                        DB only
+                                    </td>
                                     <td>{ d.point_count }</td>
                                     <td>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={ () =>
+                                                setStatsFeed( {
+                                                    name: d.feed_name,
+                                                } )
+                                            }
+                                        >
+                                            Statistics
+                                        </Button>{ ' ' }
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={ () =>
+                                                setRenamingDbFeed( {
+                                                    feedName: d.feed_name,
+                                                    newName: d.feed_name,
+                                                } )
+                                            }
+                                        >
+                                            Rename
+                                        </Button>{ ' ' }
                                         <Button
                                             variant="secondary"
                                             size="small"
@@ -330,11 +372,15 @@ export default function FeedsTab( {
                                         </Button>
                                     </td>
                                 </tr>
-                            ) ) }
-                        </tbody>
-                    </table>
-                </div>
+                            );
+                        } ) }
+                    </tbody>
+                </table>
             ) }
+
+            <Button variant="primary" onClick={ () => setShowPicker( true ) }>
+                Add Feed
+            </Button>
 
             { /* Step 1: pick a provider type */ }
             { showPicker && (
@@ -456,6 +502,44 @@ export default function FeedsTab( {
                         >
                             Cancel
                         </Button>
+                    </div>
+                </Modal>
+            ) }
+
+            { renamingDbFeed !== null && (
+                <Modal
+                    title={ `Rename "${ renamingDbFeed.feedName }"` }
+                    onRequestClose={ () => setRenamingDbFeed( null ) }
+                >
+                    <div style={ { display: 'flex', flexDirection: 'column', gap: '16px' } }>
+                        <TextControl
+                            label="New name"
+                            value={ renamingDbFeed.newName }
+                            onChange={ ( val ) =>
+                                setRenamingDbFeed( ( prev ) => ( {
+                                    ...prev,
+                                    newName: val,
+                                } ) )
+                            }
+                            __nextHasNoMarginBottom
+                            __next40pxDefaultSize
+                        />
+                        <div style={ { display: 'flex', gap: '8px' } }>
+                            <Button
+                                variant="primary"
+                                isBusy={ renameSaving }
+                                disabled={ renameSaving || renamingDbFeed.newName.trim() === '' || renamingDbFeed.newName.trim() === renamingDbFeed.feedName }
+                                onClick={ handleRenameDbFeed }
+                            >
+                                Rename
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={ () => setRenamingDbFeed( null ) }
+                            >
+                                Cancel
+                            </Button>
+                        </div>
                     </div>
                 </Modal>
             ) }
