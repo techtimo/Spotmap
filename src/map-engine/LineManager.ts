@@ -14,6 +14,7 @@ export class LineManager {
     private readonly layers: SpotmapLayers;
     private readonly layerManager: LayerManager;
     private readonly dbg: ( ...args: unknown[] ) => void;
+    private initialLoadComplete = false;
 
     constructor(
         layers: SpotmapLayers,
@@ -23,6 +24,38 @@ export class LineManager {
         this.layers = layers;
         this.layerManager = layerManager;
         this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
+    }
+
+    /**
+     * Apply directional arrows to all existing lines and mark initial load as
+     * complete so future lines (e.g. auto-reload splits) get arrows immediately.
+     * Call this once after fitBounds() so setText() runs at the correct zoom.
+     */
+    applyArrows(): void {
+        for ( const feed of Object.values( this.layers.feeds ) ) {
+            for ( const line of feed.lines ) {
+                this.applyTextPath( line );
+            }
+        }
+        this.initialLoadComplete = true;
+    }
+
+    private applyTextPath( line: L.Polyline ): void {
+        (
+            line as unknown as {
+                setText: (
+                    text: string,
+                    options: Record< string, unknown >
+                ) => void;
+            }
+         ).setText( LINE_ARROW_CHAR, {
+            repeat: true,
+            offset: LINE_ARROW_OFFSET,
+            attributes: {
+                fill: 'black',
+                'font-size': LINE_ARROW_FONT_SIZE,
+            },
+        } );
     }
 
     /**
@@ -90,22 +123,12 @@ export class LineManager {
         const opacity = this.layerManager.getFeedLineOpacity( feedName );
         const line = L.polyline( [], { color, weight, opacity } );
 
-        // Add directional arrows using the TextPath plugin
-        (
-            line as unknown as {
-                setText: (
-                    text: string,
-                    options: Record< string, unknown >
-                ) => void;
-            }
-         ).setText( LINE_ARROW_CHAR, {
-            repeat: true,
-            offset: LINE_ARROW_OFFSET,
-            attributes: {
-                fill: 'black',
-                'font-size': LINE_ARROW_FONT_SIZE,
-            },
-        } );
+        // During initial load, arrows are deferred until applyArrows() is called
+        // after fitBounds(). Lines created after that (e.g. auto-reload splits)
+        // get arrows immediately.
+        if ( this.initialLoadComplete ) {
+            this.applyTextPath( line );
+        }
 
         return line;
     }
