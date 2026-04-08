@@ -31,8 +31,9 @@ export const SINGLE_POINT_ZOOM = 14;
 /** z-index offsets for marker layering */
 export const Z_INDEX_TRACK = 0;
 export const Z_INDEX_STATUS = 1000;
-export const Z_INDEX_HELP = -2000;
+export const Z_INDEX_HELP = 2000;
 export const Z_INDEX_EMERGENCY = -3000;
+export const Z_INDEX_LAST_POINT = 1900;
 
 /** Arrow character used on polylines */
 export const LINE_ARROW_CHAR = '  \u25BA  ';

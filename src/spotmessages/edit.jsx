@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from '@wordpress/element';
 import { BlockControls, useBlockProps } from '@wordpress/block-editor';
 import {
+    Button,
     CheckboxControl,
     Dropdown,
     Flex,
@@ -20,7 +22,6 @@ const ALL_TYPES = [
     'CUSTOM',
     'HELP',
     'HELP-CANCEL',
-    'SOS',
     'TRACK',
     'MEDIA',
     'NEWMOVEMENT',
@@ -40,9 +41,90 @@ export default function Edit( { attributes, setAttributes } ) {
     const availableFeeds =
         typeof spotmapjsobj !== 'undefined' ? spotmapjsobj.feeds ?? [] : [];
 
+    const tableRef = useRef( null );
+    const spotmapRef = useRef( null );
+    const [ tableId ] = useState(
+        () => 'spotmap-msgs-' + Math.random().toString( 36 ).slice( 2, 10 )
+    );
+
     const blockProps = useBlockProps( {
         style: { padding: '12px', background: '#f0f0f0', borderRadius: '4px' },
     } );
+
+    // Inject plugin CSS into the editor document (handles iframe rendering).
+    useEffect( () => {
+        const el = tableRef.current;
+        if ( ! el ) {
+            return;
+        }
+        const doc = el.ownerDocument;
+        const baseUrl = window.spotmapjsobj?.url || '';
+        const href = baseUrl + 'css/custom.css';
+        if ( doc.querySelector( `link[href="${ href }"]` ) ) {
+            return;
+        }
+        const link = doc.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.href = href;
+        doc.head.appendChild( link );
+        return () => link.remove();
+    }, [] );
+
+    // Render live table preview whenever relevant attributes change.
+    // Debounced so rapid attribute changes (sliders, typing) don't abort
+    // in-flight requests — the current fetch is allowed to complete, then
+    // the instance is replaced after the debounce settles.
+    useEffect( () => {
+        if ( ! tableRef.current || typeof window.Spotmap === 'undefined' ) {
+            return;
+        }
+
+        // Mirror render-block-messages.php: empty feeds means "show all feeds".
+        const resolvedFeeds = feeds.length > 0 ? feeds : availableFeeds;
+
+        const options = {
+            feeds: resolvedFeeds,
+            type: types,
+            filterPoints,
+            dateRange,
+            orderBy: 'time DESC',
+            limit: count,
+            groupBy,
+            autoReload: false,
+            debug: false,
+            tableElement: tableRef.current,
+        };
+
+        const timer = setTimeout( () => {
+            if ( spotmapRef.current ) {
+                spotmapRef.current.destroy();
+                spotmapRef.current = null;
+            }
+
+            try {
+                const sm = new window.Spotmap( options );
+                spotmapRef.current = sm;
+                sm.initTable( tableId );
+            } catch ( e ) {
+                // eslint-disable-next-line no-console
+                console.error( 'Spotmap table preview error:', e );
+            }
+        }, 300 );
+
+        // Only cancel the pending timer — do NOT abort an already-running fetch.
+        return () => clearTimeout( timer );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ tableId, feeds, types, filterPoints, dateRange, count, groupBy ] );
+
+    // Destroy on unmount only (separate from the debounced effect above).
+    useEffect( () => {
+        return () => {
+            if ( spotmapRef.current ) {
+                spotmapRef.current.destroy();
+                spotmapRef.current = null;
+            }
+        };
+    }, [] );
 
     const toggleType = ( type, checked ) => {
         setAttributes( {
@@ -59,20 +141,6 @@ export default function Edit( { attributes, setAttributes } ) {
                 : feeds.filter( ( f ) => f !== feed ),
         } );
     };
-
-    const GROUP_BY_LABELS = {
-        'feed_name, type': __( 'Latest per feed & type', 'spotmap' ),
-        feed_name: __( 'Latest per feed', 'spotmap' ),
-        type: __( 'Latest per type', 'spotmap' ),
-    };
-    const groupByLabel =
-        GROUP_BY_LABELS[ groupBy ] ?? __( 'No grouping', 'spotmap' );
-
-    const activeFeedsLabel =
-        feeds.length === 0 ? __( 'All feeds', 'spotmap' ) : feeds.join( ', ' );
-
-    const activeTypesLabel =
-        types.length === 0 ? __( 'All types', 'spotmap' ) : types.join( ', ' );
 
     return (
         <>
@@ -98,6 +166,39 @@ export default function Edit( { attributes, setAttributes } ) {
                                 { availableFeeds.length === 0 && (
                                     <p>{ __( 'No feeds yet.', 'spotmap' ) }</p>
                                 ) }
+                                { availableFeeds.length > 0 && (
+                                    <Flex
+                                        gap={ 2 }
+                                        style={ {
+                                            marginBottom: '8px',
+                                            paddingBottom: '8px',
+                                            borderBottom: '1px solid #ddd',
+                                        } }
+                                    >
+                                        <Button
+                                            size="small"
+                                            variant="secondary"
+                                            onClick={ () =>
+                                                setAttributes( {
+                                                    feeds: [
+                                                        ...availableFeeds,
+                                                    ],
+                                                } )
+                                            }
+                                        >
+                                            { __( 'Select all', 'spotmap' ) }
+                                        </Button>
+                                        <Button
+                                            size="small"
+                                            variant="secondary"
+                                            onClick={ () =>
+                                                setAttributes( { feeds: [] } )
+                                            }
+                                        >
+                                            { __( 'Select none', 'spotmap' ) }
+                                        </Button>
+                                    </Flex>
+                                ) }
                                 { availableFeeds.map( ( feed ) => (
                                     <Flex key={ feed } gap={ 2 } align="center">
                                         <FlexItem isBlock>
@@ -118,7 +219,7 @@ export default function Edit( { attributes, setAttributes } ) {
                                     feeds.length === 0 && (
                                         <p
                                             style={ {
-                                                margin: '4px 0 0',
+                                                margin: '8px 0 0',
                                                 fontSize: '11px',
                                                 color: '#757575',
                                             } }
@@ -294,70 +395,7 @@ export default function Edit( { attributes, setAttributes } ) {
             </BlockControls>
 
             <div { ...blockProps }>
-                <strong>{ __( 'Spot Messages', 'spotmap' ) }</strong>
-                <table
-                    style={ {
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        marginTop: '8px',
-                        fontSize: '13px',
-                    } }
-                >
-                    <thead>
-                        <tr style={ { background: '#ddd' } }>
-                            { groupBy === 'feed_name' && (
-                                <th
-                                    style={ {
-                                        padding: '4px 8px',
-                                        textAlign: 'left',
-                                    } }
-                                >
-                                    { __( 'Feed', 'spotmap' ) }
-                                </th>
-                            ) }
-                            <th
-                                style={ {
-                                    padding: '4px 8px',
-                                    textAlign: 'left',
-                                } }
-                            >
-                                { __( 'Type', 'spotmap' ) }
-                            </th>
-                            <th
-                                style={ {
-                                    padding: '4px 8px',
-                                    textAlign: 'left',
-                                } }
-                            >
-                                { __( 'Message', 'spotmap' ) }
-                            </th>
-                            <th
-                                style={ {
-                                    padding: '4px 8px',
-                                    textAlign: 'left',
-                                } }
-                            >
-                                { __( 'Time', 'spotmap' ) }
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td
-                                colSpan={ groupBy === 'feed_name' ? 4 : 3 }
-                                style={ {
-                                    padding: '8px',
-                                    color: '#777',
-                                    fontStyle: 'italic',
-                                } }
-                            >
-                                { groupByLabel } &mdash; { activeFeedsLabel }{ ' ' }
-                                &mdash; { activeTypesLabel } &mdash; { count }{ ' ' }
-                                { __( 'rows', 'spotmap' ) }
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <table ref={ tableRef } id={ tableId }></table>
             </div>
         </>
     );

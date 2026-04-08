@@ -29,7 +29,9 @@ export class TableRenderer {
                 this.options.filterPoints
             );
 
-            const table = document.getElementById( elementId );
+            const table =
+                this.options.tableElement ??
+                document.getElementById( elementId );
             if ( ! table ) {
                 return;
             }
@@ -37,6 +39,12 @@ export class TableRenderer {
             if ( response.error ) {
                 this.renderTable( table, [], false );
                 this.appendRow( table, [ '', 'No data found', '' ] );
+                return;
+            }
+
+            if ( response.empty ) {
+                this.renderTable( table, [], false );
+                this.appendRow( table, [ '', 'No points to show yet', '' ] );
                 return;
             }
 
@@ -104,15 +112,34 @@ export class TableRenderer {
         const typeCell = document.createElement( 'td' );
         typeCell.id = `spotmap_${ entry.id }`;
         typeCell.textContent = entry.type;
-        row.appendChild( typeCell );
 
         const detail = { id: entry.id, lat: entry.latitude, lng: entry.longitude };
-        row.addEventListener( 'click', () =>
-            document.dispatchEvent( new CustomEvent( 'spotmap:click-point', { detail } ) )
-        );
-        row.addEventListener( 'dblclick', () =>
-            document.dispatchEvent( new CustomEvent( 'spotmap:dblclick-point', { detail } ) )
-        );
+
+        const panLink = document.createElement( 'a' );
+        panLink.href = '#';
+        panLink.className = 'spotmap-nav-link spotmap-nav-pan';
+        panLink.textContent = 'pan';
+        panLink.addEventListener( 'click', ( e ) => {
+            e.preventDefault();
+            e.stopPropagation();
+            document.dispatchEvent( new CustomEvent( 'spotmap:click-point', { detail } ) );
+        } );
+
+        const zoomLink = document.createElement( 'a' );
+        zoomLink.href = '#';
+        zoomLink.className = 'spotmap-nav-link spotmap-nav-zoom';
+        zoomLink.textContent = 'zoom';
+        zoomLink.addEventListener( 'click', ( e ) => {
+            e.preventDefault();
+            e.stopPropagation();
+            document.dispatchEvent( new CustomEvent( 'spotmap:dblclick-point', { detail } ) );
+        } );
+
+        typeCell.appendChild( document.createElement( 'br' ) );
+        typeCell.appendChild( panLink );
+        typeCell.appendChild( document.createTextNode( ' · ' ) );
+        typeCell.appendChild( zoomLink );
+        row.appendChild( typeCell );
 
         const messageCell = document.createElement( 'td' );
         messageCell.textContent = entry.message ?? '';
@@ -173,7 +200,9 @@ export class TableRenderer {
 
                         if ( newFirstUnixtime > lastFirstUnixtime ) {
                             lastFirstUnixtime = newFirstUnixtime;
-                            const table = document.getElementById( elementId );
+                            const table =
+                                this.options.tableElement ??
+                                document.getElementById( elementId );
                             if ( table ) {
                                 const scrollTop =
                                     table.parentElement?.scrollTop ?? 0;

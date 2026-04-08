@@ -43,6 +43,7 @@ export interface SpotmapOptions {
     height: number;
     mapId?: string;
     mapElement?: HTMLElement;
+    tableElement?: HTMLElement;
 
     // Navigation & view
     mapcenter: MapCenter;
@@ -157,6 +158,7 @@ export interface TableOptions
     orderBy?: string;
     limit?: number;
     groupBy?: string;
+    tableElement?: HTMLElement;
 }
 
 /** Body sent to the WordPress AJAX endpoint */

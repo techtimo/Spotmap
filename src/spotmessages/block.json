@@ -21,7 +21,7 @@
         },
         "types": {
             "type": "array",
-            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL", "SOS" ]
+            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL" ]
         },
         "groupBy": {
             "type": "string",
