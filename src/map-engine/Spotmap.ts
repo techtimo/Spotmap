@@ -281,6 +281,7 @@ export class Spotmap {
                 this.boundsManager.fitBounds( this.options.mapcenter );
             }
 
+            this.lineManager.applyArrows();
             this.layerManager.addOverlays();
 
             if ( this.options.autoReload && ! response.empty ) {
