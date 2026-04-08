@@ -359,6 +359,7 @@ export default function FeedsTab( {
                 <FeedModal
                     providers={ providers }
                     feed={ editingFeed }
+                    existingFeeds={ feeds }
                     onSave={ handleSave }
                     onClose={ () => setEditingFeed( null ) }
                     onBack={
