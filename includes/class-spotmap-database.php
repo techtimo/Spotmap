@@ -142,12 +142,16 @@ private const ALLOWED_COLUMNS = [
 			}
 		}
 		$rows = $wpdb->get_results(
-			"SELECT feed_name, COUNT(*) AS cnt FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL {$where}GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
+			"SELECT feed_name, COUNT(*) AS cnt, MIN(time) AS first_point, MAX(time) AS last_point FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL {$where}GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
 			ARRAY_A
 		);
 		$counts = [];
 		foreach ( $rows as $row ) {
-			$counts[ $row['feed_name'] ] = (int) $row['cnt'];
+			$counts[ $row['feed_name'] ] = [
+				'count'       => (int) $row['cnt'],
+				'first_point' => isset( $row['first_point'] ) ? (int) $row['first_point'] : null,
+				'last_point'  => isset( $row['last_point'] )  ? (int) $row['last_point']  : null,
+			];
 		}
 		return $counts;
 	}

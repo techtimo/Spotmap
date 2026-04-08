@@ -17,7 +17,7 @@ class Spotmap_Admin {
 
 		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ) . 'includes/css/font-awesome-all.min.css' );
 
-		$asset_file = plugin_dir_path( __DIR__ ) . 'build/spotmap-admin/index.asset.php';
+		$asset_file = plugin_dir_path( __DIR__ ) . 'build/spotmap-admin.asset.php';
 		$asset      = file_exists( $asset_file )
 			? require $asset_file
 			: [ 'dependencies' => [], 'version' => '1.0.0' ];
@@ -37,10 +37,10 @@ class Spotmap_Admin {
 			'feeds'    => $this->db->get_all_feednames(),
 		] );
 
-		if ( file_exists( plugin_dir_path( __DIR__ ) . 'build/spotmap-admin/index.css' ) ) {
+		if ( file_exists( plugin_dir_path( __DIR__ ) . 'build/spotmap-admin.css' ) ) {
 			wp_enqueue_style(
 				'spotmap-admin',
-				plugin_dir_url( __DIR__ ) . 'build/spotmap-admin/index.css',
+				plugin_dir_url( __DIR__ ) . 'build/spotmap-admin.css',
 				[ 'wp-components' ],
 				$asset['version']
 			);
