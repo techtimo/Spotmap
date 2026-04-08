@@ -108,6 +108,16 @@ class Spotmap_Rest_Api {
 			]
 		);
 
+		register_rest_route(
+			self::NAMESPACE,
+			'/feeds/(?P<id>[\w.]+)/stats',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ __CLASS__, 'get_feed_stats' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+			]
+		);
+
 		// --- DB Feeds ---
 		register_rest_route(
 			self::NAMESPACE,
@@ -408,6 +418,21 @@ class Spotmap_Rest_Api {
 		$feed           = self::decorate_feed( Spotmap_Options::get_feed( $id ) );
 		$feed['paused'] = $paused;
 		return rest_ensure_response( $feed );
+	}
+
+	public static function get_feed_stats( WP_REST_Request $request ) {
+		$id   = $request->get_param( 'id' );
+		$feed = Spotmap_Options::get_feed( $id );
+		if ( ! $feed ) {
+			return new WP_Error( 'not_found', 'Feed not found.', [ 'status' => 404 ] );
+		}
+		$db    = new Spotmap_Database();
+		$stats = $db->get_feed_stats( $feed['name'] ?? '' );
+
+		$stats['created_at'] = isset( $feed['created_at'] ) ? (int) $feed['created_at'] : null;
+		$stats['updated_at'] = isset( $feed['updated_at'] ) ? (int) $feed['updated_at'] : null;
+
+		return rest_ensure_response( $stats );
 	}
 
 	// -------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { useState, useEffect } from '@wordpress/element';
 import { Button, Modal, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import FeedModal from '../components/FeedModal';
+import FeedStatsModal from '../components/FeedStatsModal';
 import ProviderSelector from '../components/ProviderSelector';
 
 const isMediaFeed = ( type ) => type === 'media';
@@ -21,6 +22,7 @@ export default function FeedsTab( {
     const [ confirmDelete, setConfirmDelete ] = useState( null ); // feed object or null
     const [ confirmDeleteDbFeed, setConfirmDeleteDbFeed ] = useState( null ); // { feedName, pointCount }
     const [ importingFeedId, setImportingFeedId ] = useState( null );
+    const [ statsFeed, setStatsFeed ] = useState( null ); // feed object or null
 
     useEffect( () => {
         let cancelled = false;
@@ -204,7 +206,7 @@ export default function FeedsTab( {
                             <th>Name</th>
                             <th>Type</th>
                             <th style={ { width: '80px' } }>Points</th>
-                            <th style={ { width: '220px' } }>Actions</th>
+                            <th style={ { width: '300px' } }>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -217,6 +219,13 @@ export default function FeedsTab( {
                                 </td>
                                 <td>{ feed.point_count ?? 0 }</td>
                                 <td>
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={ () => setStatsFeed( feed ) }
+                                    >
+                                        Statistics
+                                    </Button>{ ' ' }
                                     <Button
                                         variant="secondary"
                                         size="small"
@@ -456,6 +465,13 @@ export default function FeedsTab( {
                         </Button>
                     </div>
                 </Modal>
+            ) }
+
+            { statsFeed !== null && (
+                <FeedStatsModal
+                    feed={ statsFeed }
+                    onClose={ () => setStatsFeed( null ) }
+                />
             ) }
         </div>
     );

@@ -77,3 +77,6 @@ export const updatePoint = ( id, { latitude, longitude } ) =>
         method: 'PUT',
         data: { latitude, longitude },
     } );
+
+export const getFeedStats = ( id ) =>
+    apiFetch( { url: url( `feeds/${ id }/stats` ) } );
