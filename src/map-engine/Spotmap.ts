@@ -210,10 +210,12 @@ export class Spotmap {
             this.layers,
             dbg
         );
+        const canvasRenderer = L.canvas( { pane: 'markerPane' } );
         this.markerManager = new MarkerManager(
             this.map,
             this.layers,
             this.layerManager,
+            canvasRenderer,
             dbg
         );
         this.lineManager = new LineManager(
