@@ -112,6 +112,7 @@ function buildTeltonikaUrl( key ) {
 export default function FeedModal( {
     providers,
     feed,
+    existingFeeds = [],
     onSave,
     onClose,
     onBack,
@@ -145,6 +146,7 @@ export default function FeedModal( {
 
     const [ saving, setSaving ] = useState( false );
     const [ error, setError ] = useState( null );
+    const [ nameWarningAcknowledged, setNameWarningAcknowledged ] = useState( false );
     const [ passwordEditing, setPasswordEditing ] = useState( () => new Set() );
     const [ passwordClearing, setPasswordClearing ] = useState(
         () => new Set()
@@ -166,8 +168,20 @@ export default function FeedModal( {
         setFields( ( prev ) => ( { ...prev, [ key ]: '' } ) );
     };
 
-    const setField = ( key, value ) =>
+    const setField = ( key, value ) => {
+        if ( key === 'name' ) {
+            setNameWarningAcknowledged( false );
+        }
         setFields( ( prev ) => ( { ...prev, [ key ]: value } ) );
+    };
+
+    const enteredName = fields.name ?? '';
+    const duplicateFeed =
+        enteredName !== ''
+            ? existingFeeds.find(
+                  ( f ) => f.name === enteredName && f.id !== feed?.id
+              )
+            : null;
 
     // Always build the ingest URL client-side from the key so it stays
     // consistent between add and edit regardless of server URL formatting.
@@ -223,6 +237,35 @@ export default function FeedModal( {
                 { error && (
                     <Notice status="error" onRemove={ () => setError( null ) }>
                         { error }
+                    </Notice>
+                ) }
+
+                { duplicateFeed && ! nameWarningAcknowledged && (
+                    <Notice
+                        status="warning"
+                        isDismissible={ false }
+                    >
+                        <strong>
+                            A feed named &ldquo;{ enteredName }&rdquo; already
+                            exists.
+                        </strong>{ ' ' }
+                        Using the same name means both feeds will write GPS
+                        points to the same database bucket — their data will be
+                        mixed together. Renaming either feed later will move{ ' ' }
+                        <em>all</em> of those shared points to the new name.{ ' ' }
+                        Use a unique name unless you intentionally want to merge
+                        these feeds.
+                        <div style={ { marginTop: '8px' } }>
+                            <Button
+                                variant="secondary"
+                                size="small"
+                                onClick={ () =>
+                                    setNameWarningAcknowledged( true )
+                                }
+                            >
+                                I understand, proceed anyway
+                            </Button>
+                        </div>
                     </Notice>
                 ) }
 
@@ -412,6 +455,10 @@ export default function FeedModal( {
                     <Button
                         variant="primary"
                         isBusy={ saving }
+                        disabled={
+                            saving ||
+                            ( !! duplicateFeed && ! nameWarningAcknowledged )
+                        }
                         onClick={ handleSave }
                     >
                         Save
