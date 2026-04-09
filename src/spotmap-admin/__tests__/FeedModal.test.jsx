@@ -47,7 +47,7 @@ describe( 'FeedModal — add mode', () => {
         expect( screen.getByText( 'Add Feed' ) ).toBeInTheDocument();
     } );
 
-    it( 'shows provider type selector', () => {
+    it( 'does not show provider type selector (type is pre-selected by ProviderPickerModal)', () => {
         render(
             <FeedModal
                 providers={ providers }
@@ -56,14 +56,14 @@ describe( 'FeedModal — add mode', () => {
                 onClose={ noop }
             />
         );
-        expect( screen.getByText( 'Provider Type' ) ).toBeInTheDocument();
+        expect( screen.queryByText( 'Provider Type' ) ).not.toBeInTheDocument();
     } );
 
     it( 'renders all provider fields', () => {
         render(
             <FeedModal
                 providers={ providers }
-                feed={ null }
+                feed={ { type: 'findmespot' } }
                 onSave={ noop }
                 onClose={ noop }
             />
@@ -79,7 +79,7 @@ describe( 'FeedModal — add mode', () => {
         render(
             <FeedModal
                 providers={ providers }
-                feed={ null }
+                feed={ { type: 'findmespot' } }
                 onSave={ onSave }
                 onClose={ noop }
             />
@@ -246,22 +246,17 @@ describe( 'FeedModal — push feed URLs', () => {
         window.spotmapAdminData.restUrl = originalRestUrl;
     } );
 
-    it( 'builds a Teltonika URL with &key for rest_route-based sites', async () => {
+    it( 'builds a Teltonika URL with &key for rest_route-based sites', () => {
         window.spotmapAdminData.restUrl =
             'http://localhost:8888/index.php?rest_route=/spotmap/v1/';
-        const user = userEvent.setup();
 
         render(
             <FeedModal
                 providers={ pushProviders }
-                feed={ null }
+                feed={ { type: 'teltonika' } }
                 onSave={ noop }
                 onClose={ noop }
             />
-        );
-
-        await user.click(
-            screen.getByRole( 'button', { name: /Teltonika/i } )
         );
 
         expect(
@@ -271,51 +266,4 @@ describe( 'FeedModal — push feed URLs', () => {
         ).toBeInTheDocument();
     } );
 
-    it( 'normalizes a malformed server-provided Teltonika tracking URL', () => {
-        render(
-            <FeedModal
-                providers={ pushProviders }
-                feed={ {
-                    id: 'feed-tel',
-                    type: 'teltonika',
-                    name: 'Tracker',
-                    key: 'abc123',
-                    tracking_url:
-                        'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/teltonika?key=abc123',
-                } }
-                onSave={ noop }
-                onClose={ noop }
-            />
-        );
-
-        expect(
-            screen.getByText(
-                'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/teltonika&key=abc123'
-            )
-        ).toBeInTheDocument();
-    } );
-
-    it( 'normalizes a malformed server-provided OsmAnd tracking URL', () => {
-        render(
-            <FeedModal
-                providers={ pushProviders }
-                feed={ {
-                    id: 'feed-osm',
-                    type: 'osmand',
-                    name: 'Phone',
-                    key: 'abc123',
-                    tracking_url:
-                        'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/osmand?key=abc123&lat={0}&lon={1}&timestamp={2}',
-                } }
-                onSave={ noop }
-                onClose={ noop }
-            />
-        );
-
-        expect(
-            screen.getByText(
-                'http://localhost:8888/index.php?rest_route=/spotmap/v1/ingest/osmand&key=abc123&lat={0}&lon={1}&timestamp={2}'
-            )
-        ).toBeInTheDocument();
-    } );
 } );

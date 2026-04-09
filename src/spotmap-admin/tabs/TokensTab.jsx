@@ -11,6 +11,8 @@ import * as api from '../api';
 
 const { REDACTED } = api;
 
+const noop = () => {};
+
 const TOKEN_META = {
     timezonedb: {
         label: 'TimezoneDB',
@@ -126,7 +128,7 @@ function TokenField( { tokenKey, value, onChange } ) {
     );
 }
 
-export default function TokensTab( { onNoticeChange } ) {
+export default function TokensTab( { onNoticeChange = noop } ) {
     const [ tokens, setTokens ] = useState( null );
     const [ saving, setSaving ] = useState( false );
 

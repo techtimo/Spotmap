@@ -59,6 +59,7 @@ function buildLeafletMock() {
             .mockReturnValue( document.createElement( 'div' ) ),
         invalidateSize: jest.fn(),
         removeLayer: jest.fn(),
+        attributionControl: { setPrefix: jest.fn() },
     };
 
     const mockLayerControl = {
@@ -116,6 +117,7 @@ function buildLeafletMock() {
             polyline: jest
                 .fn()
                 .mockReturnValue( { addTo: jest.fn().mockReturnThis() } ),
+            canvas: jest.fn().mockReturnValue( {} ),
         },
     };
 }

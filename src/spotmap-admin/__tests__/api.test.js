@@ -54,6 +54,7 @@ describe( 'feeds', () => {
         expect( apiFetch ).toHaveBeenCalledWith( {
             url: `${ BASE }/feeds/abc123`,
             method: 'DELETE',
+            data: { delete_points: false },
         } );
     } );
 } );

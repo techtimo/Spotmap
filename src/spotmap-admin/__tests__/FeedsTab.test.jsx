@@ -92,7 +92,7 @@ describe( 'FeedsTab — loaded', () => {
         render( <FeedsTab providers={ providers } /> );
         await screen.findByText( 'Timo' );
         expect(
-            screen.getAllByRole( 'button', { name: /Edit/i } ).length
+            screen.getAllByRole( 'button', { name: 'Actions' } ).length
         ).toBeGreaterThan( 0 );
     } );
 
@@ -104,12 +104,17 @@ describe( 'FeedsTab — loaded', () => {
 } );
 
 describe( 'FeedsTab — empty state', () => {
-    it( 'shows "No feeds" message when list is empty', async () => {
+    it( 'shows empty table when no feeds are configured', async () => {
         api.getFeeds.mockResolvedValue( [] );
+        api.getDbFeeds.mockResolvedValue( [] );
         render( <FeedsTab providers={ providers } /> );
-        expect(
-            await screen.findByText( /No feeds configured/i )
-        ).toBeInTheDocument();
+        await waitFor( () => {
+            expect(
+                document.querySelector( '.components-spinner' )
+            ).not.toBeInTheDocument();
+        } );
+        // DataViews renders no rows at all when data is empty
+        expect( screen.queryAllByRole( 'row' ) ).toHaveLength( 0 );
     } );
 } );
 
@@ -139,8 +144,10 @@ describe( 'FeedsTab — add feed', () => {
         await screen.findByText( 'Timo' );
 
         await user.click( screen.getByRole( 'button', { name: /Add Feed/i } ) );
+        // ProviderSelector opens first — pick a provider to reach FeedModal.
+        await user.click( screen.getByRole( 'button', { name: /SPOT Feed/i } ) );
 
-        // Modal opened — Cancel button only exists inside the modal.
+        // FeedModal opened — Cancel button only exists inside the modal.
         expect(
             screen.getByRole( 'button', { name: 'Cancel' } )
         ).toBeInTheDocument();
@@ -158,6 +165,8 @@ describe( 'FeedsTab — add feed', () => {
         await screen.findByText( 'Timo' );
 
         await user.click( screen.getByRole( 'button', { name: /Add Feed/i } ) );
+        // ProviderSelector opens first — pick a provider to reach FeedModal.
+        await user.click( screen.getByRole( 'button', { name: /SPOT Feed/i } ) );
         await user.type( screen.getByLabelText( /Feed Name/i ), 'New' );
         await user.click( screen.getByRole( 'button', { name: 'Save' } ) );
 
@@ -172,7 +181,7 @@ describe( 'FeedsTab — add feed', () => {
 } );
 
 describe( 'FeedsTab — delete feed', () => {
-    it( 'removes feed from list after deleting config only', async () => {
+    it( 'feed transitions to orphaned state after deleting config only', async () => {
         const onNoticeChange = jest.fn();
         const user = userEvent.setup();
 
@@ -189,25 +198,30 @@ describe( 'FeedsTab — delete feed', () => {
             within( r ).queryByText( 'Timo' )
         );
         await user.click(
-            within( initialTimoRow ).getByRole( 'button', { name: /Delete/i } )
+            within( initialTimoRow ).getByRole( 'button', { name: 'Actions' } )
         );
         await user.click(
-            await screen.findByRole( 'button', { name: /Delete config only/i } )
+            await screen.findByRole( 'menuitem', { name: /Delete config/i } )
+        );
+        await user.click(
+            await screen.findByRole( 'button', { name: /Delete config/i } )
         );
 
         await waitFor( () => {
             expect( api.deleteFeed ).toHaveBeenCalledWith( 'f1', false );
         } );
         const configuredRows = screen.getAllByRole( 'row' );
-        const configuredTimoRow = configuredRows.find(
-            ( row ) =>
-                within( row ).queryByText( 'Timo' ) &&
-                within( row ).queryByRole( 'button', { name: /Edit/i } )
+        // After deleting config, Timo transitions to a DB-only orphaned row
+        const timoDbRow = configuredRows.find( ( row ) =>
+            within( row ).queryByText( 'Timo' )
         );
-        expect( configuredTimoRow ).toBeUndefined();
+        expect( timoDbRow ).toBeDefined();
+        expect(
+            within( timoDbRow ).getAllByText( 'DB only' ).length
+        ).toBeGreaterThan( 0 );
         expect( onNoticeChange ).toHaveBeenCalledWith( {
             status: 'success',
-            text: 'Feed "Timo" deleted.',
+            text: 'Feed config "Timo" deleted. GPS points kept.',
         } );
     } );
 
@@ -226,12 +240,13 @@ describe( 'FeedsTab — delete feed', () => {
         const rows = screen.getAllByRole( 'row' );
         const timoRow = rows.find( ( r ) => within( r ).queryByText( 'Timo' ) );
         await user.click(
-            within( timoRow ).getByRole( 'button', { name: /Delete/i } )
+            within( timoRow ).getByRole( 'button', { name: 'Actions' } )
         );
         await user.click(
-            await screen.findByRole( 'button', {
-                name: /Delete all 42 points only/i,
-            } )
+            await screen.findByRole( 'menuitem', { name: /Delete points/i } )
+        );
+        await user.click(
+            await screen.findByRole( 'button', { name: /Delete 42 points/i } )
         );
 
         await waitFor( () => {
@@ -239,16 +254,14 @@ describe( 'FeedsTab — delete feed', () => {
         } );
         expect( api.deleteFeed ).not.toHaveBeenCalled();
         const updatedRows = screen.getAllByRole( 'row' );
-        const updatedTimoRow = updatedRows.find(
-            ( row ) =>
-                within( row ).queryByText( 'Timo' ) &&
-                within( row ).queryByRole( 'button', { name: /Edit/i } )
+        const updatedTimoRow = updatedRows.find( ( row ) =>
+            within( row ).queryByText( 'Timo' )
         );
         expect( updatedTimoRow ).toBeDefined();
         expect( within( updatedTimoRow ).getByText( '0' ) ).toBeInTheDocument();
         expect( onNoticeChange ).toHaveBeenCalledWith( {
             status: 'success',
-            text: 'All points for "Timo" deleted. Feed configuration kept.',
+            text: 'All points for "Timo" deleted. Feed config kept.',
         } );
     } );
 } );

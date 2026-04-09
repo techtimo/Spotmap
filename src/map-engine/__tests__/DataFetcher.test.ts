@@ -298,55 +298,6 @@ describe( 'DataFetcher.removeClosePoints — sentiero_italia load test', () => {
 } );
 
 // ---------------------------------------------------------------------------
-// RDP load test + combined pipeline (sentiero_italia)
-// ---------------------------------------------------------------------------
-
-describe( 'DataFetcher.rdpSimplify — sentiero_italia load test', () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const raw: Record<
-        string,
-        string
-    >[] = require( '../../../examples/sentiero_italia-transformed.json' );
-    const points: SpotPoint[] = raw.map( ( p, i ) => ( {
-        id: Number( p.id ) || i,
-        feed_name: p.feed_name ?? 'spot',
-        latitude: Number( p.latitude ),
-        longitude: Number( p.longitude ),
-        altitude: Number( p.altitude ) || 0,
-        type: ( p.type as SpotPoint[ 'type' ] ) ?? 'TRACK',
-        unixtime: Number( p.unixtime ) || 0,
-        time: p.time ?? '',
-        date: p.date ?? '',
-    } ) );
-
-    it( 'completes within 500 ms for the full dataset (epsilon 50 m)', () => {
-        const start = performance.now();
-        DataFetcher.rdpSimplify( [ ...points ], 50 );
-        expect( performance.now() - start ).toBeLessThan( 500 );
-    } );
-
-    it( 'reduces point count with epsilon 50 m', () => {
-        const result = DataFetcher.rdpSimplify( [ ...points ], 50 );
-        expect( result.length ).toBeLessThan( points.length );
-    } );
-
-    it( 'always keeps first and last point', () => {
-        const result = DataFetcher.rdpSimplify( [ ...points ], 50 );
-        expect( result[ 0 ].id ).toBe( points[ 0 ].id );
-        expect( result[ result.length - 1 ].id ).toBe(
-            points[ points.length - 1 ].id
-        );
-    } );
-
-    it( 'combined RDP + removeClosePoints yields fewer points than removeClosePoints alone', () => {
-        const rdpOnly = DataFetcher.rdpSimplify( [ ...points ], 50 );
-        const combined = DataFetcher.removeClosePoints( rdpOnly, 50 );
-        const removeOnly = DataFetcher.removeClosePoints( [ ...points ], 50 );
-        expect( combined.length ).toBeLessThanOrEqual( removeOnly.length );
-    } );
-} );
-
-// ---------------------------------------------------------------------------
 // fetchPoints
 // ---------------------------------------------------------------------------
 

@@ -13,23 +13,44 @@ require_once plugin_dir_path( __FILE__ ) . '../includes/class-spotmap-database.p
 
 $map_id = 'spotmap-container-' . wp_rand();
 
-// Fall back to admin defaults when the block attribute was never explicitly set.
-$feeds = ! empty( $attributes['feeds'] )
-	? $attributes['feeds']
-	: ( new Spotmap_Database() )->get_all_feednames();
-
 $default_maps = array_values( array_filter( array_map( 'trim', explode( ',', Spotmap_Options::get_setting( 'maps', 'openstreetmap' ) ) ) ) );
 $maps         = ! empty( $attributes['maps'] ) ? $attributes['maps'] : $default_maps;
 
-// Build per-feed styles from admin defaults when not explicitly set (mirrors shortcode behaviour).
-if ( ! empty( $attributes['styles'] ) ) {
-	$styles = $attributes['styles'];
+// Detect feed format: new format has feed objects with a 'name' key; old format is an array of strings.
+$feeds_raw = ! empty( $attributes['feeds'] ) ? $attributes['feeds'] : array();
+$feeds     = array();
+$styles    = array();
+
+if ( ! empty( $feeds_raw ) && isset( $feeds_raw[0]['name'] ) ) {
+	// New format: feeds is an array of objects with styles embedded.
+	foreach ( $feeds_raw as $feed_obj ) {
+		$name = $feed_obj['name'] ?? null;
+		if ( $name ) {
+			$feeds[] = $name;
+			$style   = $feed_obj;
+			unset( $style['name'] );
+			$styles[ $name ] = $style;
+		}
+	}
 } else {
+	// Old format: feeds is an array of strings; styles is a separate attribute.
+	$feeds = array_values( $feeds_raw );
+	if ( ! empty( $attributes['styles'] ) ) {
+		$styles = $attributes['styles'];
+	}
+}
+
+// Fall back to all feeds from DB when none are configured.
+if ( empty( $feeds ) ) {
+	$feeds = ( new Spotmap_Database() )->get_all_feednames();
+}
+
+// If styles are still empty, build from admin defaults (mirrors shortcode behaviour).
+if ( empty( $styles ) ) {
 	$defaults   = Spotmap_Options::get_settings();
 	$colors     = array_values( array_filter( array_map( 'trim', explode( ',', $defaults['color'] ) ) ) );
 	$splitlines = array_values( array_filter( array_map( 'trim', explode( ',', (string) $defaults['splitlines'] ) ) ) );
 	$num_colors = max( 1, count( $colors ) );
-	$styles     = array();
 	foreach ( array_values( $feeds ) as $i => $feed_name ) {
 		$styles[ $feed_name ] = array(
 			'color'      => $colors[ $i % $num_colors ] ?? 'blue',
