@@ -364,7 +364,8 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A second point within 25 m and < 10 min later must be skipped.
+	 * A second point within 25 m and < 10 min later must be skipped (return 0)
+	 * and the stored row updated with the new position (rolling anchor).
 	 */
 	public function test_stationary_dedup_skips_nearby_point_within_10_min(): void {
 		self::$db->insert_point( $this->make_point( [
@@ -374,7 +375,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 			'longitude' => 8.541700,
 		] ) );
 
-		// ~5 m away, 5 min later — should be skipped.
+		// ~5 m away, 5 min later — should be skipped but anchor rolled forward.
 		$result = self::$db->insert_point( $this->make_point( [
 			'feedName' => 'dedup-near',
 			'unixTime' => 1710000300,
@@ -383,6 +384,12 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 		] ) );
 
 		$this->assertSame( 0, $result );
+
+		// The stored row must now reflect the newer position, not the original one.
+		global $wpdb;
+		$row = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-near' LIMIT 1" );
+		$this->assertEqualsWithDelta( 47.376940, (float) $row->latitude, 0.00001 );
+		$this->assertSame( 1710000300, (int) $row->time );
 	}
 
 	/**
@@ -451,5 +458,98 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 		] ) );
 
 		$this->assertSame( 1, $result );
+	}
+
+	/**
+	 * Three consecutive close pings result in exactly one DB row whose
+	 * coordinates reflect the LAST ping (rolling anchor).
+	 */
+	public function test_stationary_dedup_rolls_anchor_through_chain(): void {
+		global $wpdb;
+
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-chain',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+		// 2nd ping: ~4 m, 1 min — within thresholds.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-chain',
+			'unixTime' => 1710000060,
+			'latitude' => 47.376940,
+			'longitude' => 8.541700,
+		] ) );
+		// 3rd ping: ~4 m further, 1 min — still within thresholds of the rolled anchor.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-chain',
+			'unixTime' => 1710000120,
+			'latitude' => 47.376980,
+			'longitude' => 8.541700,
+		] ) );
+
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-chain'" );
+		$this->assertSame( 1, $count, 'Only one row should exist after three close pings.' );
+
+		$row = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-chain' LIMIT 1" );
+		$this->assertEqualsWithDelta( 47.376980, (float) $row->latitude, 0.00001, 'Anchor should be at the last ping latitude.' );
+		$this->assertSame( 1710000120, (int) $row->time );
+	}
+
+	/**
+	 * When a ping exceeds the time threshold the pending row is committed and
+	 * the new ping is inserted as a fresh row.
+	 *
+	 * Mirrors the user example:
+	 *   P1 (anchor) → several close pings roll the anchor → P_n arrives > 600 s
+	 *   after the current anchor → anchor is kept, P_n is a new row.
+	 */
+	public function test_stationary_dedup_commits_anchor_on_time_breach(): void {
+		global $wpdb;
+
+		// P1: anchor.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-commit',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+		// P2–P4: close pings that roll the anchor forward.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-commit',
+			'unixTime' => 1710000060,
+			'latitude' => 47.376940,
+			'longitude' => 8.541700,
+		] ) );
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-commit',
+			'unixTime' => 1710000120,
+			'latitude' => 47.376980,
+			'longitude' => 8.541700,
+		] ) );
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-commit',
+			'unixTime' => 1710000590,  // 470 s since P3 — still within 600 s threshold.
+			'latitude' => 47.377010,
+			'longitude' => 8.541700,
+		] ) );
+
+		// P5: arrives 610 s after the current anchor (P4) — exceeds time threshold.
+		$result = self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-commit',
+			'unixTime' => 1710000590 + 610,
+			'latitude' => 47.377050,
+			'longitude' => 8.541700,
+		] ) );
+
+		$this->assertSame( 1, $result, 'P5 should be inserted as a new row.' );
+
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-commit'" );
+		$this->assertSame( 2, $count, 'Two rows: the committed anchor and P5.' );
+
+		// The first (older) row must carry P4\'s coordinates (the last rolled anchor).
+		$first = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-commit' ORDER BY time ASC LIMIT 1" );
+		$this->assertEqualsWithDelta( 47.377010, (float) $first->latitude, 0.00001, 'First row should be the last rolled-anchor position.' );
+		$this->assertSame( 1710000590, (int) $first->time );
 	}
 }

@@ -414,11 +414,15 @@ private const ALLOWED_COLUMNS = [
 	 * Coordinate bounds are validated; if invalid, the last known point's
 	 * coordinates for the same feed_id are used as a fallback.
 	 *
-	 * Stationary-deduplication: if the new point is within the configured
+	 * Rolling-anchor deduplication: if the new point is within the configured
 	 * import-min-distance of the last stored point for the same feed AND within
-	 * import-min-time seconds, the timestamp of the existing point is updated
-	 * and 0 is returned.  The first arrival point is always kept because no
-	 * prior point exists at that location yet.
+	 * import-min-time seconds, all mutable fields (latitude, longitude, time,
+	 * altitude, speed, bearing, hdop, battery_status) of the existing row are
+	 * updated with the new values and 0 is returned.  The anchor rolls forward
+	 * with every suppressed ping, so the last stored row always reflects the
+	 * most recent reported position.  A point is permanently committed only
+	 * when the next ping exceeds either threshold.
+	 * The first arrival point is always kept because no prior point exists yet.
 	 *
 	 * @param array<string, mixed> $data           Column → value pairs (DB column names).
 	 * @param bool                 $schedule_tz     Whether to schedule the timezone lookup event.
@@ -449,13 +453,15 @@ private const ALLOWED_COLUMNS = [
 				$min_distance = (int) Spotmap_Options::get_setting( 'import-min-distance', 25 );
 			$min_time     = (int) Spotmap_Options::get_setting( 'import-min-time', 600 );
 				if ( $distance_m <= $min_distance && $time_diff_s < $min_time ) {
-					// Stationary duplicate — update the existing point's timestamp so the
-					// map always reflects when the tracker last reported, even when parked.
+					// Rolling-anchor: replace the pending row with the new position so
+					// the anchor moves forward with each suppressed ping.
+					$mutable = [ 'time', 'latitude', 'longitude', 'altitude', 'speed', 'bearing', 'hdop', 'battery_status' ];
+					$update  = array_intersect_key( $data, array_flip( $mutable ) );
 					$wpdb->update(
 						$wpdb->prefix . 'spotmap_points',
-						array( 'time' => $data['time'] ),
+						$update,
 						array( 'id' => $prev->id ),
-						array( '%s' ),
+						null,
 						array( '%d' )
 					);
 					return 0;
