@@ -75,8 +75,16 @@ describe( 'MarkerManager.getPopupHtml', () => {
         const html = MarkerManager.getPopupHtml(
             makePoint( { hiddenPoints: { count: 12, radius: 50 } } )
         );
-        expect( html ).toContain( '12 hidden Points' );
+        expect( html ).toContain( '12 hidden points' );
         expect( html ).toContain( '50 meters' );
+    } );
+
+    it( 'shows hidden points without radius when radius is 0 (server-only suppression)', () => {
+        const html = MarkerManager.getPopupHtml(
+            makePoint( { hiddenPoints: { count: 7, radius: 0 } } )
+        );
+        expect( html ).toContain( '7 hidden points' );
+        expect( html ).not.toContain( 'radius' );
     } );
 
     it( 'shows local time when it differs from UTC time', () => {

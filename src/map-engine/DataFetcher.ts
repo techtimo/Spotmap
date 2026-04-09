@@ -98,6 +98,7 @@ export class DataFetcher {
                 ( response as SpotPoint[] ).length
             } points`
         );
+        DataFetcher.applyServerHiddenCounts( response as SpotPoint[] );
         return response;
     }
 
@@ -285,7 +286,26 @@ export class DataFetcher {
             anchor.hiddenPoints = { count: hiddenCount, radius };
         }
 
+        DataFetcher.applyServerHiddenCounts( result );
         return result;
+    }
+
+    /**
+     * Folds server-side `hidden_points` (rolling-anchor suppression count)
+     * into each point's `hiddenPoints` annotation so both server-suppressed
+     * and client-filtered pings are reflected in the map popup.
+     */
+    static applyServerHiddenCounts( points: SpotPoint[] ): void {
+        for ( const pt of points ) {
+            const n = pt.hidden_points ?? 0;
+            if ( n > 0 ) {
+                pt.hiddenPoints = {
+                    count: ( pt.hiddenPoints?.count ?? 0 ) + n,
+                    radius: pt.hiddenPoints?.radius ?? 0,
+                };
+                pt.hidden_points = 0; // consumed — prevent double-adding on re-runs
+            }
+        }
     }
 
     /**

@@ -115,6 +115,8 @@ export interface SpotPoint {
     message?: string;
     battery_status?: string;
     messengerName?: string;
+    /** Server-side rolling-anchor suppression count — pings merged into this row. */
+    hidden_points?: number;
     hiddenPoints?: { count: number; radius: number };
 }
 
