@@ -265,5 +265,4 @@ describe( 'FeedModal — push feed URLs', () => {
             )
         ).toBeInTheDocument();
     } );
-
 } );

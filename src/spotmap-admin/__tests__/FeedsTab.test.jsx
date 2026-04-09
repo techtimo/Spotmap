@@ -145,7 +145,9 @@ describe( 'FeedsTab — add feed', () => {
 
         await user.click( screen.getByRole( 'button', { name: /Add Feed/i } ) );
         // ProviderSelector opens first — pick a provider to reach FeedModal.
-        await user.click( screen.getByRole( 'button', { name: /SPOT Feed/i } ) );
+        await user.click(
+            screen.getByRole( 'button', { name: /SPOT Feed/i } )
+        );
 
         // FeedModal opened — Cancel button only exists inside the modal.
         expect(
@@ -166,7 +168,9 @@ describe( 'FeedsTab — add feed', () => {
 
         await user.click( screen.getByRole( 'button', { name: /Add Feed/i } ) );
         // ProviderSelector opens first — pick a provider to reach FeedModal.
-        await user.click( screen.getByRole( 'button', { name: /SPOT Feed/i } ) );
+        await user.click(
+            screen.getByRole( 'button', { name: /SPOT Feed/i } )
+        );
         await user.type( screen.getByLabelText( /Feed Name/i ), 'New' );
         await user.click( screen.getByRole( 'button', { name: 'Save' } ) );
 
