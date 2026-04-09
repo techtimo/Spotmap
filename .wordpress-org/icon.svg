@@ -1,36 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <defs>
     <linearGradient id="trackGrad3c" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#F59E0B"/>
-      <stop offset="100%" style="stop-color:#EF4444"/>
+      <stop offset="0" style="stop-color:#F59E0B"/>
+      <stop offset="1" style="stop-color:#EF4444"/>
     </linearGradient>
+    <path id="northArc" d="M48,90 A90,85 0 0,1 218,90" fill="none"/>
+    <path id="southArc" d="M48,200 A90,85 0 0,0 200,130" fill="none"/>
+    <path style="fill: none;" id="path-0" d="M 60.426 47.756 C 60.751 46.516 61.893 45.315 62.701 44.508 C 63.025 44.019 64.793 41.909 64.975 41.909 C 65.624 40.585 66.575 39.31 67.574 39.31 C 69.228 37.98 70.785 37.541 72.447 36.711 C 73.64 36.386 74.687 35.411 76.02 35.411 C 77.309 34.447 79.552 35.453 80.569 34.437 C 82.258 33.072 84.525 33.079 85.442 32.162 C 87.04 32.162 88.347 30.863 89.34 30.863 C 89.665 30.654 92.203 29.888 92.589 29.888 C 94.738 29.888 99.736 28.581 99.736 27.614 C 100.937 26.739 102.194 26.456 102.985 25.665 C 103.903 24.746 106.68 23.391 107.208 23.391 C 108.566 23.391 109.535 22.416 110.782 22.416 C 111.778 21.745 113.241 21.442 114.355 21.442 C 115.717 20.73 117.922 21.117 118.904 21.117 C 120.42 21.117 121.611 21.117 122.802 21.117 C 124.535 21.117 125.942 21.117 127.35 21.117 C 127.675 21.597 130.632 21.766 131.249 21.766 C 132.765 21.766 133.956 21.766 135.147 21.766 C 136.663 21.766 137.854 21.766 139.046 21.766 C 140.909 21.766 142.099 22.091 143.594 22.091 C 145.251 22.091 147.073 22.741 147.817 22.741 C 149.081 22.741 151.068 22.419 151.716 23.066 C 153.073 23.066 153.981 24.041 154.964 24.041 C 155.951 24.703 158.366 25.34 159.188 25.34 C 160.241 25.34 161.522 26.64 162.112 26.64 C 163.251 26.64 164.182 28.264 165.036 28.264 C 166.155 28.264 167.44 29.888 167.959 29.888 C 169.253 29.888 170.883 30.219 170.883 31.188 C 171.498 31.513 173.807 32.786 173.807 33.137 C 174.709 33.714 176.046 34.437 176.731 34.437 C 177.056 34.486 179.56 35.736 179.655 35.736 C 181.043 35.736 182.277 37.036 182.904 37.036 C 183.441 37.036 185.469 38.301 185.827 38.66 C 186.732 38.985 187.63 40.609 188.102 40.609 L 188.426 40.609 C 188.426 40.829 189.004 41.584 189.401 41.584"/>
+    <path style="fill: none;" id="path-1" d="M 66.274 60.427 C 104.816 39.365 133.954 39.419 173.807 58.802"/>
+    <path style="fill: none;" id="path-2" d="M 66.274 60.427 C 127.882 30.918 130.381 44.942 188.427 58.477"/>
+    <path style="fill: none;" id="path-3" d="M 69.523 69.198 C 131.78 91.668 199.904 73.53 218.64 -16.894"/>
   </defs>
   <rect width="256" height="256" rx="48" fill="#0B1121"/>
-  <!-- Globe outline - prominent -->
-  <circle cx="128" cy="128" r="90" fill="none" stroke="#3B82F6" stroke-width="4.5"/>
-  <!-- Latitude arcs -->
-  <ellipse cx="128" cy="128" rx="90" ry="34" fill="none" stroke="#3B82F6" stroke-width="2" opacity="0.25"/>
-  <ellipse cx="128" cy="128" rx="90" ry="66" fill="none" stroke="#3B82F6" stroke-width="2" opacity="0.2"/>
-  <!-- Meridians -->
-  <ellipse cx="128" cy="128" rx="38" ry="90" fill="none" stroke="#3B82F6" stroke-width="2" opacity="0.25"/>
-  <!-- Crosshair ticks -->
-  <line x1="128" y1="24" x2="128" y2="36" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
-  <line x1="128" y1="220" x2="128" y2="232" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
-  <line x1="24" y1="128" x2="36" y2="128" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
-  <line x1="220" y1="128" x2="232" y2="128" stroke="#60A5FA" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
-  <!-- BOLD tracked route - high contrast amber on blue globe -->
-  <path d="M66 168 L92 142 L118 155 L146 120 L172 108 L196 86" 
-        fill="none" stroke="url(#trackGrad3c)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Track start -->
-  <circle cx="66" cy="168" r="7" fill="#F59E0B"/>
-  <circle cx="66" cy="168" r="3.5" fill="#FEF3C7"/>
-  <!-- Waypoints -->
-  <circle cx="92" cy="142" r="4.5" fill="#F59E0B" opacity="0.7"/>
-  <circle cx="118" cy="155" r="4.5" fill="#F97316" opacity="0.7"/>
-  <circle cx="146" cy="120" r="4.5" fill="#F97316" opacity="0.7"/>
-  <circle cx="172" cy="108" r="4.5" fill="#EF4444" opacity="0.7"/>
-  <!-- Current position - big and bright -->
-  <circle cx="196" cy="86" r="20" fill="#EF4444" opacity="0.15"/>
-  <circle cx="196" cy="86" r="13" fill="#EF4444"/>
-  <circle cx="196" cy="86" r="6" fill="#FEE2E2"/>
+  <line x1="128" y1="17" x2="128" y2="5" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <line x1="128" y1="239" x2="128" y2="251" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <line x1="17" y1="128" x2="5" y2="128" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <line x1="239" y1="128" x2="251" y2="128" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  <circle cx="128" cy="128" r="110" fill="none" stroke="#3B82F6" stroke-width="6"/>
+  <ellipse cx="128" cy="128" rx="110" ry="33.553" fill="none" stroke="#3B82F6" stroke-width="3" opacity="0.25"/>
+  <ellipse cx="128" cy="128" rx="110" ry="82" fill="none" stroke="#3B82F6" stroke-width="3" opacity="0.2"/>
+  <ellipse cx="128" cy="128" rx="36.305" ry="110" fill="none" stroke="#3B82F6" stroke-width="3" opacity="0.25"/>
+  <ellipse cx="128" cy="128" rx="78" ry="110" fill="none" stroke="#3B82F6" stroke-width="3" opacity="0.25"/>
+  <text style="fill: rgb(245, 158, 11); font-family: &quot;Arial&quot;, sans-serif; font-size: 28px; white-space: pre;" transform="matrix(1, 0, 0, 1, 10.720813, -0.97462)"><textPath href="#path-1">Spotmap</textPath></text>
+  <text style="fill: rgb(59, 130, 245); font-family: &quot;Arial&quot;, sans-serif; font-size: 22px; white-space: pre;" transform="matrix(1, 0, 0, 1, 13.044767, 152.08255)"><textPath href="#path-3">GPX GPS Tracking</textPath></text>
+  <path d="M 42.032 191.482 L 76.247 157.267 L 110.461 174.374 L 147.307 128.317 L 181.521 112.526 L 213.104 83.575" fill="none" stroke="url(#trackGrad3c)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 9.212px;"/>
+  <circle cx="42.032" cy="191.482" r="9.212" fill="#F59E0B" style="stroke-width: 1.316px;"/>
+  <circle cx="42.032" cy="191.482" r="4.606" fill="#FEF3C7" style="stroke-width: 1.316px;"/>
+  <circle cx="76.247" cy="157.267" r="5.922" fill="#F59E0B" opacity="0.7" style="stroke-width: 1.316px;"/>
+  <circle cx="110.461" cy="174.374" r="5.922" fill="#F97316" opacity="0.7" style="stroke-width: 1.316px;"/>
+  <circle cx="147.307" cy="128.317" r="5.922" fill="#F97316" opacity="0.7" style="stroke-width: 1.316px;"/>
+  <circle cx="181.521" cy="112.526" r="5.922" fill="#EF4444" opacity="0.7" style="stroke-width: 1.316px;"/>
+  <circle cx="213.104" cy="83.575" r="26.319" fill="#EF4444" opacity="0.15" style="stroke-width: 1.316px;"/>
+  <circle cx="213.104" cy="83.575" r="17.107" fill="#EF4444" style="stroke-width: 1.316px;"/>
+  <circle cx="213.104" cy="83.575" r="7.896" fill="#FEE2E2" style="stroke-width: 1.316px;"/>
 </svg>

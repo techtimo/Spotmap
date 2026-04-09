@@ -69,6 +69,8 @@ const DEFAULT_FEED_STYLE = {
     visible: true,
 };
 
+const getFeedName = ( f ) => ( typeof f === 'string' ? f : f.name );
+
 // Toggle with a flyout sub-popover that reveals on hover.
 function NavigationButtonsControl( { value, onChange } ) {
     const [ open, setOpen ] = useState( false );
@@ -693,12 +695,28 @@ export default function Edit( { attributes, setAttributes } ) {
                   0
               );
 
+    // Migrate old format: feeds was string[], styles was a separate Record<string, FeedStyle>
+    useEffect( () => {
+        if (
+            attributes.feeds.length > 0 &&
+            typeof attributes.feeds[ 0 ] === 'string'
+        ) {
+            const migrated = attributes.feeds.map( ( name ) => ( {
+                name,
+                ...DEFAULT_FEED_STYLE,
+                ...( attributes.styles?.[ name ] || {} ),
+            } ) );
+            setAttributes( { feeds: migrated, styles: {} } );
+        }
+    }, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Points for the currently selected feeds only (null while loading)
     const selectedPoints =
         feedPointCounts === null
             ? null
             : attributes.feeds.reduce(
-                  ( s, f ) => s + ( feedPointCounts.get( f ) || 0 ),
+                  ( s, f ) =>
+                      s + ( feedPointCounts.get( getFeedName( f ) ) || 0 ),
                   0
               );
 
@@ -733,7 +751,7 @@ export default function Edit( { attributes, setAttributes } ) {
         return () => links.forEach( ( l ) => l.remove() );
     }, [] );
 
-    // On first insert (when styles is empty, meaning never initialized), populate from admin-configured defaults.
+    // On first insert (when maps is empty, meaning never initialized), populate from admin-configured defaults.
     // We intentionally do NOT re-trigger when feeds is empty, so the user can choose to show no feeds.
     // Waits for feedPointCounts to load so we can decide whether to default to all feeds or none.
     useEffect( () => {
@@ -741,11 +759,7 @@ export default function Edit( { attributes, setAttributes } ) {
         if ( feedPointCounts === null ) {
             return;
         }
-        if (
-            ( Object.keys( attributes.styles ).length === 0 ||
-                attributes.maps.length === 0 ) &&
-            window.spotmapjsobj?.feeds
-        ) {
+        if ( attributes.maps.length === 0 && window.spotmapjsobj?.feeds ) {
             const feedNames = Array.isArray( window.spotmapjsobj.feeds )
                 ? window.spotmapjsobj.feeds
                 : Object.keys( window.spotmapjsobj.feeds );
@@ -756,12 +770,16 @@ export default function Edit( { attributes, setAttributes } ) {
                 .map( ( c ) => c.trim() )
                 .filter( Boolean );
             const numColors = adminColors.length || 1;
-            const defaultStyles = {};
-            feedNames.forEach( ( name, i ) => {
-                const color =
-                    adminColors[ i % numColors ] || DEFAULT_FEED_STYLE.color;
-                defaultStyles[ name ] = { ...DEFAULT_FEED_STYLE, color };
-            } );
+
+            // If the DB already holds more than 10 000 points, default to no feeds
+            // so the editor doesn't immediately try to render a huge dataset.
+            const enabledNames = totalPoints > 10000 ? [] : feedNames;
+            const defaultFeedObjects = enabledNames.map( ( name, i ) => ( {
+                name,
+                ...DEFAULT_FEED_STYLE,
+                color: adminColors[ i % numColors ] || DEFAULT_FEED_STYLE.color,
+            } ) );
+
             const defaultMaps = dv.maps
                 ? dv.maps
                       .split( ',' )
@@ -776,13 +794,9 @@ export default function Edit( { attributes, setAttributes } ) {
                 ? parseInt( dv[ 'filter-points' ], 10 )
                 : attributes.filterPoints;
 
-            // If the DB already holds more than 10 000 points, default to no feeds
-            // so the editor doesn't immediately try to render a huge dataset.
-            const defaultFeeds = totalPoints > 10000 ? [] : feedNames;
-
             setAttributes( {
-                feeds: defaultFeeds,
-                styles: defaultStyles,
+                feeds: defaultFeedObjects,
+                styles: {},
                 maps: defaultMaps,
                 height: defaultHeight,
                 mapcenter: defaultMapcenter,
@@ -811,8 +825,23 @@ export default function Edit( { attributes, setAttributes } ) {
             return;
         }
 
+        const feedNames = [];
+        const feedStyles = {};
+        attributes.feeds.forEach( ( f ) => {
+            const name = getFeedName( f );
+            if ( ! name ) {
+                return;
+            }
+            feedNames.push( name );
+            if ( typeof f === 'object' ) {
+                const { name: _n, ...style } = f;
+                feedStyles[ name ] = style;
+            }
+        } );
         const options = {
             ...attributes,
+            feeds: feedNames,
+            styles: feedStyles,
             mapId,
             mapElement: container,
             enablePanning: false, // always disabled in editor preview
@@ -849,7 +878,6 @@ export default function Edit( { attributes, setAttributes } ) {
         mapId,
         selectedPoints,
         attributes.feeds,
-        attributes.styles,
         attributes.mapcenter,
         attributes.filterPoints,
         attributes.dateRange,
@@ -947,20 +975,26 @@ export default function Edit( { attributes, setAttributes } ) {
     }
 
     const updateStyle = ( feed, key, value ) => {
-        const newStyles = { ...attributes.styles };
-        newStyles[ feed ] = { ...( newStyles[ feed ] || {} ), [ key ]: value };
-        setAttributes( { styles: newStyles } );
+        const newFeeds = attributes.feeds.map( ( f ) => {
+            const name = getFeedName( f );
+            if ( name !== feed ) {
+                return f;
+            }
+            return {
+                ...( typeof f === 'object'
+                    ? f
+                    : { name: f, ...DEFAULT_FEED_STYLE } ),
+                [ key ]: value,
+            };
+        } );
+        setAttributes( { feeds: newFeeds } );
     };
 
     const toggleFeed = ( feed, checked ) => {
         const next = checked
-            ? [ ...attributes.feeds, feed ]
-            : attributes.feeds.filter( ( f ) => f !== feed );
-        const newStyles = { ...attributes.styles };
-        if ( checked && ! newStyles[ feed ] ) {
-            newStyles[ feed ] = { ...DEFAULT_FEED_STYLE };
-        }
-        setAttributes( { feeds: next, styles: newStyles } );
+            ? [ ...attributes.feeds, { name: feed, ...DEFAULT_FEED_STYLE } ]
+            : attributes.feeds.filter( ( f ) => getFeedName( f ) !== feed );
+        setAttributes( { feeds: next } );
     };
 
     const mergeGpxTracks = ( newTracks, getTitle ) => {
@@ -1012,7 +1046,9 @@ export default function Edit( { attributes, setAttributes } ) {
             { feedStyleModal && (
                 <FeedStyleModal
                     feed={ feedStyleModal }
-                    style={ attributes.styles?.[ feedStyleModal ] }
+                    style={ attributes.feeds.find(
+                        ( f ) => getFeedName( f ) === feedStyleModal
+                    ) }
                     onUpdate={ ( key, value ) =>
                         updateStyle( feedStyleModal, key, value )
                     }
@@ -1063,26 +1099,28 @@ export default function Edit( { attributes, setAttributes } ) {
                                             size="small"
                                             variant="secondary"
                                             onClick={ () => {
-                                                const newStyles = {
-                                                    ...attributes.styles,
-                                                };
-                                                availableFeeds.forEach(
-                                                    ( feed ) => {
-                                                        if (
-                                                            ! newStyles[ feed ]
-                                                        ) {
-                                                            newStyles[ feed ] =
-                                                                {
-                                                                    ...DEFAULT_FEED_STYLE,
-                                                                };
-                                                        }
-                                                    }
+                                                const byName = new Map(
+                                                    attributes.feeds
+                                                        .filter(
+                                                            ( f ) =>
+                                                                typeof f ===
+                                                                'object'
+                                                        )
+                                                        .map( ( f ) => [
+                                                            f.name,
+                                                            f,
+                                                        ] )
                                                 );
                                                 setAttributes( {
-                                                    feeds: [
-                                                        ...availableFeeds,
-                                                    ],
-                                                    styles: newStyles,
+                                                    feeds: availableFeeds.map(
+                                                        ( feed ) =>
+                                                            byName.get(
+                                                                feed
+                                                            ) ?? {
+                                                                name: feed,
+                                                                ...DEFAULT_FEED_STYLE,
+                                                            }
+                                                    ),
                                                 } );
                                             } }
                                         >
@@ -1099,44 +1137,66 @@ export default function Edit( { attributes, setAttributes } ) {
                                         </Button>
                                     </Flex>
                                 ) }
-                                { availableFeeds.map( ( feed ) => (
-                                    <Flex key={ feed } gap={ 2 } align="center">
-                                        <FlexItem isBlock>
-                                            <CheckboxControl
-                                                __nextHasNoMarginBottom
-                                                label={ feed }
-                                                checked={ attributes.feeds.includes(
-                                                    feed
-                                                ) }
-                                                onChange={ ( checked ) =>
-                                                    toggleFeed( feed, checked )
+                                { availableFeeds.map( ( feed ) => {
+                                    const feedObj = attributes.feeds.find(
+                                        ( f ) => getFeedName( f ) === feed
+                                    );
+                                    return (
+                                        <Flex
+                                            key={ feed }
+                                            gap={ 2 }
+                                            align="center"
+                                        >
+                                            <FlexItem isBlock>
+                                                <CheckboxControl
+                                                    __nextHasNoMarginBottom
+                                                    label={ feed }
+                                                    checked={
+                                                        feedObj !== undefined
+                                                    }
+                                                    onChange={ ( checked ) =>
+                                                        toggleFeed(
+                                                            feed,
+                                                            checked
+                                                        )
+                                                    }
+                                                />
+                                            </FlexItem>
+                                            <Button
+                                                icon={ brush }
+                                                label={
+                                                    __( 'Style' ) + ' ' + feed
                                                 }
+                                                size="small"
+                                                variant="tertiary"
+                                                style={ {
+                                                    visibility: feedObj
+                                                        ? 'visible'
+                                                        : 'hidden',
+                                                } }
+                                                onClick={ () => {
+                                                    onClose();
+                                                    setFeedStyleModal( feed );
+                                                } }
                                             />
-                                        </FlexItem>
-                                        <Button
-                                            icon={ brush }
-                                            label={ __( 'Style' ) + ' ' + feed }
-                                            size="small"
-                                            variant="tertiary"
-                                            onClick={ () => {
-                                                onClose();
-                                                setFeedStyleModal( feed );
-                                            } }
-                                        />
-                                        <span
-                                            style={ {
-                                                display: 'block',
-                                                width: '16px',
-                                                height: '16px',
-                                                borderRadius: '50%',
-                                                background:
-                                                    attributes.styles?.[ feed ]
-                                                        ?.color || 'blue',
-                                                flexShrink: 0,
-                                            } }
-                                        />
-                                    </Flex>
-                                ) ) }
+                                            <span
+                                                style={ {
+                                                    display: 'block',
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    borderRadius: '50%',
+                                                    background:
+                                                        feedObj?.color ||
+                                                        'blue',
+                                                    flexShrink: 0,
+                                                    visibility: feedObj
+                                                        ? 'visible'
+                                                        : 'hidden',
+                                                } }
+                                            />
+                                        </Flex>
+                                    );
+                                } ) }
                             </div>
                         ) }
                     />

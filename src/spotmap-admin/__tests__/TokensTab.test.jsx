@@ -92,7 +92,7 @@ describe( 'TokensTab — REDACTED token (stored)', () => {
 
         const input = await screen.findByLabelText( /TimezoneDB/i );
         await user.type( input, 'abc' );
-        await user.clear( input );
+        await user.keyboard( '{Backspace}{Backspace}{Backspace}' );
 
         await user.click(
             screen.getByRole( 'button', { name: /Save API Tokens/i } )
@@ -135,13 +135,14 @@ describe( 'TokensTab — empty token (not stored)', () => {
 } );
 
 describe( 'TokensTab — save', () => {
-    it( 'calls updateTokens and shows success notice', async () => {
+    it( 'calls updateTokens and fires success notice via onNoticeChange', async () => {
         const user = userEvent.setup();
+        const onNoticeChange = jest.fn();
         api.updateTokens.mockResolvedValue( {
             timezonedb: REDACTED,
             mapbox: '',
         } );
-        render( <TokensTab /> );
+        render( <TokensTab onNoticeChange={ onNoticeChange } /> );
         await screen.findByText( /Token stored/i );
 
         await user.click(
@@ -149,23 +150,30 @@ describe( 'TokensTab — save', () => {
         );
 
         await waitFor( () => {
-            expect( api.updateTokens ).toHaveBeenCalled();
+            expect( onNoticeChange ).toHaveBeenCalledWith(
+                expect.objectContaining( { status: 'success' } )
+            );
         } );
-        const notices = await screen.findAllByText( /API tokens saved/i );
-        expect( notices.length ).toBeGreaterThan( 0 );
     } );
 
-    it( 'shows error notice when save fails', async () => {
+    it( 'fires error notice via onNoticeChange when save fails', async () => {
         const user = userEvent.setup();
+        const onNoticeChange = jest.fn();
         api.updateTokens.mockRejectedValue( new Error( 'Network error' ) );
-        render( <TokensTab /> );
+        render( <TokensTab onNoticeChange={ onNoticeChange } /> );
         await screen.findByText( /Token stored/i );
 
         await user.click(
             screen.getByRole( 'button', { name: /Save API Tokens/i } )
         );
 
-        const notices = await screen.findAllByText( 'Network error' );
-        expect( notices.length ).toBeGreaterThan( 0 );
+        await waitFor( () => {
+            expect( onNoticeChange ).toHaveBeenCalledWith(
+                expect.objectContaining( {
+                    status: 'error',
+                    text: 'Network error',
+                } )
+            );
+        } );
     } );
 } );
