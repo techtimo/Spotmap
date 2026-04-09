@@ -46,7 +46,7 @@
         },
         "dateRange": {
             "type": "object",
-            "default": { "from": "", "to": "" }
+            "default": { "from": "", "to": "", "mode": "range" }
         },
         "gpx": {
             "type": "array",
