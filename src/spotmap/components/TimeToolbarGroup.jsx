@@ -1,50 +1,112 @@
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import {
     Button,
     DatePicker,
     DateTimePicker,
     Modal,
+    Notice,
     RadioControl,
-    SelectControl,
-    TextControl,
     ToolbarButton,
     ToolbarGroup,
+    __experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { calendar } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 
-const UNIT_OPTIONS = [
-    { label: __( 'hours' ), value: 'hours' },
-    { label: __( 'days' ), value: 'days' },
-    { label: __( 'weeks' ), value: 'weeks' },
-    { label: __( 'months' ), value: 'months' },
-    { label: __( 'years' ), value: 'years' },
+const TIME_UNITS = [
+    { value: 'hours', label: __( 'hours', 'spotmap' ) },
+    { value: 'days', label: __( 'days', 'spotmap' ) },
+    { value: 'weeks', label: __( 'weeks', 'spotmap' ) },
+    { value: 'months', label: __( 'months', 'spotmap' ) },
+    { value: 'years', label: __( 'years', 'spotmap' ) },
 ];
+
+// Normalize legacy singular/non-plural unit strings from old presets.
+const UNIT_ALIASES = {
+    hour: 'hours',
+    minute: 'hours',
+    minutes: 'hours',
+    day: 'days',
+    week: 'weeks',
+    month: 'months',
+    year: 'years',
+};
+const normalizeUnit = ( u ) =>
+    UNIT_ALIASES[ u ] ??
+    ( TIME_UNITS.find( ( o ) => o.value === u ) ? u : 'hours' );
+
+/**
+ * Split a UnitControl value string (e.g. "5hours") into amount and unit parts.
+ * Returns { amount: string, unit: string }.
+ *
+ * @param {string|number} v The raw UnitControl value.
+ */
+const splitUCValue = ( v ) => {
+    if ( ! v && v !== 0 ) {
+        return { amount: '', unit: 'hours' };
+    }
+    const str = String( v );
+    const numPart = str.match( /^(\d*)/ )?.[ 1 ] ?? '';
+    const unitPart = str.slice( numPart.length );
+    return { amount: numPart, unit: normalizeUnit( unitPart ) || 'hours' };
+};
 
 /**
  * Parse a stored from/to value back to local state shape.
- * Returns { type: 'none'|'relative'|'specific', relAmount, relUnit, specific }
+ * Returns { type: 'none'|'relative'|'specific', relAmount: string, relUnit: string, specific: string }
+ *
+ * @param {string} value The stored from/to string.
  */
 const parseEndpoint = ( value ) => {
     if ( ! value ) {
-        return { type: 'none', relAmount: 1, relUnit: 'days', specific: '' };
+        return { type: 'none', relAmount: '1', relUnit: 'hours', specific: '' };
     }
     if ( value.startsWith( 'last-' ) ) {
         const parts = value.slice( 5 ).split( '-' );
-        const amount = parseInt( parts[ 0 ] ) || 1;
-        const unit = parts.slice( 1 ).join( '-' ) || 'days';
-        return { type: 'relative', relAmount: amount, relUnit: unit, specific: '' };
+        const amount = parts[ 0 ] || '1';
+        const unit = normalizeUnit( parts.slice( 1 ).join( '-' ) || 'hours' );
+        return {
+            type: 'relative',
+            relAmount: amount,
+            relUnit: unit,
+            specific: '',
+        };
     }
-    return { type: 'specific', relAmount: 1, relUnit: 'days', specific: value };
+    return {
+        type: 'specific',
+        relAmount: '1',
+        relUnit: 'hours',
+        specific: value,
+    };
 };
 
-/** Build the stored value string from local endpoint state. */
+/**
+ * Build the stored value string from local endpoint state. Returns null if invalid.
+ *
+ * @param {Object} state The endpoint state object.
+ */
 const buildEndpoint = ( state ) => {
-    if ( state.type === 'none' ) return '';
+    if ( state.type === 'none' ) {
+        return '';
+    }
     if ( state.type === 'relative' ) {
+        if ( ! state.relAmount ) {
+            return null; // invalid — empty amount
+        }
         return `last-${ state.relAmount }-${ state.relUnit }`;
     }
     return state.specific || '';
+};
+
+/**
+ * Detect single-day mode purely from stored from/to values.
+ * True when from = "YYYY-MM-DD 00:00:00" and to = "YYYY-MM-DD 23:59:59" with the same date.
+ */
+const isSingleDayRange = ( from, to ) => {
+    if ( ! from || ! to ) return false;
+    const fromMatch = from.match( /^(\d{4}-\d{2}-\d{2}) 00:00:00$/ );
+    const toMatch = to.match( /^(\d{4}-\d{2}-\d{2}) 23:59:59$/ );
+    return !! ( fromMatch && toMatch && fromMatch[ 1 ] === toMatch[ 1 ] );
 };
 
 const formatShort = ( value ) => {
@@ -64,204 +126,221 @@ const formatShort = ( value ) => {
     return value;
 };
 
-/** Derive the toolbar button label from the stored dateRange. */
 const getButtonLabel = ( dateRange ) => {
-    const mode = dateRange?.mode;
     const from = dateRange?.from || '';
     const to = dateRange?.to || '';
-
     if ( ! from && ! to ) return __( 'Time' );
-
-    if ( mode === 'single-day' && from ) {
-        return from.split( ' ' )[ 0 ] || __( 'Time' );
-    }
-
+    if ( isSingleDayRange( from, to ) ) return from.split( ' ' )[ 0 ];
     const parts = [];
     if ( from ) parts.push( formatShort( from ) );
     if ( to ) parts.push( formatShort( to ) );
     return parts.join( ' – ' ) || __( 'Time' );
 };
 
+// ─── Scoped styles ───────────────────────────────────────────────────────────
+
+const UNIT_CONTROL_STYLES = `
+.spotmap-unit-control .components-input-control__input {
+    flex: 1 1 auto !important;
+}
+.spotmap-unit-control .components-input-control__suffix {
+    flex: 0 0 40px !important;
+}
+.spotmap-unit-control .components-unit-control__select {
+    width: 40px !important;
+    min-width: 40px !important;
+}
+`;
+
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function RelativeInputs( { amount, unit, onChange } ) {
-    return (
-        <div
-            style={ {
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'flex-end',
-                marginTop: '8px',
-                marginLeft: '28px',
-            } }
-        >
-            <TextControl
-                label={ __( 'Amount' ) }
-                hideLabelFromVision
-                type="number"
-                min={ 1 }
-                value={ amount }
-                onChange={ ( v ) =>
-                    onChange( { amount: Math.max( 1, parseInt( v ) || 1 ), unit } )
-                }
-                style={ { width: '80px' } }
-            />
-            <SelectControl
-                __next40pxDefaultSize
-                label={ __( 'Unit' ) }
-                hideLabelFromVision
-                value={ unit }
-                options={ UNIT_OPTIONS }
-                onChange={ ( u ) => onChange( { amount, unit: u } ) }
-            />
-        </div>
-    );
-}
-
 function EndpointSection( { label, state, onChange } ) {
+    const set = ( type ) => onChange( { ...state, type } );
     return (
-        <div>
-            <RadioControl
-                label={ label }
-                selected={ state.type }
-                options={ [
-                    { label: __( 'No filter' ), value: 'none' },
-                    { label: __( 'Relative (last N…)' ), value: 'relative' },
-                    { label: __( 'Specific date and time' ), value: 'specific' },
-                ] }
-                onChange={ ( type ) => onChange( { ...state, type } ) }
-            />
+        <fieldset style={ { border: 'none', margin: 0, padding: 0 } }>
+            <legend
+                style={ {
+                    fontWeight: 600,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    marginBottom: '8px',
+                } }
+            >
+                { label }
+            </legend>
+
+            { /* No filter */ }
+            <label style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', cursor: 'pointer' } }>
+                <input type="radio" checked={ state.type === 'none' } onChange={ () => set( 'none' ) } />
+                { __( 'No filter' ) }
+            </label>
+
+            { /* Relative */ }
+            <label style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' } }>
+                <input type="radio" checked={ state.type === 'relative' } onChange={ () => set( 'relative' ) } />
+                { __( 'Relative (last N…)' ) }
+            </label>
             { state.type === 'relative' && (
-                <RelativeInputs
-                    amount={ state.relAmount }
-                    unit={ state.relUnit }
-                    onChange={ ( { amount, unit } ) =>
-                        onChange( { ...state, relAmount: amount, relUnit: unit } )
-                    }
-                />
-            ) }
-            { state.type === 'specific' && (
-                <div style={ { marginTop: '8px' } }>
-                    <DateTimePicker
-                        currentDate={ state.specific || new Date().toISOString() }
-                        onChange={ ( date ) =>
-                            onChange( { ...state, specific: date } )
-                        }
+                <div className="spotmap-unit-control" style={ { marginBottom: '6px', marginLeft: '24px' } }>
+                    <UnitControl
+                        label={ label }
+                        hideLabelFromVision
+                        value={ `${ state.relAmount }${ state.relUnit }` }
+                        units={ TIME_UNITS }
+                        min={ 1 }
+                        onChange={ ( v ) => {
+                            const { amount, unit } = splitUCValue( v );
+                            onChange( { ...state, relAmount: amount, relUnit: unit } );
+                        } }
                     />
                 </div>
             ) }
-        </div>
+
+            { /* Specific */ }
+            <label style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', cursor: 'pointer' } }>
+                <input type="radio" checked={ state.type === 'specific' } onChange={ () => set( 'specific' ) } />
+                { __( 'Specific date and time' ) }
+            </label>
+            { state.type === 'specific' && (
+                <div style={ { marginLeft: '24px' } }>
+                    <DateTimePicker
+                        currentDate={ state.specific || new Date().toISOString() }
+                        onChange={ ( date ) => onChange( { ...state, specific: date } ) }
+                    />
+                </div>
+            ) }
+        </fieldset>
     );
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
+const UNIT_MS = {
+    hours: 3600 * 1000,
+    days: 24 * 3600 * 1000,
+    weeks: 7 * 24 * 3600 * 1000,
+    months: 30 * 24 * 3600 * 1000,
+    years: 365 * 24 * 3600 * 1000,
+};
+
+const resolveMs = ( state ) => {
+    if ( state.type === 'none' ) return null;
+    if ( state.type === 'specific' ) {
+        const d = new Date( state.specific );
+        return isNaN( d ) ? null : d.getTime();
+    }
+    const ms = UNIT_MS[ state.relUnit ];
+    return ms && state.relAmount
+        ? Date.now() - parseInt( state.relAmount ) * ms
+        : null;
+};
+
 /**
  * Toolbar group for selecting the date range filter.
  *
  * @param {Object}   props
- * @param {Object}   props.dateRange         { from: string, to: string, mode?: string }
- * @param {Function} props.onChangeDateRange Called with new { from, to, mode } object.
+ * @param {Object}   props.dateRange         { from: string, to: string }
+ * @param {Function} props.onChangeDateRange Called with new { from, to } object.
  */
 export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
     const [ isOpen, setIsOpen ] = useState( false );
+    const [ showErrors, setShowErrors ] = useState( false );
 
-    // Local modal state – initialised when the modal opens.
+    const from = dateRange?.from || '';
+    const to = dateRange?.to || '';
+
     const [ localMode, setLocalMode ] = useState( 'range' );
     const [ singleDay, setSingleDay ] = useState( '' );
-    const [ fromState, setFromState ] = useState( () =>
-        parseEndpoint( '' )
-    );
+    const [ fromState, setFromState ] = useState( () => parseEndpoint( '' ) );
     const [ toState, setToState ] = useState( () => parseEndpoint( '' ) );
 
-    const openModal = () => {
-        const storedMode = dateRange?.mode;
-        const from = dateRange?.from || '';
-        const to = dateRange?.to || '';
+    // Sync local state from prop whenever modal opens.
+    useEffect( () => {
+        if ( ! isOpen ) return;
+        setShowErrors( false );
 
-        if ( storedMode === 'single-day' ) {
+        if ( isSingleDayRange( from, to ) ) {
             setLocalMode( 'single-day' );
-            // from is stored as "YYYY-MM-DD 00:00:00"
-            setSingleDay( from.split( ' ' )[ 0 ] || '' );
+            setSingleDay( from.split( ' ' )[ 0 ] );
+            setFromState( parseEndpoint( '' ) );
+            setToState( parseEndpoint( '' ) );
         } else {
             setLocalMode( 'range' );
             setSingleDay( '' );
+            setFromState( parseEndpoint( from ) );
+            setToState( parseEndpoint( to ) );
         }
+    }, [ isOpen ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
-        setFromState( parseEndpoint( from ) );
-        setToState( parseEndpoint( to ) );
-        setIsOpen( true );
-    };
+    // Collect all current errors (shown only after first Apply attempt).
+    const errors = [];
+    if ( localMode === 'range' ) {
+        if (
+            fromState.type === 'relative' &&
+            ! fromState.relAmount
+        ) {
+            errors.push( __( '"From": enter an amount.' ) );
+        }
+        if (
+            toState.type === 'relative' &&
+            ! toState.relAmount
+        ) {
+            errors.push( __( '"To": enter an amount.' ) );
+        }
+        if ( ! errors.length ) {
+            const fromMs = resolveMs( fromState );
+            const toMs = resolveMs( toState );
+            if (
+                fromMs !== null &&
+                toMs !== null &&
+                toMs - fromMs <= 1000
+            ) {
+                errors.push(
+                    __(
+                        '"To" must be more than 1 second after "From".'
+                    )
+                );
+            }
+        }
+    }
 
     const applyFilter = () => {
+        if ( errors.length ) {
+            setShowErrors( true );
+            return;
+        }
         if ( localMode === 'single-day' ) {
             if ( singleDay ) {
                 onChangeDateRange( {
                     from: `${ singleDay } 00:00:00`,
                     to: `${ singleDay } 23:59:59`,
-                    mode: 'single-day',
                 } );
             } else {
-                onChangeDateRange( { from: '', to: '', mode: 'single-day' } );
+                onChangeDateRange( { from: '', to: '' } );
             }
         } else {
             onChangeDateRange( {
                 from: buildEndpoint( fromState ),
                 to: buildEndpoint( toState ),
-                mode: 'range',
             } );
         }
         setIsOpen( false );
     };
 
     const clearFilter = () => {
-        onChangeDateRange( { from: '', to: '', mode: 'range' } );
+        onChangeDateRange( { from: '', to: '' } );
         setIsOpen( false );
     };
 
-    const hasFilter = !! ( dateRange?.from || dateRange?.to );
-
-    /**
-     * Resolve an endpoint state to an approximate Unix ms timestamp so any
-     * combination of specific / relative endpoints can be compared.
-     * Returns null when the endpoint is "none" or unparseable.
-     */
-    const UNIT_MS = {
-        hours: 3600 * 1000,
-        days: 24 * 3600 * 1000,
-        weeks: 7 * 24 * 3600 * 1000,
-        months: 30 * 24 * 3600 * 1000,
-        years: 365 * 24 * 3600 * 1000,
-    };
-    const resolveMs = ( state ) => {
-        if ( state.type === 'none' ) return null;
-        if ( state.type === 'specific' ) {
-            const d = new Date( state.specific );
-            return isNaN( d ) ? null : d.getTime();
-        }
-        // relative: "last N unit" → now − N × unit
-        const ms = UNIT_MS[ state.relUnit ];
-        return ms ? Date.now() - state.relAmount * ms : null;
-    };
-
-    // Validate: "to" must be more than 1 second after "from".
-    let validationError = '';
-    if ( localMode === 'range' ) {
-        const fromMs = resolveMs( fromState );
-        const toMs = resolveMs( toState );
-        if ( fromMs !== null && toMs !== null && toMs - fromMs <= 1000 ) {
-            validationError = __(
-                '"To" must be more than 1 second after "From".'
-            );
-        }
-    }
+    const hasFilter = !! ( from || to );
 
     return (
         <ToolbarGroup>
             <ToolbarButton
                 label={ __( 'Time filter' ) }
                 icon={ calendar }
-                onClick={ openModal }
+                onClick={ () => setIsOpen( true ) }
                 isPressed={ hasFilter }
             >
                 { getButtonLabel( dateRange ) }
@@ -273,6 +352,7 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                     onRequestClose={ () => setIsOpen( false ) }
                     size="medium"
                 >
+                    <style>{ UNIT_CONTROL_STYLES }</style>
                     <div
                         style={ {
                             display: 'flex',
@@ -285,15 +365,18 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                             selected={ localMode }
                             options={ [
                                 {
-                                    label: __( 'Single day' ),
-                                    value: 'single-day',
-                                },
-                                {
                                     label: __( 'Date range (start and end separately)' ),
                                     value: 'range',
                                 },
+                                {
+                                    label: __( 'Single day' ),
+                                    value: 'single-day',
+                                },
                             ] }
-                            onChange={ setLocalMode }
+                            onChange={ ( mode ) => {
+                                setLocalMode( mode );
+                                setShowErrors( false );
+                            } }
                         />
 
                         { localMode === 'single-day' && (
@@ -301,16 +384,20 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                 <p style={ { margin: '0 0 8px' } }>
                                     { __( 'Show only points from this day:' ) }
                                 </p>
-                                <DatePicker
-                                    currentDate={
-                                        singleDay
-                                            ? `${ singleDay }T12:00:00`
-                                            : new Date().toISOString()
-                                    }
-                                    onChange={ ( date ) =>
-                                        setSingleDay( date.split( 'T' )[ 0 ] )
-                                    }
-                                />
+                                { /* min-height reserves space for a 6-row month so
+                                     the buttons below never shift when cycling months */ }
+                                <div style={ { minHeight: '272px' } }>
+                                    <DatePicker
+                                        currentDate={
+                                            singleDay
+                                                ? `${ singleDay }T12:00:00`
+                                                : new Date().toISOString()
+                                        }
+                                        onChange={ ( date ) =>
+                                            setSingleDay( date.split( 'T' )[ 0 ] )
+                                        }
+                                    />
+                                </div>
                             </div>
                         ) }
 
@@ -319,27 +406,37 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                 <EndpointSection
                                     label={ __( 'Show points from' ) }
                                     state={ fromState }
-                                    onChange={ setFromState }
+                                    onChange={ ( s ) => {
+                                        setFromState( s );
+                                        setShowErrors( false );
+                                    } }
                                 />
-                                <hr style={ { margin: '0', borderColor: '#ddd' } } />
+                                <hr
+                                    style={ {
+                                        margin: '0',
+                                        borderColor: '#ddd',
+                                    } }
+                                />
                                 <EndpointSection
                                     label={ __( 'Show points to' ) }
                                     state={ toState }
-                                    onChange={ setToState }
+                                    onChange={ ( s ) => {
+                                        setToState( s );
+                                        setShowErrors( false );
+                                    } }
                                 />
                             </>
                         ) }
 
-                        { validationError && (
-                            <p
-                                style={ {
-                                    margin: '0',
-                                    color: '#cc1818',
-                                    fontSize: '13px',
-                                } }
+                        { showErrors && errors.length > 0 && (
+                            <Notice
+                                status="warning"
+                                isDismissible={ false }
                             >
-                                { validationError }
-                            </p>
+                                { errors.map( ( e, i ) => (
+                                    <div key={ i }>{ e }</div>
+                                ) ) }
+                            </Notice>
                         ) }
 
                         <div
@@ -367,7 +464,6 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                 <Button
                                     variant="primary"
                                     onClick={ applyFilter }
-                                    disabled={ !! validationError }
                                 >
                                     { __( 'Apply' ) }
                                 </Button>
