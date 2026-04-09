@@ -85,7 +85,7 @@ class Spotmap_Options {
 			'filter-points'      => 5,
 			'map-overlays'       => null,
 			'import-min-distance' => 25,
-			'import-min-time'    => 60,
+			'import-min-time'    => 600,
 		];
 	}
 

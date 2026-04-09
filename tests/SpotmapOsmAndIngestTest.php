@@ -320,7 +320,7 @@ class SpotmapOsmAndIngestTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '{1}', $data['tracking_url'] ); // lon
 		$this->assertStringContainsString( '{2}', $data['tracking_url'] ); // timestamp
 		$this->assertStringContainsString( '{11}', $data['tracking_url'] ); // batproc
-		$this->assertStringContainsString( 'ingest/osmand', $data['tracking_url'] );
+		$this->assertStringContainsString( 'ingest/osmand', rawurldecode( $data['tracking_url'] ) );
 	}
 
 	public function test_update_osmand_feed_preserves_key(): void {

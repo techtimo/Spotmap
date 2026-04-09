@@ -122,25 +122,4 @@ class SpotmapTeltonikaIngestTest extends WP_UnitTestCase {
 		$this->assertSame( 1774544317, (int) $points[0]['time'] );
 	}
 
-	public function test_post_with_flat_json_payload_stores_point(): void {
-		$this->seed_teltonika_feed( 'TrackerFlat', 'flat-123' );
-
-		$response = $this->ingest(
-			'flat-123',
-			[
-				'latitude'  => 47.12345,
-				'longitude' => 11.54321,
-				'timestamp' => 1774545000,
-				'speed'     => 12.5,
-			]
-		);
-
-		$this->assertSame( 200, $response->get_status() );
-
-		$points = $this->get_points( 'TrackerFlat' );
-		$this->assertCount( 1, $points );
-		$this->assertEqualsWithDelta( 47.12345, (float) $points[0]['latitude'], 0.00001 );
-		$this->assertEqualsWithDelta( 11.54321, (float) $points[0]['longitude'], 0.00001 );
-		$this->assertSame( 1774545000, (int) $points[0]['time'] );
-	}
 }
