@@ -138,7 +138,8 @@ export class Spotmap {
      */
     async initMap(): Promise< void > {
         if ( ! this.options.maps ) {
-            console.error( // eslint-disable-line no-console
+            console.error(
+                // eslint-disable-line no-console
                 'Spotmap: missing required "maps" option. options:',
                 JSON.stringify( this.options )
             );
@@ -337,7 +338,7 @@ export class Spotmap {
         if ( ( this.options as unknown as TableOptions ).tableElement ) {
             tableOptions.tableElement = (
                 this.options as unknown as TableOptions
-            ).tableElement;
+             ).tableElement;
         }
 
         this.dataFetcher = new DataFetcher( spotmapjsobj.ajaxUrl );

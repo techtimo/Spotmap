@@ -39,6 +39,7 @@ export default function Edit( { attributes, setAttributes } ) {
     } = attributes;
 
     const availableFeeds =
+        // eslint-disable-next-line no-undef
         typeof spotmapjsobj !== 'undefined' ? spotmapjsobj.feeds ?? [] : [];
 
     const tableRef = useRef( null );

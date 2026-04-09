@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from '@wordpress/element';
-import { Button, __experimentalConfirmDialog as ConfirmDialog, Modal, Spinner, TextControl } from '@wordpress/components';
+import {
+    Button,
+    // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+    __experimentalConfirmDialog as ConfirmDialog,
+    Modal,
+    Spinner,
+    TextControl,
+} from '@wordpress/components';
 import { DataViews, filterSortAndPaginate } from '@wordpress/dataviews';
 import '../admin.css';
 import * as api from '../api';
@@ -29,7 +36,12 @@ const STATUS_ELEMENTS = [
 ];
 
 const formatTimestamp = ( ts ) =>
-    ts ? new Date( ts * 1000 ).toLocaleString( [], { dateStyle: 'short', timeStyle: 'short' } ) : '—';
+    ts
+        ? new Date( ts * 1000 ).toLocaleString( [], {
+              dateStyle: 'short',
+              timeStyle: 'short',
+          } )
+        : '—';
 
 export default function FeedsTab( {
     providers,
@@ -52,8 +64,10 @@ export default function FeedsTab( {
 
     const [ view, setView ] = useState( () => {
         try {
-            const saved = localStorage.getItem( STORAGE_KEY );
-            return saved ? { ...DEFAULT_VIEW, ...JSON.parse( saved ) } : DEFAULT_VIEW;
+            const saved = window.localStorage.getItem( STORAGE_KEY );
+            return saved
+                ? { ...DEFAULT_VIEW, ...JSON.parse( saved ) }
+                : DEFAULT_VIEW;
         } catch {
             return DEFAULT_VIEW;
         }
@@ -88,7 +102,10 @@ export default function FeedsTab( {
     const handleViewChange = ( newView ) => {
         setView( newView );
         try {
-            localStorage.setItem( STORAGE_KEY, JSON.stringify( newView ) );
+            window.localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify( newView )
+            );
         } catch {}
     };
 
@@ -137,9 +154,12 @@ export default function FeedsTab( {
             );
             onNoticeChange( {
                 status: 'success',
-                text: count > 0
-                    ? `Imported ${ count } photo${ count === 1 ? '' : 's' }.`
-                    : 'No new photos found to import.',
+                text:
+                    count > 0
+                        ? `Imported ${ count } photo${
+                              count === 1 ? '' : 's'
+                          }.`
+                        : 'No new photos found to import.',
             } );
         } catch ( err ) {
             onNoticeChange( { status: 'error', text: err.message } );
@@ -280,7 +300,9 @@ export default function FeedsTab( {
     }, [ feeds, dbFeeds, providers ] );
 
     const fields = useMemo( () => {
-        const typeElements = [ ...new Set( allItems.map( ( i ) => i.typeLabel ) ) ]
+        const typeElements = [
+            ...new Set( allItems.map( ( i ) => i.typeLabel ) ),
+        ]
             .sort()
             .map( ( label ) => ( { value: label, label } ) );
         return [
@@ -312,8 +334,12 @@ export default function FeedsTab( {
                 elements: STATUS_ELEMENTS,
                 filterBy: { operators: [ 'is' ] },
                 render: ( { item } ) => {
-                    if ( item.status === 'paused' ) return 'Paused';
-                    if ( item.status === 'orphaned' ) return 'DB only';
+                    if ( item.status === 'paused' ) {
+                        return 'Paused';
+                    }
+                    if ( item.status === 'orphaned' ) {
+                        return 'DB only';
+                    }
                     return 'Active';
                 },
             },
@@ -334,91 +360,93 @@ export default function FeedsTab( {
         ];
     }, [ allItems ] );
 
-    const actions = useMemo( () => [
-        {
-            id: 'edit',
-            label: 'Edit',
-            isEligible: ( item ) => ! item.isOrphaned,
-            callback: ( [ item ] ) => setEditingFeed( item._feed ),
-        },
-        {
-            id: 'statistics',
-            label: 'Statistics',
-            callback: ( [ item ] ) =>
-                setStatsFeed(
-                    item.isOrphaned ? { name: item.name } : item._feed
-                ),
-        },
-        {
-            id: 'download-gpx',
-            label: 'Download GPX',
-            isEligible: ( item ) => item.pointCount > 0,
-            callback: ( [ item ] ) => setGpxDownloadFeed( item.name ),
-        },
-        {
-            id: 'pause',
-            label: 'Pause feed',
-            isEligible: ( item ) =>
-                ! item.isOrphaned && ! item._feed.paused,
-            callback: ( [ item ] ) => handleTogglePause( item._feed ),
-        },
-        {
-            id: 'resume',
-            label: 'Resume feed',
-            isEligible: ( item ) =>
-                ! item.isOrphaned && item._feed.paused,
-            callback: ( [ item ] ) => handleTogglePause( item._feed ),
-        },
-        {
-            id: 'import-photos',
-            label: 'Check for new photos',
-            isEligible: ( item ) =>
-                ! item.isOrphaned && isMediaFeed( item._feed?.type ),
-            callback: ( [ item ] ) => handleImportPhotos( item._feed ),
-        },
-        {
-            id: 'rename',
-            label: 'Rename',
-            isEligible: ( item ) => item.isOrphaned,
-            callback: ( [ item ] ) =>
-                setRenamingDbFeed( {
-                    feedName: item.name,
-                    newName: item.name,
-                } ),
-        },
-        {
-            id: 'delete-config',
-            label: 'Delete config',
-            isDestructive: true,
-            isEligible: ( item ) => ! item.isOrphaned,
-            callback: ( [ item ] ) => setConfirmDeleteConfig( item._feed ),
-        },
-        {
-            id: 'delete-points',
-            label: 'Delete points',
-            isDestructive: true,
-            isEligible: ( item ) => ! item.isOrphaned,
-            callback: ( [ item ] ) => setConfirmDeletePoints( item._feed ),
-        },
-        {
-            id: 'delete-feed',
-            label: 'Delete feed and points',
-            isDestructive: true,
-            isEligible: ( item ) => ! item.isOrphaned,
-            callback: ( [ item ] ) => setConfirmDeleteBoth( item._feed ),
-        },
-        {
-            id: 'delete-db-points',
-            label: 'Delete points',
-            isDestructive: true,
-            isEligible: ( item ) => item.isOrphaned,
-            callback: ( [ item ] ) =>
-                setConfirmDeleteDbFeed( {
-                    feedName: item.name,
-                    pointCount: item.pointCount,
-                } ),
-        },
-    ], [] ); // eslint-disable-line react-hooks/exhaustive-deps
+    const actions = useMemo(
+        () => [
+            {
+                id: 'edit',
+                label: 'Edit',
+                isEligible: ( item ) => ! item.isOrphaned,
+                callback: ( [ item ] ) => setEditingFeed( item._feed ),
+            },
+            {
+                id: 'statistics',
+                label: 'Statistics',
+                callback: ( [ item ] ) =>
+                    setStatsFeed(
+                        item.isOrphaned ? { name: item.name } : item._feed
+                    ),
+            },
+            {
+                id: 'download-gpx',
+                label: 'Download GPX',
+                isEligible: ( item ) => item.pointCount > 0,
+                callback: ( [ item ] ) => setGpxDownloadFeed( item.name ),
+            },
+            {
+                id: 'pause',
+                label: 'Pause feed',
+                isEligible: ( item ) =>
+                    ! item.isOrphaned && ! item._feed.paused,
+                callback: ( [ item ] ) => handleTogglePause( item._feed ),
+            },
+            {
+                id: 'resume',
+                label: 'Resume feed',
+                isEligible: ( item ) => ! item.isOrphaned && item._feed.paused,
+                callback: ( [ item ] ) => handleTogglePause( item._feed ),
+            },
+            {
+                id: 'import-photos',
+                label: 'Check for new photos',
+                isEligible: ( item ) =>
+                    ! item.isOrphaned && isMediaFeed( item._feed?.type ),
+                callback: ( [ item ] ) => handleImportPhotos( item._feed ),
+            },
+            {
+                id: 'rename',
+                label: 'Rename',
+                isEligible: ( item ) => item.isOrphaned,
+                callback: ( [ item ] ) =>
+                    setRenamingDbFeed( {
+                        feedName: item.name,
+                        newName: item.name,
+                    } ),
+            },
+            {
+                id: 'delete-config',
+                label: 'Delete config',
+                isDestructive: true,
+                isEligible: ( item ) => ! item.isOrphaned,
+                callback: ( [ item ] ) => setConfirmDeleteConfig( item._feed ),
+            },
+            {
+                id: 'delete-points',
+                label: 'Delete points',
+                isDestructive: true,
+                isEligible: ( item ) => ! item.isOrphaned,
+                callback: ( [ item ] ) => setConfirmDeletePoints( item._feed ),
+            },
+            {
+                id: 'delete-feed',
+                label: 'Delete feed and points',
+                isDestructive: true,
+                isEligible: ( item ) => ! item.isOrphaned,
+                callback: ( [ item ] ) => setConfirmDeleteBoth( item._feed ),
+            },
+            {
+                id: 'delete-db-points',
+                label: 'Delete points',
+                isDestructive: true,
+                isEligible: ( item ) => item.isOrphaned,
+                callback: ( [ item ] ) =>
+                    setConfirmDeleteDbFeed( {
+                        feedName: item.name,
+                        pointCount: item.pointCount,
+                    } ),
+            },
+        ],
+        []
+    ); // eslint-disable-line react-hooks/exhaustive-deps
 
     const { data: pageData, paginationInfo } = useMemo(
         () => filterSortAndPaginate( allItems, view, fields ),
@@ -432,7 +460,10 @@ export default function FeedsTab( {
     return (
         <div style={ { marginTop: '1rem' } }>
             <div style={ { marginBottom: '1rem' } }>
-                <Button variant="primary" onClick={ () => setShowPicker( true ) }>
+                <Button
+                    variant="primary"
+                    onClick={ () => setShowPicker( true ) }
+                >
                     Add Feed
                 </Button>
             </div>
@@ -505,7 +536,9 @@ export default function FeedsTab( {
             { confirmDeletePoints !== null && (
                 <ConfirmDialog
                     title={ `Delete points for "${ confirmDeletePoints.name }"?` }
-                    confirmButtonText={ `Delete ${ confirmDeletePoints.point_count ?? 0 } points` }
+                    confirmButtonText={ `Delete ${
+                        confirmDeletePoints.point_count ?? 0
+                    } points` }
                     onConfirm={ () =>
                         handleDeletePointsOnly( confirmDeletePoints )
                     }
@@ -515,8 +548,8 @@ export default function FeedsTab( {
                     <strong>
                         { confirmDeletePoints.point_count ?? 0 } GPS points
                     </strong>{ ' ' }
-                    for "{ confirmDeletePoints.name }". The feed configuration
-                    will be kept. This cannot be undone.
+                    for &quot;{ confirmDeletePoints.name }&quot;. The feed
+                    configuration will be kept. This cannot be undone.
                 </ConfirmDialog>
             ) }
 
@@ -531,7 +564,8 @@ export default function FeedsTab( {
                     <strong>
                         { confirmDeleteBoth.point_count ?? 0 } GPS points
                     </strong>{ ' ' }
-                    for "{ confirmDeleteBoth.name }". This cannot be undone.
+                    for &quot;{ confirmDeleteBoth.name }&quot;. This cannot be
+                    undone.
                 </ConfirmDialog>
             ) }
 
@@ -546,8 +580,8 @@ export default function FeedsTab( {
                     <strong>
                         { confirmDeleteDbFeed.pointCount } GPS points
                     </strong>{ ' ' }
-                    for "{ confirmDeleteDbFeed.feedName }". This cannot be
-                    undone.
+                    for &quot;{ confirmDeleteDbFeed.feedName }&quot;. This
+                    cannot be undone.
                 </ConfirmDialog>
             ) }
 

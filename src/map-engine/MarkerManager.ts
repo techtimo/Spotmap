@@ -22,7 +22,10 @@ export class MarkerManager {
     private readonly layers: SpotmapLayers;
     private readonly layerManager: LayerManager;
     private readonly canvasRenderer: L.Canvas;
-    private readonly markerById = new Map< number, L.Marker | L.CircleMarker >();
+    private readonly markerById = new Map<
+        number,
+        L.Marker | L.CircleMarker
+    >();
     private readonly iconCache = new Map< string, L.Icon >();
     private readonly abortController = new AbortController();
     private readonly dbg: ( ...args: unknown[] ) => void;
