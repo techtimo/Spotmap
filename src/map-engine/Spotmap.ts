@@ -190,6 +190,7 @@ export class Spotmap {
             dragging: this.options.enablePanning ?? true,
             zoomControl: this.options.zoomControl ?? true,
         } );
+        this.map.attributionControl.setPrefix( '' );
 
         // Optional controls
         if ( this.options.fullscreenButton !== false && L.Control.FullScreen ) {
