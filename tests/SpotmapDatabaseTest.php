@@ -118,7 +118,8 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 
 	public function test_get_points_filters_by_type(): void {
 		self::$db->insert_point( $this->make_point( [ 'messageType' => 'OK',   'unixTime' => 1700000020 ] ) );
-		self::$db->insert_point( $this->make_point( [ 'messageType' => 'HELP', 'unixTime' => 1700000021 ] ) );
+		// Space > 10 min apart so deduplication does not skip the second insert.
+		self::$db->insert_point( $this->make_point( [ 'messageType' => 'HELP', 'unixTime' => 1700000020 + 601 ] ) );
 
 		$points = self::$db->get_points( [ 'type' => [ 'HELP' ] ] );
 
@@ -160,7 +161,8 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 
 	public function test_get_all_types_returns_inserted_types(): void {
 		self::$db->insert_point( $this->make_point( [ 'messageType' => 'OK',   'unixTime' => 1700000050 ] ) );
-		self::$db->insert_point( $this->make_point( [ 'messageType' => 'HELP', 'unixTime' => 1700000051 ] ) );
+		// Space > 10 min apart so deduplication does not skip the second insert.
+		self::$db->insert_point( $this->make_point( [ 'messageType' => 'HELP', 'unixTime' => 1700000050 + 601 ] ) );
 
 		$types = self::$db->get_all_types();
 

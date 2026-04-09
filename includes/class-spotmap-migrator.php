@@ -114,6 +114,10 @@ class Spotmap_Migrator {
         // the 1.0.x admin UI (e.g. if OPTION_VERSION was never persisted).
         if ( ! empty( $feeds ) ) {
             Spotmap_Options::save_feeds( $feeds );
+        } elseif ( false === get_option( Spotmap_Options::OPTION_FEEDS ) ) {
+            // First-ever install: no legacy feeds and spotmap_feeds not yet
+            // initialized — create the empty array so callers can rely on it.
+            Spotmap_Options::save_feeds( [] );
         }
 
         // Remove legacy options.

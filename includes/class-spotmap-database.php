@@ -447,7 +447,7 @@ private const ALLOWED_COLUMNS = [
 				);
 				$time_diff_s  = abs( (int) $data['time'] - (int) $prev->time );
 				$min_distance = (int) Spotmap_Options::get_setting( 'import-min-distance', 25 );
-				$min_time     = (int) Spotmap_Options::get_setting( 'import-min-time', 60 );
+			$min_time     = (int) Spotmap_Options::get_setting( 'import-min-time', 600 );
 				if ( $distance_m <= $min_distance && $time_diff_s < $min_time ) {
 					// Stationary duplicate — update the existing point's timestamp so the
 					// map always reflects when the tracker last reported, even when parked.
