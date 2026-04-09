@@ -552,4 +552,74 @@ class SpotmapDatabaseTest extends WP_UnitTestCase {
 		$this->assertEqualsWithDelta( 47.377010, (float) $first->latitude, 0.00001, 'First row should be the last rolled-anchor position.' );
 		$this->assertSame( 1710000590, (int) $first->time );
 	}
+
+	/**
+	 * Each suppressed ping increments hidden_points on the anchor row.
+	 */
+	public function test_stationary_dedup_increments_hidden_points(): void {
+		global $wpdb;
+
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+		// 3 suppressed pings within thresholds.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden',
+			'unixTime' => 1710000060,
+			'latitude' => 47.376920,
+			'longitude' => 8.541700,
+		] ) );
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden',
+			'unixTime' => 1710000120,
+			'latitude' => 47.376940,
+			'longitude' => 8.541700,
+		] ) );
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden',
+			'unixTime' => 1710000180,
+			'latitude' => 47.376960,
+			'longitude' => 8.541700,
+		] ) );
+
+		$row = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-hidden' LIMIT 1" );
+		$this->assertSame( 3, (int) $row->hidden_points, 'hidden_points should equal the number of suppressed pings.' );
+	}
+
+	/**
+	 * After the anchor is committed (time threshold exceeded), the new row
+	 * starts with hidden_points = 0.
+	 */
+	public function test_stationary_dedup_new_row_resets_hidden_points(): void {
+		global $wpdb;
+
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden-reset',
+			'unixTime' => 1710000000,
+			'latitude' => 47.376900,
+			'longitude' => 8.541700,
+		] ) );
+		// One suppressed ping.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden-reset',
+			'unixTime' => 1710000060,
+			'latitude' => 47.376920,
+			'longitude' => 8.541700,
+		] ) );
+		// New point beyond time threshold — committed as a new row.
+		self::$db->insert_point( $this->make_point( [
+			'feedName' => 'dedup-hidden-reset',
+			'unixTime' => 1710000060 + 700,
+			'latitude' => 47.376940,
+			'longitude' => 8.541700,
+		] ) );
+
+		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-hidden-reset' ORDER BY time ASC" );
+		$this->assertCount( 2, $rows );
+		$this->assertSame( 1, (int) $rows[0]->hidden_points, 'First row should have hidden_points = 1.' );
+		$this->assertSame( 0, (int) $rows[1]->hidden_points, 'Second row should start with hidden_points = 0.' );
+	}
 }

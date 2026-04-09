@@ -104,6 +104,29 @@ describe( 'DataFetcher.removeClosePoints', () => {
         expect( result[ 0 ].hiddenPoints ).toEqual( { count: 2, radius: 50 } );
     } );
 
+    it( 'folds server hidden_points into hiddenPoints count', () => {
+        // Point 1 had 3 pings suppressed server-side; it is also the client anchor.
+        const pts = [
+            { ...makePoint( 47.0, 8.0, 'TRACK', 1 ), hidden_points: 3 },
+            makePoint( 47.0, 8.0000001, 'TRACK', 2 ), // filtered client-side
+        ];
+        const result = DataFetcher.removeClosePoints( pts, 50 );
+        expect( result ).toHaveLength( 1 );
+        // 1 client-hidden + 3 server-suppressed = 4 total
+        expect( result[ 0 ].hiddenPoints ).toEqual( { count: 4, radius: 50 } );
+    } );
+
+    it( 'folds server hidden_points even when no client points are hidden', () => {
+        const pts = [
+            { ...makePoint( 47.0, 8.0, 'TRACK', 1 ), hidden_points: 5 },
+            makePoint( 48.0, 9.0, 'TRACK', 2 ), // far away — new anchor
+        ];
+        const result = DataFetcher.removeClosePoints( pts, 50 );
+        expect( result ).toHaveLength( 2 );
+        expect( result[ 0 ].hiddenPoints ).toEqual( { count: 5, radius: 0 } );
+        expect( result[ 1 ].hiddenPoints ).toBeUndefined();
+    } );
+
     it( 'resets hidden count after a sufficiently distant point', () => {
         const pts = [
             makePoint( 47.0, 8.0, 'TRACK', 1 ),
@@ -354,6 +377,21 @@ describe( 'DataFetcher.fetchPoints', () => {
         const result = await fetcher.fetchPoints( minimalBody, 50 );
 
         expect( ( result as SpotPoint[] ).length ).toBe( 1 );
+    } );
+
+    it( 'folds server hidden_points without client filter', async () => {
+        const serverPoints = [
+            { ...makePoint( 47.0, 8.0, 'TRACK', 1 ), hidden_points: 4 },
+        ];
+        mockFetch( serverPoints );
+
+        const fetcher = new DataFetcher(
+            'https://example.com/wp-admin/admin-ajax.php'
+        );
+        const result = await fetcher.fetchPoints( minimalBody );
+        const pts = result as SpotPoint[];
+
+        expect( pts[ 0 ].hiddenPoints ).toEqual( { count: 4, radius: 0 } );
     } );
 
     it( 'sends a POST request to the given URL', async () => {

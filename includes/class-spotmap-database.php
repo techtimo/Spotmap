@@ -13,7 +13,7 @@ private const ALLOWED_COLUMNS = [
 		'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
 		'battery_status', 'message', 'custom_message', 'feed_name',
 		'feed_id', 'model', 'device_name', 'local_timezone',
-		'hdop', 'speed', 'bearing',
+		'hdop', 'speed', 'bearing', 'hidden_points',
 	];
 
 	private static function sanitize_select( string $select ): string {
@@ -88,6 +88,7 @@ private const ALLOWED_COLUMNS = [
 		    `hdop` float DEFAULT NULL,
 		    `speed` float DEFAULT NULL,
 		    `bearing` float DEFAULT NULL,
+		    `hidden_points` int(11) unsigned DEFAULT 0,
 		    PRIMARY KEY (`id`),
 		    UNIQUE KEY `id_UNIQUE` (`id`),
 		    KEY `idx_feed_time` (`feed_name`, `time`)
@@ -456,7 +457,8 @@ private const ALLOWED_COLUMNS = [
 					// Rolling-anchor: replace the pending row with the new position so
 					// the anchor moves forward with each suppressed ping.
 					$mutable = [ 'time', 'latitude', 'longitude', 'altitude', 'speed', 'bearing', 'hdop', 'battery_status' ];
-					$update  = array_intersect_key( $data, array_flip( $mutable ) );
+					$update                  = array_intersect_key( $data, array_flip( $mutable ) );
+					$update['hidden_points'] = (int) ( $prev->hidden_points ?? 0 ) + 1;
 					$wpdb->update(
 						$wpdb->prefix . 'spotmap_points',
 						$update,
