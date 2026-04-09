@@ -41,6 +41,7 @@ const COLORS = [
     { name: 'coral', color: '#FF6347' },
     { name: 'medium purple', color: '#9370DB' },
     { name: 'white', color: '#FFFFFF' },
+    { name: 'black', color: '#000000' },
 ];
 
 // Satellite icon (inline SVG)
