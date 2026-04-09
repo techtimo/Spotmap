@@ -39,8 +39,10 @@ export const deleteDbFeedPoints = ( feedName ) =>
 
 export const getDbFeedStats = ( feedName ) => {
     const params = new URLSearchParams( { feed_name: feedName } );
-    const base = url( 'db-feeds/stats' );
-    return apiFetch( { url: base + ( base.includes( '?' ) ? '&' : '?' ) + params } );
+    const endpoint = url( 'db-feeds/stats' );
+    return apiFetch( {
+        url: endpoint + ( endpoint.includes( '?' ) ? '&' : '?' ) + params,
+    } );
 };
 
 export const importPhotos = ( id ) =>
@@ -84,8 +86,10 @@ export const getPoints = ( { feed, from, to } = {} ) => {
     if ( ! qs ) {
         return apiFetch( { url: url( 'points' ) } );
     }
-    const base = url( 'points' );
-    return apiFetch( { url: base + ( base.includes( '?' ) ? '&' : '?' ) + qs } );
+    const endpoint = url( 'points' );
+    return apiFetch( {
+        url: endpoint + ( endpoint.includes( '?' ) ? '&' : '?' ) + qs,
+    } );
 };
 
 export const updatePoint = ( id, { latitude, longitude } ) =>

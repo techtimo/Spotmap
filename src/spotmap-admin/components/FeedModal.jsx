@@ -108,6 +108,14 @@ function buildTeltonikaUrl( key ) {
 /**
  * Feed settings modal — used for both Add (with type pre-selected by
  * ProviderPickerModal) and Edit (feed prop has a full feed object).
+ *
+ * @param {Object}   root0
+ * @param {Object}   root0.providers     Map of provider type → provider config.
+ * @param {Object}   root0.feed          Feed object (partial for new, full for edit).
+ * @param {Array}    root0.existingFeeds List of existing feeds for name-conflict checks.
+ * @param {Function} root0.onSave        Called with (data, id) after successful save.
+ * @param {Function} root0.onClose       Called when the modal is closed/cancelled.
+ * @param {Function} root0.onBack        Called to go back to the provider picker.
  */
 export default function FeedModal( {
     providers,
@@ -146,7 +154,8 @@ export default function FeedModal( {
 
     const [ saving, setSaving ] = useState( false );
     const [ error, setError ] = useState( null );
-    const [ nameWarningAcknowledged, setNameWarningAcknowledged ] = useState( false );
+    const [ nameWarningAcknowledged, setNameWarningAcknowledged ] =
+        useState( false );
     const [ passwordEditing, setPasswordEditing ] = useState( () => new Set() );
     const [ passwordClearing, setPasswordClearing ] = useState(
         () => new Set()
@@ -241,10 +250,7 @@ export default function FeedModal( {
                 ) }
 
                 { duplicateFeed && ! nameWarningAcknowledged && (
-                    <Notice
-                        status="warning"
-                        isDismissible={ false }
-                    >
+                    <Notice status="warning" isDismissible={ false }>
                         <strong>
                             A feed named &ldquo;{ enteredName }&rdquo; already
                             exists.
@@ -252,8 +258,8 @@ export default function FeedModal( {
                         Using the same name means both feeds will write GPS
                         points to the same database bucket — their data will be
                         mixed together. Renaming either feed later will move{ ' ' }
-                        <em>all</em> of those shared points to the new name.{ ' ' }
-                        Use a unique name unless you intentionally want to merge
+                        <em>all</em> of those shared points to the new name. Use
+                        a unique name unless you intentionally want to merge
                         these feeds.
                         <div style={ { marginTop: '8px' } }>
                             <Button

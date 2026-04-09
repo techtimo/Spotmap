@@ -113,7 +113,11 @@ export class TableRenderer {
         typeCell.id = `spotmap_${ entry.id }`;
         typeCell.textContent = entry.type;
 
-        const detail = { id: entry.id, lat: entry.latitude, lng: entry.longitude };
+        const detail = {
+            id: entry.id,
+            lat: entry.latitude,
+            lng: entry.longitude,
+        };
 
         const panLink = document.createElement( 'a' );
         panLink.href = '#';
@@ -122,7 +126,9 @@ export class TableRenderer {
         panLink.addEventListener( 'click', ( e ) => {
             e.preventDefault();
             e.stopPropagation();
-            document.dispatchEvent( new CustomEvent( 'spotmap:click-point', { detail } ) );
+            document.dispatchEvent(
+                new CustomEvent( 'spotmap:click-point', { detail } )
+            );
         } );
 
         const zoomLink = document.createElement( 'a' );
@@ -132,7 +138,9 @@ export class TableRenderer {
         zoomLink.addEventListener( 'click', ( e ) => {
             e.preventDefault();
             e.stopPropagation();
-            document.dispatchEvent( new CustomEvent( 'spotmap:dblclick-point', { detail } ) );
+            document.dispatchEvent(
+                new CustomEvent( 'spotmap:dblclick-point', { detail } )
+            );
         } );
 
         typeCell.appendChild( document.createElement( 'br' ) );
