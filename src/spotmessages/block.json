@@ -2,7 +2,7 @@
     "$schema": "https://schemas.wp.org/trunk/block.json",
     "apiVersion": 3,
     "name": "spotmap/spotmessages",
-    "title": "Spot Messages",
+    "title": "Spotmap Messages",
     "category": "embed",
     "icon": "list-view",
     "description": "Display a table of the latest SPOT messages grouped by feed (e.g. last SOS, check-in, etc.).",
@@ -21,7 +21,7 @@
         },
         "types": {
             "type": "array",
-            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL" ]
+            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL", "TRACK", "MEDIA", "NEWMOVEMENT", "STOP", "STATUS" ]
         },
         "groupBy": {
             "type": "string",
