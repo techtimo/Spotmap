@@ -1,7 +1,7 @@
 {
     "name": "techtimo/spotmap",
     "description": "Spotmap WordPress plugin",
-    "version": "1.1.1-beta",
+    "version": "1.0.0",
     "type": "wordpress-plugin",
     "require": {
         "symfony/yaml": "^7.0",
@@ -33,7 +33,7 @@
         ],
         "test": "phpunit",
         "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-text",
-        "format": "php-cs-fixer fix",
-        "lint": "php-cs-fixer check"
+        "format": "vendor/bin/php-cs-fixer fix",
+        "lint": "vendor/bin/php-cs-fixer check"
     }
 }
