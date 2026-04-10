@@ -101,3 +101,11 @@ export const updatePoint = ( id, { latitude, longitude } ) =>
 
 export const getFeedStats = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/stats` ) } );
+
+export const getVictronInstallations = ( token ) => {
+    const params = new URLSearchParams( { token } );
+    const endpoint = url( 'victron/installations' );
+    return apiFetch( {
+        url: endpoint + ( endpoint.includes( '?' ) ? '&' : '?' ) + params,
+    } );
+};

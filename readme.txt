@@ -2,7 +2,7 @@
 
 Contributors: techtimo  
 Donate link: paypal.me/ebaytimo  
-Tags: gps, tracking, map, leaflet, gpx, live tracking, osmand, teltonika, spot, gps tracker
+Tags: gps, tracking, map, gpx, live tracking, osmand, teltonika, spot, tracker, victron
 License: GPL2  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.5
