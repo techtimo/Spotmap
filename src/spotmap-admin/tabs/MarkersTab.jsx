@@ -3,6 +3,57 @@ import { Button, SelectControl, Spinner } from '@wordpress/components';
 import * as api from '../api';
 import IconPicker from '../components/IconPicker';
 
+const PREVIEW_COLOR = '#0073aa';
+
+function MarkerPreview( { iconShape, icon } ) {
+    const effectiveIcon = icon || 'circle';
+    const base = {
+        position: 'relative',
+        backgroundColor: 'white',
+        borderColor: PREVIEW_COLOR,
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        color: PREVIEW_COLOR,
+        boxSizing: 'border-box',
+        textAlign: 'center',
+    };
+
+    if ( iconShape === 'circle-dot' ) {
+        return (
+            <div
+                className="beautify-marker circle-dot"
+                style={ { ...base, width: '10px', height: '10px', borderWidth: '5px' } }
+            />
+        );
+    }
+
+    const iStyle = { color: PREVIEW_COLOR, fontSize: '12px' };
+
+    if ( iconShape === 'marker' ) {
+        return (
+            <div
+                className="beautify-marker marker"
+                style={ { ...base, width: '28px', height: '28px', display: 'inline-block' } }
+            >
+                <i
+                    className={ `fas fa-${ effectiveIcon }` }
+                    style={ { ...iStyle, marginTop: '5px', marginLeft: '-2px' } }
+                />
+            </div>
+        );
+    }
+
+    // circle
+    return (
+        <div
+            className="beautify-marker circle"
+            style={ { ...base, width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } }
+        >
+            <i className={ `fas fa-${ effectiveIcon }` } style={ iStyle } />
+        </div>
+    );
+}
+
 const ICON_SHAPES = [
     { value: 'marker', label: 'Marker' },
     { value: 'circle', label: 'Circle' },
@@ -56,6 +107,7 @@ export default function MarkersTab( { onNoticeChange } ) {
                         <th style={ { width: '140px' } }>Type</th>
                         <th style={ { width: '160px' } }>Shape</th>
                         <th style={ { width: '200px' } }>Icon</th>
+                        <th style={ { width: '80px' } }>Preview</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,7 +136,7 @@ export default function MarkersTab( { onNoticeChange } ) {
                                     } }
                                 >
                                     <i
-                                        className={ `fas fa-${ config.icon }` }
+                                        className={ `fas fa-${ config.icon || 'circle' }` }
                                         style={ {
                                             fontSize: '1.3em',
                                             width: '1.5em',
@@ -96,9 +148,15 @@ export default function MarkersTab( { onNoticeChange } ) {
                                         size="small"
                                         onClick={ () => setPickerFor( type ) }
                                     >
-                                        { config.icon || 'Pick icon…' }
+                                        Edit
                                     </Button>
                                 </div>
+                            </td>
+                            <td>
+                                <MarkerPreview
+                                    iconShape={ config.iconShape }
+                                    icon={ config.icon }
+                                />
                             </td>
                         </tr>
                     ) ) }

@@ -49,6 +49,7 @@
         "@wordpress/icons": "^11.8.0",
         "@wordpress/scripts": "^31.6.0",
         "dotenv": "^16.5.0",
+        "svg2img": "^1.0.0-beta.2",
         "ts-loader": "^9.5.4",
         "typescript": "^5.9.3"
     },
