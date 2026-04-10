@@ -304,7 +304,7 @@ private const ALLOWED_COLUMNS = [
 				$filter['type']
 			)));
 			$types_on_db = $this->get_all_types();
-			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','TRACK','HELP','MEDIA']);
+			$allowed_types = array_merge($types_on_db,['HELP-CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','TRACK','HELP','MEDIA']);
 			foreach ($filter['type'] as $value) {
 				if(!in_array($value,$allowed_types)){
 					return ['error'=> true,'title'=>$value.' not found in DB','message'=> "Change the 'devices' attribute of your Shortcode"];
