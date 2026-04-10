@@ -1,8 +1,6 @@
 import type { AjaxRequestBody, AjaxResponse, SpotPoint } from './types';
 import { debug as debugLog } from './utils';
 
-const TRACK_TYPES = new Set< SpotPoint[ 'type' ] >( [ 'TRACK' ] );
-
 /**
  * Handles AJAX communication with the WordPress backend.
  * Replaces jQuery.post with the native fetch API.
@@ -120,7 +118,7 @@ export class DataFetcher {
             return points;
         }
 
-        const isTrack = ( p: SpotPoint ) => TRACK_TYPES.has( p.type );
+        const isTrack = ( p: SpotPoint ) => p.type === 'TRACK';
 
         const result: SpotPoint[] = [];
         let i = 0;

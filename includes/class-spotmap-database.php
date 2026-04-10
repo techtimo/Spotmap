@@ -317,7 +317,7 @@ class Spotmap_Database
                 $filter['type']
             )));
             $types_on_db = $this->get_all_types();
-            $allowed_types = array_merge($types_on_db, ['HELP-CANCEL','OK','CUSTOM','STATUS','STOP','NEWMOVEMENT','TRACK','HELP','MEDIA']);
+            $allowed_types = array_merge($types_on_db, array_keys(Spotmap_Options::get_marker_defaults()));
             foreach ($filter['type'] as $value) {
                 if (!in_array($value, $allowed_types)) {
                     return ['error' => true,'title' => $value.' not found in DB','message' => "Change the 'devices' attribute of your Shortcode"];
