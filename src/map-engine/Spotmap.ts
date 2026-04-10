@@ -403,20 +403,19 @@ export class Spotmap {
             const color = this.layerManager.getGpxColor( entry.color );
             const gpxOptions = {
                 async: true,
-                marker_options: {
+                markers: {
+                    startIcon: null,
+                    endIcon: null,
                     wptIcons: {
                         '': this.markerManager.getMarkerIcon( {
                             color,
                         } ),
                     },
-                    wptIconsType: {
+                    wptTypeIcons: {
                         '': this.markerManager.getMarkerIcon( {
                             color,
                         } ),
                     },
-                    startIconUrl: '',
-                    endIconUrl: '',
-                    shadowUrl: spotmapjsobj.url + 'leaflet-gpx/pin-shadow.png',
                 },
                 polyline_options: { color },
             };
