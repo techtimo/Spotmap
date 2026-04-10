@@ -233,6 +233,7 @@ function EndpointSection( { label, state, onChange } ) {
                     <UnitControl
                         label={ label }
                         hideLabelFromVision
+                        __next40pxDefaultSize
                         value={ `${ state.relAmount }${ state.relUnit }` }
                         units={ TIME_UNITS }
                         min={ 1 }
