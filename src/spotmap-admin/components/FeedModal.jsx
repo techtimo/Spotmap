@@ -4,13 +4,14 @@ import {
     Modal,
     Button,
     TextControl,
+    SelectControl,
     BaseControl,
     Flex,
     FlexItem,
     Notice,
 } from '@wordpress/components';
 import { arrowLeft, chevronDown, chevronUp } from '@wordpress/icons';
-import { REDACTED } from '../api';
+import { REDACTED, getVictronInstallations } from '../api';
 
 // Message types that can have per-feed custom overrides (SPOT only).
 const SPOT_CUSTOM_MESSAGE_TYPES = [
@@ -139,8 +140,49 @@ export default function FeedModal( {
         if ( ! isEdit && ( type === 'osmand' || type === 'teltonika' ) ) {
             initial.key = generateFeedKey();
         }
+        // Victron: installation picker fields not in provider.fields schema.
+        if ( type === 'victron' ) {
+            initial.installation_id   = feed?.installation_id   ?? '';
+            initial.installation_name = feed?.installation_name ?? '';
+        }
         return initial;
     } );
+
+    // Victron installation picker state.
+    const [ victronInstallations, setVictronInstallations ] = useState(
+        () => feed?.installation_id
+            ? [ { id: feed.installation_id, name: feed.installation_name ?? feed.installation_id } ]
+            : null
+    );
+    const [ victronTokenExpiry, setVictronTokenExpiry ] = useState( null );
+    const [ victronLoading, setVictronLoading ]         = useState( false );
+    const [ victronError, setVictronError ]             = useState( null );
+
+    const handleVictronConnect = async () => {
+        setVictronLoading( true );
+        setVictronError( null );
+        try {
+            const result = await getVictronInstallations( fields.token );
+            setVictronInstallations( result.installations );
+            setVictronTokenExpiry( result.token_expires );
+            // Auto-select if only one installation.
+            if ( result.installations.length === 1 ) {
+                const inst = result.installations[ 0 ];
+                setField( 'installation_id',   String( inst.id ) );
+                setField( 'installation_name', inst.name );
+                if ( ! fields.name ) {
+                    setField( 'name', inst.name );
+                }
+            } else {
+                setField( 'installation_id',   '' );
+                setField( 'installation_name', '' );
+            }
+        } catch ( err ) {
+            setVictronError( err.message );
+        } finally {
+            setVictronLoading( false );
+        }
+    };
 
     const [ customMessages, setCustomMessages ] = useState( () => {
         const stored = feed?.custom_messages ?? {};
@@ -211,6 +253,9 @@ export default function FeedModal( {
             const data = { type, ...fields };
             if ( type === 'findmespot' ) {
                 data.custom_messages = customMessages;
+            }
+            if ( type === 'victron' && ! data.installation_id ) {
+                throw new Error( 'Please connect to VRM and select an installation.' );
             }
             await onSave( data, feed?.id );
         } catch ( err ) {
@@ -372,6 +417,129 @@ export default function FeedModal( {
                         />
                     );
                 } ) }
+
+                { type === 'victron' && (
+                    <div
+                        style={ {
+                            padding: '12px',
+                            background: '#f9f9f9',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                        } }
+                    >
+                        { victronError && (
+                            <Notice
+                                status="error"
+                                onRemove={ () => setVictronError( null ) }
+                            >
+                                { victronError }
+                            </Notice>
+                        ) }
+
+                        <Flex align="center" gap={ 2 }>
+                            <FlexItem>
+                                <Button
+                                    variant="secondary"
+                                    isBusy={ victronLoading }
+                                    disabled={
+                                        victronLoading ||
+                                        ! fields.token ||
+                                        fields.token === REDACTED
+                                    }
+                                    onClick={ handleVictronConnect }
+                                >
+                                    { victronInstallations
+                                        ? 'Reload installations'
+                                        : 'Connect to VRM' }
+                                </Button>
+                            </FlexItem>
+                            { isEdit && fields.token === REDACTED && (
+                                <FlexItem>
+                                    <span
+                                        style={ {
+                                            fontSize: '0.85em',
+                                            color: '#555',
+                                        } }
+                                    >
+                                        Change the token to reload
+                                        installations.
+                                    </span>
+                                </FlexItem>
+                            ) }
+                            { victronTokenExpiry !== null && (
+                                <FlexItem>
+                                    <span
+                                        style={ {
+                                            fontSize: '0.85em',
+                                            color: '#1d7e1d',
+                                        } }
+                                    >
+                                        { victronTokenExpiry === 0
+                                            ? '✓ Token valid (no expiry)'
+                                            : `✓ Token valid until ${ new Date( victronTokenExpiry * 1000 ).toLocaleDateString() }` }
+                                    </span>
+                                </FlexItem>
+                            ) }
+                        </Flex>
+
+                        { victronInstallations !== null && (
+                            victronInstallations.length === 0 ? (
+                                <Notice status="warning" isDismissible={ false }>
+                                    No GPS-capable installations found for this
+                                    token.
+                                </Notice>
+                            ) : (
+                                <SelectControl
+                                    label="Installation"
+                                    value={ fields.installation_id }
+                                    options={ [
+                                        {
+                                            label: '— select an installation —',
+                                            value: '',
+                                        },
+                                        ...victronInstallations.map(
+                                            ( inst ) => ( {
+                                                label: inst.name,
+                                                value: String( inst.id ),
+                                            } )
+                                        ),
+                                    ] }
+                                    onChange={ ( val ) => {
+                                        const inst = victronInstallations.find(
+                                            ( i ) => String( i.id ) === val
+                                        );
+                                        setField( 'installation_id', val );
+                                        setField(
+                                            'installation_name',
+                                            inst?.name ?? ''
+                                        );
+                                        if ( inst && ! fields.name ) {
+                                            setField( 'name', inst.name );
+                                        }
+                                    } }
+                                    __nextHasNoMarginBottom
+                                    __next40pxDefaultSize
+                                />
+                            )
+                        ) }
+
+                        { ! victronInstallations && fields.installation_id && (
+                            <BaseControl
+                                label="Installation"
+                                id="victron-installation-stored"
+                                __nextHasNoMarginBottom
+                            >
+                                <p style={ { margin: '4px 0 0' } }>
+                                    { fields.installation_name ||
+                                        fields.installation_id }
+                                </p>
+                            </BaseControl>
+                        ) }
+                    </div>
+                ) }
 
                 { osmandTrackingUrl && (
                     <TrackingUrlBox

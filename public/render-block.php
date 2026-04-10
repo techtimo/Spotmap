@@ -40,8 +40,9 @@ if ( ! empty( $feeds_raw ) && isset( $feeds_raw[0]['name'] ) ) {
 	}
 }
 
-// Fall back to all feeds from DB when none are configured.
-if ( empty( $feeds ) ) {
+// Fall back to all feeds from DB only when the block is entirely unconfigured (maps still at default []).
+// If maps is set but feeds is empty, the user explicitly chose to show no feeds.
+if ( empty( $feeds ) && empty( $attributes['maps'] ) ) {
 	$feeds = ( new Spotmap_Database() )->get_all_feednames();
 }
 

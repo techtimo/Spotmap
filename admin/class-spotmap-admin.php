@@ -119,8 +119,9 @@ class Spotmap_Admin {
 	function get_feed_data() {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
 
-		$feeds           = Spotmap_Options::get_feeds();
+		$feeds              = Spotmap_Options::get_feeds();
 		$findmespot_crawler = null;
+		$victron_crawler    = null;
 		foreach ( $feeds as $feed ) {
 			if ( ! empty( $feed['paused'] ) ) {
 				continue;
@@ -135,8 +136,16 @@ class Spotmap_Admin {
 					$feed['feed_id']  ?? '',
 					$feed['password'] ?? ''
 				);
+			} elseif ( $type === 'victron' ) {
+				if ( $victron_crawler === null ) {
+					$victron_crawler = new Spotmap_Api_Crawler( 'victron' );
+				}
+				$victron_crawler->get_data(
+					$feed['name']            ?? '',
+					$feed['installation_id'] ?? '',
+					$feed['token']           ?? ''
+				);
 			}
-			// Future provider types handled here as they are implemented.
 		}
 	}
 

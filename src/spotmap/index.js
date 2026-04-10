@@ -11,8 +11,8 @@ const SpotmapIcon = (
     >
         <defs>
             <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#F59E0B" />
-                <stop offset="100%" stop-color="#EF4444" />
+                <stop offset="0%" stopColor="#F59E0B" />
+                <stop offset="100%" stopColor="#EF4444" />
             </linearGradient>
         </defs>
 
@@ -26,8 +26,8 @@ const SpotmapIcon = (
             x2="12"
             y2="0.8"
             stroke="#60A5FA"
-            stroke-width="1.4"
-            stroke-linecap="round"
+            strokeWidth="1.4"
+            strokeLinecap="round"
         />
         <line
             x1="12"
@@ -35,8 +35,8 @@ const SpotmapIcon = (
             x2="12"
             y2="23.2"
             stroke="#60A5FA"
-            stroke-width="1.4"
-            stroke-linecap="round"
+            strokeWidth="1.4"
+            strokeLinecap="round"
         />
         <line
             x1="1.8"
@@ -44,8 +44,8 @@ const SpotmapIcon = (
             x2="0.8"
             y2="12"
             stroke="#60A5FA"
-            stroke-width="1.4"
-            stroke-linecap="round"
+            strokeWidth="1.4"
+            strokeLinecap="round"
         />
         <line
             x1="22.2"
@@ -53,8 +53,8 @@ const SpotmapIcon = (
             x2="23.2"
             y2="12"
             stroke="#60A5FA"
-            stroke-width="1.4"
-            stroke-linecap="round"
+            strokeWidth="1.4"
+            strokeLinecap="round"
         />
 
         { /* <!-- Globe --> */ }
@@ -64,7 +64,7 @@ const SpotmapIcon = (
             r="10.2"
             fill="none"
             stroke="#3B82F6"
-            stroke-width="1.4"
+            strokeWidth="1.4"
         />
         { /* <!-- Latitude ellipses --> */ }
         <ellipse
@@ -74,7 +74,7 @@ const SpotmapIcon = (
             ry="3.9"
             fill="none"
             stroke="#3B82F6"
-            stroke-width="1"
+            strokeWidth="1"
         />
         <ellipse
             cx="12"
@@ -83,7 +83,7 @@ const SpotmapIcon = (
             ry="7.7"
             fill="none"
             stroke="#3B82F6"
-            stroke-width="1"
+            strokeWidth="1"
         />
         { /* <!-- Meridian ellipse --> */ }
         <ellipse
@@ -93,7 +93,7 @@ const SpotmapIcon = (
             ry="10.2"
             fill="none"
             stroke="#3B82F6"
-            stroke-width="1"
+            strokeWidth="1"
         />
 
         { /* <!-- Route (clean S curve) --> */ }
@@ -102,8 +102,8 @@ const SpotmapIcon = (
            C 9 8, 14 18, 19 6"
             fill="none"
             stroke="url(#g)"
-            stroke-width="2.2"
-            stroke-linecap="round"
+            strokeWidth="2.2"
+            strokeLinecap="round"
         />
 
         { /* <!-- Start --> */ }

@@ -93,6 +93,26 @@ class Spotmap_Providers {
 					],
 				],
 
+				'victron' => [
+					'label'  => 'Victron VRM',
+					'fields' => [
+						[
+							'key'         => 'name',
+							'type'        => 'text',
+							'label'       => 'Feed Name',
+							'required'    => true,
+							'description' => 'A unique name used to identify this feed in the map block.',
+						],
+						[
+							'key'         => 'token',
+							'type'        => 'password',
+							'label'       => 'Access Token',
+							'required'    => true,
+							'description' => 'Personal access token from VRM Portal → Preferences → Integrations → Access tokens.',
+						],
+					],
+				],
+
 				// Future providers — add crawler implementation alongside each entry.
 				// 'garmin' => [
 				//     'label'  => 'Garmin inReach',

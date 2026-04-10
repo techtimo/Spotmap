@@ -181,6 +181,23 @@ class Spotmap_Rest_Api {
 			]
 		);
 
+		// --- Victron ---
+		register_rest_route(
+			self::NAMESPACE,
+			'/victron/installations',
+			[
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => [ __CLASS__, 'get_victron_installations' ],
+				'permission_callback' => [ __CLASS__, 'admin_permission' ],
+				'args'                => [
+					'token' => [
+						'type'     => 'string',
+						'required' => true,
+					],
+				],
+			]
+		);
+
 		// --- Providers ---
 		register_rest_route(
 			self::NAMESPACE,
@@ -671,6 +688,81 @@ class Spotmap_Rest_Api {
 		return rest_ensure_response( Spotmap_Providers::all() );
 	}
 
+	// Victron
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Validates a Victron access token and returns the list of GPS-capable
+	 * installations together with the token's expiry date.
+	 *
+	 * GET /victron/installations?token=<token>
+	 *
+	 * Response: { token_expires: <unix|null>, installations: [ { id, name } ] }
+	 */
+	public static function get_victron_installations( WP_REST_Request $request ) {
+		$token   = $request->get_param( 'token' );
+		$headers = [ 'X-Authorization' => 'Token ' . $token ];
+
+		// 1. Validate token and get user ID.
+		$me_resp = wp_remote_get(
+			'https://vrmapi.victronenergy.com/v2/users/me',
+			[ 'headers' => $headers, 'timeout' => 10 ]
+		);
+		if ( is_wp_error( $me_resp ) ) {
+			return new WP_Error( 'network_error', 'Could not reach the Victron VRM API.', [ 'status' => 502 ] );
+		}
+		$me = json_decode( wp_remote_retrieve_body( $me_resp ), true );
+		if ( empty( $me['success'] ) ) {
+			return new WP_Error( 'invalid_token', 'Invalid access token.', [ 'status' => 401 ] );
+		}
+		$user_id         = (int) $me['user']['id'];
+		$id_access_token = (int) $me['user']['idAccessToken'];
+
+		// 2. Look up the token expiry.
+		$token_expires = null;
+		$tok_resp      = wp_remote_get(
+			"https://vrmapi.victronenergy.com/v2/users/{$user_id}/accesstokens",
+			[ 'headers' => $headers, 'timeout' => 10 ]
+		);
+		if ( ! is_wp_error( $tok_resp ) ) {
+			$tok_json = json_decode( wp_remote_retrieve_body( $tok_resp ), true );
+			foreach ( $tok_json['tokens'] ?? [] as $t ) {
+				if ( (int) $t['idAccessToken'] === $id_access_token ) {
+					$token_expires = isset( $t['expires'] ) ? (int) $t['expires'] : null;
+					break;
+				}
+			}
+		}
+
+		// 3. Fetch installations and filter to those with active GPS.
+		$inst_resp = wp_remote_get(
+			"https://vrmapi.victronenergy.com/v2/users/{$user_id}/installations?extended=1",
+			[ 'headers' => $headers, 'timeout' => 15 ]
+		);
+		if ( is_wp_error( $inst_resp ) ) {
+			return new WP_Error( 'network_error', 'Could not fetch installations.', [ 'status' => 502 ] );
+		}
+		$inst_json     = json_decode( wp_remote_retrieve_body( $inst_resp ), true );
+		$installations = [];
+		foreach ( $inst_json['records'] ?? [] as $rec ) {
+			$ext = [];
+			foreach ( $rec['extended'] ?? [] as $e ) {
+				$ext[ $e['code'] ] = $e;
+			}
+			if ( array_key_exists( 'lt', $ext ) ) {
+				$installations[] = [
+					'id'   => (int) $rec['idSite'],
+					'name' => sanitize_text_field( $rec['name'] ?? '' ),
+				];
+			}
+		}
+
+		return rest_ensure_response( [
+			'token_expires' => $token_expires,
+			'installations' => $installations,
+		] );
+	}
+
 	// -------------------------------------------------------------------------
 	// Markers
 	// -------------------------------------------------------------------------
@@ -859,6 +951,12 @@ class Spotmap_Rest_Api {
 			$data['key'] = sanitize_text_field( $body['key'] );
 		}
 
+		// Victron: installation_id and installation_name are set by the picker, not a text field.
+		if ( $type === 'victron' ) {
+			$data['installation_id']   = sanitize_text_field( $body['installation_id'] ?? '' );
+			$data['installation_name'] = sanitize_text_field( $body['installation_name'] ?? '' );
+		}
+
 		// Per-feed custom message overrides (findmespot only).
 		if ( $type === 'findmespot' && isset( $body['custom_messages'] ) && is_array( $body['custom_messages'] ) ) {
 			$allowed_msg_types = [ 'OK', 'HELP', 'CUSTOM' ];
@@ -903,6 +1001,10 @@ class Spotmap_Rest_Api {
 			}
 		}
 
+		if ( $type === 'victron' && empty( $data['installation_id'] ) ) {
+			return new WP_Error( 'missing_field', '"Installation" is required.', [ 'status' => 422 ] );
+		}
+
 		return true;
 	}
 
@@ -916,6 +1018,28 @@ class Spotmap_Rest_Api {
 	 */
 	private static function validate_feed_with_provider( array $data ) {
 		$type = $data['type'] ?? '';
+
+		if ( $type === 'victron' ) {
+			$token = $data['token'] ?? '';
+			if ( empty( $token ) ) {
+				return true;
+			}
+			$response = wp_remote_get(
+				'https://vrmapi.victronenergy.com/v2/users/me',
+				[ 'headers' => [ 'X-Authorization' => 'Token ' . $token ], 'timeout' => 10 ]
+			);
+			if ( is_wp_error( $response ) ) {
+				return true; // Network error — don't block saving.
+			}
+			$json = json_decode( wp_remote_retrieve_body( $response ), true );
+			if ( empty( $json['success'] ) ) {
+				return new WP_Error(
+					'invalid_token',
+					'The Victron access token is invalid. Please check it and try again.',
+					[ 'status' => 422 ]
+				);
+			}
+		}
 
 		if ( $type === 'findmespot' ) {
 			$feed_id  = $data['feed_id'] ?? '';
