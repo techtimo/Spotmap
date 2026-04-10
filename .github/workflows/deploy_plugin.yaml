@@ -2,7 +2,7 @@ name: Release & Deploy
 
 on:
   push:
-    branches: [master]
+    branches: [ main ]
     paths:
       - spotmap.php
 
@@ -33,6 +33,16 @@ jobs:
           else
               echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Claim git tag (lock against concurrent runs)
+        if: steps.tag_check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
+          # If a concurrent run already pushed this tag, the push above fails
+          # and the job exits here — before wasting time on the build.
 
       - name: Set up Node
         if: steps.tag_check.outputs.exists == 'false'
@@ -95,16 +105,6 @@ jobs:
               --password "$SVN_PASSWORD" \
               --no-auth-cache \
               -m "Release $VERSION"
-
-      - name: Sync WP.org assets (banners, screenshots, icons)
-        if: steps.tag_check.outputs.exists == 'false'
-        uses: 10up/action-wordpress-plugin-asset-update@v1
-        with:
-          assets-dir: .wordpress-org
-          slug: spotmap
-        env:
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
 
       - name: Create git tag
         if: steps.tag_check.outputs.exists == 'false'
