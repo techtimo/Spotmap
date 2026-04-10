@@ -86,7 +86,7 @@ jobs:
 
           # Sync trunk
           svn update --set-depth infinity /tmp/svn/trunk
-          rsync -rc --delete /tmp/plugin-build/spotmap/ /tmp/svn/trunk/
+          rsync -rc --delete --delete-excluded /tmp/plugin-build/spotmap/ /tmp/svn/trunk/
 
           # Stage all changes
           cd /tmp/svn
@@ -100,10 +100,13 @@ jobs:
               svn copy trunk "tags/$VERSION"
           fi
 
+          svn update
+
           svn commit \
               --username "$SVN_USERNAME" \
               --password "$SVN_PASSWORD" \
               --no-auth-cache \
+              --non-interactive \
               -m "Release $VERSION"
 
       - name: Create git tag
