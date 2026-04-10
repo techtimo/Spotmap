@@ -14,8 +14,8 @@
  *   2. Implement the private static method migrate_to_x_y_z().
  *   Migrations run in version order; each runs only once per install.
  */
-class Spotmap_Migrator {
-
+class Spotmap_Migrator
+{
     /**
      * Ordered map of target version => method name.
      * Add new entries here as the plugin evolves.
@@ -32,24 +32,25 @@ class Spotmap_Migrator {
      *
      * @return void
      */
-    public static function run() {
+    public static function run()
+    {
         // Always sync the schema (dbDelta is idempotent — no-ops when up to date).
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-database.php';
         Spotmap_Database::create_table();
 
-        $stored = get_option( Spotmap_Options::OPTION_VERSION, '0.0.0' );
+        $stored = get_option(Spotmap_Options::OPTION_VERSION, '0.0.0');
 
-        if ( version_compare( $stored, SPOTMAP_VERSION, '>=' ) ) {
+        if (version_compare($stored, SPOTMAP_VERSION, '>=')) {
             return;
         }
 
-        foreach ( self::$migrations as $version => $method ) {
-            if ( version_compare( $stored, $version, '<' ) ) {
+        foreach (self::$migrations as $version => $method) {
+            if (version_compare($stored, $version, '<')) {
                 self::$method();
             }
         }
 
-        update_option( Spotmap_Options::OPTION_VERSION, SPOTMAP_VERSION );
+        update_option(Spotmap_Options::OPTION_VERSION, SPOTMAP_VERSION);
     }
 
     // -------------------------------------------------------------------------
@@ -77,7 +78,8 @@ class Spotmap_Migrator {
      *
      * @return void
      */
-    private static function migrate_to_1_0_0(): void {
+    private static function migrate_to_1_0_0(): void
+    {
         global $wpdb;
         $table = $wpdb->prefix . 'spotmap_points';
 
@@ -85,88 +87,94 @@ class Spotmap_Migrator {
 
         // Normalize EXTREME-TRACK and UNLIMITED-TRACK → TRACK (0.11.x rows).
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $wpdb->query( "UPDATE `{$table}` SET `type` = 'TRACK' WHERE `type` IN ('EXTREME-TRACK', 'UNLIMITED-TRACK')" );
+        $wpdb->query("UPDATE `{$table}` SET `type` = 'TRACK' WHERE `type` IN ('EXTREME-TRACK', 'UNLIMITED-TRACK')");
 
         // Migrate global custom messages into each findmespot feed, then drop the option.
-        $global_messages = get_option( 'spotmap_custom_messages', [] );
-        if ( is_array( $global_messages ) && ! empty( $global_messages ) ) {
+        $global_messages = get_option('spotmap_custom_messages', []);
+        if (is_array($global_messages) && ! empty($global_messages)) {
             $feeds   = Spotmap_Options::get_feeds();
             $changed = false;
-            foreach ( $feeds as &$feed ) {
-                if ( ( $feed['type'] ?? '' ) !== 'findmespot' ) {
+            foreach ($feeds as &$feed) {
+                if (($feed['type'] ?? '') !== 'findmespot') {
                     continue;
                 }
-                if ( empty( $feed['custom_messages'] ) ) {
+                if (empty($feed['custom_messages'])) {
                     $feed['custom_messages'] = $global_messages;
                     $changed                 = true;
                 }
             }
-            unset( $feed );
-            if ( $changed ) {
-                Spotmap_Options::save_feeds( $feeds );
+            unset($feed);
+            if ($changed) {
+                Spotmap_Options::save_feeds($feeds);
             }
         }
-        delete_option( 'spotmap_custom_messages' );
+        delete_option('spotmap_custom_messages');
 
         // Update spotmap_marker: rename UNLIMITED-TRACK key → TRACK, drop customMessage.
-        $markers = get_option( 'spotmap_marker', [] );
-        if ( is_array( $markers ) ) {
+        $markers = get_option('spotmap_marker', []);
+        if (is_array($markers)) {
             $changed = false;
-            if ( isset( $markers['UNLIMITED-TRACK'] ) && ! isset( $markers['TRACK'] ) ) {
+            if (isset($markers['UNLIMITED-TRACK']) && ! isset($markers['TRACK'])) {
                 $markers['TRACK'] = $markers['UNLIMITED-TRACK'];
-                unset( $markers['UNLIMITED-TRACK'] );
+                unset($markers['UNLIMITED-TRACK']);
                 $changed = true;
             }
-            foreach ( $markers as $type => $config ) {
-                if ( is_array( $config ) && array_key_exists( 'customMessage', $config ) ) {
-                    unset( $markers[ $type ]['customMessage'] );
+            foreach ($markers as $type => $config) {
+                if (is_array($config) && array_key_exists('customMessage', $config)) {
+                    unset($markers[ $type ]['customMessage']);
                     $changed = true;
                 }
             }
-            if ( $changed ) {
-                update_option( 'spotmap_marker', $markers );
+            if ($changed) {
+                update_option('spotmap_marker', $markers);
             }
         }
 
         // Convert flat legacy feed options (0.11.x) → unified spotmap_feeds array.
         // If feeds are already in the new format, skip to avoid overwriting them.
-        if ( ! empty( Spotmap_Options::get_feeds() ) ) {
+        if (! empty(Spotmap_Options::get_feeds())) {
             return;
         }
 
-        $names     = get_option( 'spotmap_findmespot_name', [] );
-        $ids       = get_option( 'spotmap_findmespot_id', [] );
-        $passwords = get_option( 'spotmap_findmespot_password', [] );
+        $names     = get_option('spotmap_findmespot_name', []);
+        $ids       = get_option('spotmap_findmespot_id', []);
+        $passwords = get_option('spotmap_findmespot_password', []);
 
-        if ( ! is_array( $names ) )     $names     = [];
-        if ( ! is_array( $ids ) )       $ids       = [];
-        if ( ! is_array( $passwords ) ) $passwords = [];
+        if (! is_array($names)) {
+            $names     = [];
+        }
+        if (! is_array($ids)) {
+            $ids       = [];
+        }
+        if (! is_array($passwords)) {
+            $passwords = [];
+        }
 
         $feeds = [];
-        foreach ( $ids as $i => $feed_id ) {
-            if ( empty( $feed_id ) ) {
+        foreach ($ids as $i => $feed_id) {
+            if (empty($feed_id)) {
                 continue;
             }
             $feeds[] = [
-                'id'       => uniqid( 'feed_', true ),
+                'id'       => uniqid('feed_', true),
                 'type'     => 'findmespot',
-                'name'     => isset( $names[ $i ] ) ? sanitize_text_field( $names[ $i ] ) : '',
-                'feed_id'  => sanitize_text_field( $feed_id ),
-                'password' => isset( $passwords[ $i ] ) ? $passwords[ $i ] : '',
+                'name'     => isset($names[ $i ]) ? sanitize_text_field($names[ $i ]) : '',
+                'feed_id'  => sanitize_text_field($feed_id),
+                'password' => isset($passwords[ $i ]) ? $passwords[ $i ] : '',
             ];
         }
 
-        if ( ! empty( $feeds ) ) {
-            Spotmap_Options::save_feeds( $feeds );
-        } elseif ( false === get_option( Spotmap_Options::OPTION_FEEDS ) ) {
+        if (! empty($feeds)) {
+            Spotmap_Options::save_feeds($feeds);
+        } elseif (false === get_option(Spotmap_Options::OPTION_FEEDS)) {
             // First-ever install: initialize the empty array so callers can rely on it.
-            Spotmap_Options::save_feeds( [] );
+            Spotmap_Options::save_feeds([]);
         }
 
-        delete_option( 'spotmap_findmespot_name' );
-        delete_option( 'spotmap_findmespot_id' );
-        delete_option( 'spotmap_findmespot_password' );
-        delete_option( 'spotmap_api_providers' );
+        delete_option('spotmap_findmespot_name');
+        delete_option('spotmap_findmespot_id');
+        delete_option('spotmap_findmespot_password');
+        delete_option('spotmap_api_providers');
     }
 
     /**
@@ -175,16 +183,17 @@ class Spotmap_Migrator {
      *
      * @return void
      */
-    private static function migrate_table_to_1_0_0(): void {
+    private static function migrate_table_to_1_0_0(): void
+    {
         global $wpdb;
         $table = $wpdb->prefix . 'spotmap_points';
 
-        if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) ) {
+        if (! $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table))) {
             return; // Fresh install; create_table() will handle it.
         }
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $wpdb->query( "ALTER TABLE `{$table}` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT" );
+        $wpdb->query("ALTER TABLE `{$table}` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT");
     }
 
 }

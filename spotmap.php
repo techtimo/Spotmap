@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name:       Spotmap
  * Plugin URI:        https://github.com/techtimo/spotmap
@@ -16,28 +17,31 @@
 
 
 // Block direct access
-defined( 'ABSPATH' ) or die();
+defined('ABSPATH') or die();
 
-define( 'SPOTMAP_VERSION', '1.0.0' );
+define('SPOTMAP_VERSION', '1.0.0');
 
-require_once plugin_dir_path( __FILE__ ) . 'vendor-prefixed/autoload.php';
+require_once plugin_dir_path(__FILE__) . 'vendor-prefixed/autoload.php';
 
-register_activation_hook( __FILE__, 'activate_spotmap' );
-function activate_spotmap() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spotmap-activator.php';
-	Spotmap_Activator::activate();
+register_activation_hook(__FILE__, 'activate_spotmap');
+function activate_spotmap()
+{
+    require_once plugin_dir_path(__FILE__) . 'includes/class-spotmap-activator.php';
+    Spotmap_Activator::activate();
 }
 
-register_deactivation_hook( __FILE__, 'deactivate_spotmap' );
-function deactivate_spotmap() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-spotmap-deactivator.php';
-	Spotmap_Deactivator::deactivate();
+register_deactivation_hook(__FILE__, 'deactivate_spotmap');
+function deactivate_spotmap()
+{
+    require_once plugin_dir_path(__FILE__) . 'includes/class-spotmap-deactivator.php';
+    Spotmap_Deactivator::deactivate();
 }
 
-require plugin_dir_path( __FILE__ ) . 'includes/class-spotmap.php';
+require plugin_dir_path(__FILE__) . 'includes/class-spotmap.php';
 
-function run_spotmap() {
-	$plugin = new Spotmap();
-	$plugin->run();
+function run_spotmap()
+{
+    $plugin = new Spotmap();
+    $plugin->run();
 }
 run_spotmap();

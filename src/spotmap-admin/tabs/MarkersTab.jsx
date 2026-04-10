@@ -22,7 +22,12 @@ function MarkerPreview( { iconShape, icon } ) {
         return (
             <div
                 className="beautify-marker circle-dot"
-                style={ { ...base, width: '10px', height: '10px', borderWidth: '5px' } }
+                style={ {
+                    ...base,
+                    width: '10px',
+                    height: '10px',
+                    borderWidth: '5px',
+                } }
             />
         );
     }
@@ -33,11 +38,20 @@ function MarkerPreview( { iconShape, icon } ) {
         return (
             <div
                 className="beautify-marker marker"
-                style={ { ...base, width: '28px', height: '28px', display: 'inline-block' } }
+                style={ {
+                    ...base,
+                    width: '28px',
+                    height: '28px',
+                    display: 'inline-block',
+                } }
             >
                 <i
                     className={ `fas fa-${ effectiveIcon }` }
-                    style={ { ...iStyle, marginTop: '5px', marginLeft: '-2px' } }
+                    style={ {
+                        ...iStyle,
+                        marginTop: '5px',
+                        marginLeft: '-2px',
+                    } }
                 />
             </div>
         );
@@ -47,7 +61,14 @@ function MarkerPreview( { iconShape, icon } ) {
     return (
         <div
             className="beautify-marker circle"
-            style={ { ...base, width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } }
+            style={ {
+                ...base,
+                width: '22px',
+                height: '22px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            } }
         >
             <i className={ `fas fa-${ effectiveIcon }` } style={ iStyle } />
         </div>
@@ -136,7 +157,9 @@ export default function MarkersTab( { onNoticeChange } ) {
                                     } }
                                 >
                                     <i
-                                        className={ `fas fa-${ config.icon || 'circle' }` }
+                                        className={ `fas fa-${
+                                            config.icon || 'circle'
+                                        }` }
                                         style={ {
                                             fontSize: '1.3em',
                                             width: '1.5em',
