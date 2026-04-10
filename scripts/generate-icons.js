@@ -19,13 +19,17 @@ const sizes = [
 const svg = fs.readFileSync( SRC, 'utf8' );
 
 for ( const { name, width, height } of sizes ) {
-    svg2img( svg, { width, height, preserveAspectRatio: true }, ( err, buffer ) => {
-        if ( err ) {
-            console.error( `Failed to generate ${ name }:`, err );
-            process.exit( 1 );
+    svg2img(
+        svg,
+        { width, height, preserveAspectRatio: true },
+        ( err, buffer ) => {
+            if ( err ) {
+                console.error( `Failed to generate ${ name }:`, err );
+                process.exit( 1 );
+            }
+            const dest = path.join( OUT, name );
+            fs.writeFileSync( dest, buffer );
+            console.log( `✓ ${ dest }` );
         }
-        const dest = path.join( OUT, name );
-        fs.writeFileSync( dest, buffer );
-        console.log( `✓ ${ dest }` );
-    } );
+    );
 }

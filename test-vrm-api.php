@@ -1,4 +1,5 @@
 <?php
+
 // Quick test of VRM API connectivity
 $token = '7b38727316dd384635a69a4a5faf8e8a6aa6952d935c3f55a1b2f50e8e5493ee';
 $installation_id = '522142';
@@ -42,4 +43,3 @@ if (!empty($json['success']) && !empty($json['records']['data']['attributes'])) 
     echo "Altitude (attr 584): " . ($attrs[584]['valueFloat'] ?? 'null') . " m\n";
     echo "Seconds Ago:        " . ($attrs['secondsAgo']['value'] ?? 'null') . "\n";
 }
-?>

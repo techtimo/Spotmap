@@ -21,7 +21,17 @@
         },
         "types": {
             "type": "array",
-            "default": [ "OK", "CUSTOM", "HELP", "HELP-CANCEL", "TRACK", "MEDIA", "NEWMOVEMENT", "STOP", "STATUS" ]
+            "default": [
+                "OK",
+                "CUSTOM",
+                "HELP",
+                "HELP-CANCEL",
+                "TRACK",
+                "MEDIA",
+                "NEWMOVEMENT",
+                "STOP",
+                "STATUS"
+            ]
         },
         "groupBy": {
             "type": "string",

@@ -190,6 +190,7 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 * New: Interactive **data table** linked to map — click a row to zoom to that position
 * New: **GPX export** — convert tracked positions to GPX files
 * Improved: Full **Gutenberg block** with live preview and block sidebar settings
+* Improved: In unlikely cases WP simply deleted the cron job to fetch new points, this will not happen anymore
 * Improved: Map engine rewritten to support **faster map rendering** with large numbers of points
 * Improved: last-point marker is now customizable via additional CSS 
 * Fix: `id` column gains `AUTO_INCREMENT` (was missing in 0.11.2); migration runs automatically on update

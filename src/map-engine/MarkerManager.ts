@@ -264,7 +264,8 @@ export class MarkerManager {
 
         if ( entry.hiddenPoints ) {
             const { count, radius } = entry.hiddenPoints;
-            const radiusNote = radius > 0 ? ` within a radius of ${ radius } meters` : '';
+            const radiusNote =
+                radius > 0 ? ` within a radius of ${ radius } meters` : '';
             html += `There are ${ count } hidden points${ radiusNote }<br>`;
         }
 
