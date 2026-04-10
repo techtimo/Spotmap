@@ -1,8 +1,3 @@
-import type { PointType } from './types';
-
-/** Point types that represent tracking positions (rendered as small dots) */
-export const TRACK_TYPES: PointType[] = [ 'TRACK' ];
-
 /** Default marker colors */
 export const DEFAULT_COLOR = 'blue';
 export const DEFAULT_GPX_COLOR = 'gold';

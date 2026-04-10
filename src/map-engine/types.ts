@@ -128,7 +128,8 @@ export type PointType =
     | 'HELP-CANCEL'
     | 'MEDIA'
     | 'NEWMOVEMENT'
-    | 'SOS';
+    | 'STATUS'
+    | 'STOP';
 
 /** Internal structure for a feed's map layers */
 export interface FeedLayer {

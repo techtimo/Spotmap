@@ -1,7 +1,6 @@
 import type { SpotPoint, SpotmapLayers } from './types';
 import { debug as debugLog } from './utils';
 import {
-    TRACK_TYPES,
     CIRCLE_DOT_ICON_SIZE,
     CIRCLE_DOT_ICON_ANCHOR,
     CIRCLE_DOT_BORDER_WIDTH,
@@ -123,7 +122,7 @@ export class MarkerManager {
         if ( pointType && spotmapjsobj.marker[ pointType ] ) {
             return spotmapjsobj.marker[ pointType ].iconShape;
         }
-        if ( pointType && TRACK_TYPES.includes( pointType ) ) {
+        if ( pointType === 'TRACK' ) {
             return spotmapjsobj.marker.TRACK?.iconShape ?? 'circle-dot';
         }
         return 'marker';
@@ -135,7 +134,7 @@ export class MarkerManager {
     private getMarkerOptions( point: SpotPoint ): L.MarkerOptions {
         let zIndexOffset = Z_INDEX_TRACK;
 
-        if ( ! TRACK_TYPES.includes( point.type ) ) {
+        if ( point.type !== 'TRACK' ) {
             zIndexOffset = Z_INDEX_STATUS;
         }
         if ( [ 'HELP', 'HELP-CANCEL' ].includes( point.type ) ) {
@@ -182,10 +181,7 @@ export class MarkerManager {
                 iconOptions.iconSize = CIRCLE_DOT_ICON_SIZE;
                 iconOptions.borderWith = CIRCLE_DOT_BORDER_WIDTH;
             }
-        } else if (
-            pointType &&
-            TRACK_TYPES.includes( pointType as SpotPoint[ 'type' ] )
-        ) {
+        } else if ( pointType === 'TRACK' ) {
             const trackMarker = spotmapjsobj.marker.TRACK;
             iconOptions.iconShape = trackMarker?.iconShape;
             iconOptions.icon = trackMarker?.icon;
