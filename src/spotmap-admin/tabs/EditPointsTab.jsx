@@ -167,49 +167,156 @@ export default function EditPointsTab( { onNoticeChange } ) {
                         return;
                     }
                     total++;
-                    marker.dragging.enable();
-                    // Capture position before each drag so undo knows where to go back.
-                    let prevLatLng = marker.getLatLng();
-                    marker.on( 'dragstart', ( e ) => {
-                        prevLatLng = e.target.getLatLng();
-                    } );
-                    marker.on( 'dragend', async ( e ) => {
-                        const { lat, lng } = e.target.getLatLng();
-                        const prev = prevLatLng;
-                        try {
-                            await api.updatePoint( point.id, {
-                                latitude: lat,
-                                longitude: lng,
+
+                    const wireDragging = ( m ) => {
+                        m.dragging.enable();
+                        // Leaflet suppresses popup-on-click after a drag; wire
+                        // it explicitly so it always works.
+                        m.on( 'click', () => {
+                            if ( m.getPopup() ) {
+                                m.openPopup();
+                            }
+                        } );
+                        let prevLatLng = m.getLatLng();
+                        m.on( 'dragstart', ( e ) => {
+                            prevLatLng = e.target.getLatLng();
+                            if ( m._icon ) {
+                                m._icon.style.cursor = 'grabbing';
+                            }
+                        } );
+                        m.on( 'dragend', async ( e ) => {
+                            // Re-enable both after dragend — Leaflet's
+                            // MarkerDrag and our own disable() can leave these
+                            // in an inconsistent state.
+                            sm.map.dragging.enable();
+                            m.dragging.enable();
+                            if ( m._icon ) {
+                                m._icon.style.cursor = 'pointer';
+                            }
+                            const { lat, lng } = e.target.getLatLng();
+                            const prev = prevLatLng;
+                            try {
+                                await api.updatePoint( point.id, {
+                                    latitude: lat,
+                                    longitude: lng,
+                                } );
+                                onNoticeChange( {
+                                    status: 'success',
+                                    text:
+                                        'Point #' +
+                                        point.id +
+                                        ' saved at ' +
+                                        lat.toFixed( 5 ) +
+                                        ', ' +
+                                        lng.toFixed( 5 ) +
+                                        '.',
+                                } );
+                                undoStackRef.current = [
+                                    ...undoStackRef.current,
+                                    {
+                                        pointId: point.id,
+                                        marker: m,
+                                        prevLat: prev.lat,
+                                        prevLng: prev.lng,
+                                    },
+                                ];
+                                setUndoCount( undoStackRef.current.length );
+                            } catch ( err ) {
+                                onNoticeChange( {
+                                    status: 'error',
+                                    text: `Failed to save point #${ point.id }: ${ err.message }`,
+                                } );
+                                e.target.setLatLng( [ prev.lat, prev.lng ] );
+                            }
+                        } );
+                    };
+
+                    // L.CircleMarker has no dragging support.
+                    // On mousedown we wait to see if the user actually moves the
+                    // mouse (drag) or just clicks (popup).  The swap only happens
+                    // on the first mousemove so the drag starts seamlessly.
+                    if ( ! marker.dragging ) {
+                        marker.on( 'mousedown', ( e ) => {
+                            window.L.DomEvent.stopPropagation( e );
+                            const nativeEvent = e.originalEvent;
+                            let swapped = false;
+
+                            // Disable map panning immediately so that any
+                            // mousemoves before/during the swap don't pan the
+                            // map. Always restored on mouseup.
+                            sm.map.dragging.disable();
+
+                            const doSwap = () => {
+                                swapped = true;
+                                document.removeEventListener(
+                                    'mousemove',
+                                    onMove // eslint-disable-line no-use-before-define
+                                );
+                                const color = marker.options.color ?? 'blue';
+                                const replacement = window.L.marker(
+                                    marker.getLatLng(),
+                                    {
+                                        icon: window.L.divIcon( {
+                                            className: '',
+                                            html: `<div style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><div style="width:10px;height:10px;border-radius:50%;background:white;border:2px solid ${ color };box-sizing:border-box;flex-shrink:0;"></div></div>`,
+                                            iconSize: [ 20, 20 ],
+                                            iconAnchor: [ 10, 10 ],
+                                        } ),
+                                    }
+                                );
+                                const popup = marker.getPopup();
+                                if ( popup ) {
+                                    replacement.bindPopup(
+                                        popup.getContent()
+                                    );
+                                }
+                                feedLayer.featureGroup.removeLayer( marker );
+                                feedLayer.featureGroup.addLayer( replacement );
+                                feedLayer.markers[ i ] = replacement;
+                                wireDragging( replacement );
+                                // Re-fire the original mousedown on the new
+                                // icon so Leaflet's drag handler starts.
+                                if ( replacement._icon && nativeEvent ) {
+                                    replacement._icon.dispatchEvent(
+                                        new MouseEvent( 'mousedown', {
+                                            bubbles: true,
+                                            cancelable: true,
+                                            clientX: nativeEvent.clientX,
+                                            clientY: nativeEvent.clientY,
+                                            button: nativeEvent.button,
+                                        } )
+                                    );
+                                }
+                            };
+
+                            const onMove = () => {
+                                if ( ! swapped ) {
+                                    doSwap();
+                                }
+                            };
+                            // Always restore map dragging on mouseup, whether
+                            // it was a click or a drag.
+                            const onUp = () => {
+                                document.removeEventListener(
+                                    'mousemove',
+                                    onMove
+                                );
+                                sm.map.dragging.enable();
+                                if ( ! swapped ) {
+                                    // Pure click — open popup.
+                                    marker.openPopup();
+                                }
+                            };
+
+                            document.addEventListener( 'mousemove', onMove );
+                            document.addEventListener( 'mouseup', onUp, {
+                                once: true,
                             } );
-                            onNoticeChange( {
-                                status: 'success',
-                                text:
-                                    'Point #' +
-                                    point.id +
-                                    ' saved at ' +
-                                    lat.toFixed( 5 ) +
-                                    ', ' +
-                                    lng.toFixed( 5 ) +
-                                    '.',
-                            } );
-                            undoStackRef.current = [
-                                ...undoStackRef.current,
-                                {
-                                    pointId: point.id,
-                                    marker,
-                                    prevLat: prev.lat,
-                                    prevLng: prev.lng,
-                                },
-                            ];
-                            setUndoCount( undoStackRef.current.length );
-                        } catch ( err ) {
-                            onNoticeChange( {
-                                status: 'error',
-                                text: `Failed to save point #${ point.id }: ${ err.message }`,
-                            } );
-                            e.target.setLatLng( [ prev.lat, prev.lng ] );
-                        }
-                    } );
+                        } );
+                        return;
+                    }
+
+                    wireDragging( marker );
                 } );
             }
 
