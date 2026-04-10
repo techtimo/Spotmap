@@ -25,6 +25,8 @@ const ALL_TYPES = [
     'TRACK',
     'MEDIA',
     'NEWMOVEMENT',
+    'STOP',
+    'STATUS',
 ];
 
 export default function Edit( { attributes, setAttributes } ) {
