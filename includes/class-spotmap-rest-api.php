@@ -695,9 +695,10 @@ class Spotmap_Rest_Api {
 			if ( ! is_array( $config ) ) {
 				continue;
 			}
+			$icon = sanitize_text_field( $config['icon'] ?? '' );
 			$sanitized[ $type ] = [
 				'iconShape' => sanitize_text_field( $config['iconShape'] ?? '' ),
-				'icon'      => sanitize_text_field( $config['icon'] ?? '' ),
+				'icon'      => $icon !== '' ? $icon : 'circle',
 			];
 		}
 

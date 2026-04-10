@@ -24,7 +24,6 @@ class Spotmap_Migrator {
      */
     private static $migrations = [
         '1.0.0' => 'migrate_to_1_0_0',
-        '1.1.0' => 'migrate_to_1_1_0',
     ];
 
     /**
@@ -78,11 +77,59 @@ class Spotmap_Migrator {
      *
      * @return void
      */
-    private static function migrate_to_1_0_0() {
+    private static function migrate_to_1_0_0(): void {
+        global $wpdb;
+        $table = $wpdb->prefix . 'spotmap_points';
+
         self::migrate_table_to_1_0_0();
 
-        // If feeds are already in the new format, this migration already ran
-        // (or feeds were configured directly in 1.0.x). Don't overwrite them.
+        // Normalize EXTREME-TRACK and UNLIMITED-TRACK → TRACK (0.11.x rows).
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->query( "UPDATE `{$table}` SET `type` = 'TRACK' WHERE `type` IN ('EXTREME-TRACK', 'UNLIMITED-TRACK')" );
+
+        // Migrate global custom messages into each findmespot feed, then drop the option.
+        $global_messages = get_option( 'spotmap_custom_messages', [] );
+        if ( is_array( $global_messages ) && ! empty( $global_messages ) ) {
+            $feeds   = Spotmap_Options::get_feeds();
+            $changed = false;
+            foreach ( $feeds as &$feed ) {
+                if ( ( $feed['type'] ?? '' ) !== 'findmespot' ) {
+                    continue;
+                }
+                if ( empty( $feed['custom_messages'] ) ) {
+                    $feed['custom_messages'] = $global_messages;
+                    $changed                 = true;
+                }
+            }
+            unset( $feed );
+            if ( $changed ) {
+                Spotmap_Options::save_feeds( $feeds );
+            }
+        }
+        delete_option( 'spotmap_custom_messages' );
+
+        // Update spotmap_marker: rename UNLIMITED-TRACK key → TRACK, drop customMessage.
+        $markers = get_option( 'spotmap_marker', [] );
+        if ( is_array( $markers ) ) {
+            $changed = false;
+            if ( isset( $markers['UNLIMITED-TRACK'] ) && ! isset( $markers['TRACK'] ) ) {
+                $markers['TRACK'] = $markers['UNLIMITED-TRACK'];
+                unset( $markers['UNLIMITED-TRACK'] );
+                $changed = true;
+            }
+            foreach ( $markers as $type => $config ) {
+                if ( is_array( $config ) && array_key_exists( 'customMessage', $config ) ) {
+                    unset( $markers[ $type ]['customMessage'] );
+                    $changed = true;
+                }
+            }
+            if ( $changed ) {
+                update_option( 'spotmap_marker', $markers );
+            }
+        }
+
+        // Convert flat legacy feed options (0.11.x) → unified spotmap_feeds array.
+        // If feeds are already in the new format, skip to avoid overwriting them.
         if ( ! empty( Spotmap_Options::get_feeds() ) ) {
             return;
         }
@@ -109,85 +156,17 @@ class Spotmap_Migrator {
             ];
         }
 
-        // Only save if there are legacy feeds to migrate. Calling save_feeds([])
-        // when no legacy options exist would wipe feeds already configured via
-        // the 1.0.x admin UI (e.g. if OPTION_VERSION was never persisted).
         if ( ! empty( $feeds ) ) {
             Spotmap_Options::save_feeds( $feeds );
         } elseif ( false === get_option( Spotmap_Options::OPTION_FEEDS ) ) {
-            // First-ever install: no legacy feeds and spotmap_feeds not yet
-            // initialized — create the empty array so callers can rely on it.
+            // First-ever install: initialize the empty array so callers can rely on it.
             Spotmap_Options::save_feeds( [] );
         }
 
-        // Remove legacy options.
         delete_option( 'spotmap_findmespot_name' );
         delete_option( 'spotmap_findmespot_id' );
         delete_option( 'spotmap_findmespot_password' );
         delete_option( 'spotmap_api_providers' );
-    }
-
-    /**
-     * 1.0.x → 1.1.0
-     *
-     * 1. EXTREME-TRACK and UNLIMITED-TRACK are aliases for TRACK — normalize
-     *    all existing rows so the frontend only needs to handle one track type.
-     *
-     * 2. Global custom messages (spotmap_custom_messages) are copied into every
-     *    findmespot feed's custom_messages field, then the global option is
-     *    dropped. The customMessage key is removed from spotmap_marker entries.
-     *
-     * 3. The spotmap_marker option key 'UNLIMITED-TRACK' is renamed to 'TRACK'.
-     *
-     * @return void
-     */
-    private static function migrate_to_1_1_0(): void {
-        global $wpdb;
-        $table = $wpdb->prefix . 'spotmap_points';
-
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $wpdb->query( "UPDATE `{$table}` SET `type` = 'TRACK' WHERE `type` IN ('EXTREME-TRACK', 'UNLIMITED-TRACK')" );
-
-        // Migrate global custom messages into each feed, then drop the option.
-        $global_messages = get_option( 'spotmap_custom_messages', [] );
-        if ( is_array( $global_messages ) && ! empty( $global_messages ) ) {
-            $feeds   = Spotmap_Options::get_feeds();
-            $changed = false;
-            foreach ( $feeds as &$feed ) {
-                if ( ! isset( $feed['type'] ) || $feed['type'] !== 'findmespot' ) {
-                    continue;
-                }
-                if ( empty( $feed['custom_messages'] ) ) {
-                    $feed['custom_messages'] = $global_messages;
-                    $changed                 = true;
-                }
-            }
-            unset( $feed );
-            if ( $changed ) {
-                Spotmap_Options::save_feeds( $feeds );
-            }
-        }
-        delete_option( 'spotmap_custom_messages' );
-
-        // Update spotmap_marker: rename UNLIMITED-TRACK key to TRACK, drop customMessage.
-        $markers = get_option( 'spotmap_marker', [] );
-        if ( is_array( $markers ) ) {
-            $changed = false;
-            if ( isset( $markers['UNLIMITED-TRACK'] ) && ! isset( $markers['TRACK'] ) ) {
-                $markers['TRACK'] = $markers['UNLIMITED-TRACK'];
-                unset( $markers['UNLIMITED-TRACK'] );
-                $changed = true;
-            }
-            foreach ( $markers as $type => $config ) {
-                if ( is_array( $config ) && array_key_exists( 'customMessage', $config ) ) {
-                    unset( $markers[ $type ]['customMessage'] );
-                    $changed = true;
-                }
-            }
-            if ( $changed ) {
-                update_option( 'spotmap_marker', $markers );
-            }
-        }
     }
 
     /**

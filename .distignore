@@ -53,3 +53,4 @@ phpcs.xml.dist
 # Dev environment
 .env.example
 .wp-env.json
+.wp-env.override.json

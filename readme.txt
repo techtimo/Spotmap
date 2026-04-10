@@ -6,8 +6,9 @@ Tags: gps, tracking, map, leaflet, gpx, live tracking, osmand, teltonika, spot, 
 License: GPL2  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.5
-Tested up to: 6.9  
-Stable tag: 1.0.0  
+Requires PHP: 8.2
+Tested up to: 7.0
+Stable tag: 1.0.0
 
 Live GPS tracking for WordPress — display positions from SPOT, OsmAnd, and Teltonika devices on interactive maps. Self-hosted, privacy-friendly. 🗺
 
@@ -172,9 +173,10 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 1. Three months of tracking data with colored track lines and GPX overlays
 2. Click any position to see details — marker popups with timestamp and message
 3. The Gutenberg block with live map preview
-4. Time filtering with relative ranges and the interactive data table
-5. The GPX manager
-6. Multiple devices on a single map with different colors
+4. Time filtering with relative ranges
+5. Interactive feed data table
+6. The GPX manager
+7. Multiple devices on a single map with different colors
 
 ## Changelog
 
@@ -189,6 +191,7 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 * New: **GPX export** — convert tracked positions to GPX files
 * Improved: Full **Gutenberg block** with live preview and block sidebar settings
 * Improved: Map engine rewritten to support **faster map rendering** with large numbers of points
+* Improved: last-point marker is now customizable via additional CSS 
 * Fix: `id` column gains `AUTO_INCREMENT` (was missing in 0.11.2); migration runs automatically on update
 
 ## Upgrade Notice
