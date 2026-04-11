@@ -220,7 +220,7 @@ export class Spotmap {
             this.layers,
             dbg
         );
-        const canvasRenderer = L.canvas( { pane: 'markerPane' } );
+        const canvasRenderer = L.svg( { pane: 'markerPane' } );
         this.markerManager = new MarkerManager(
             this.map,
             this.layers,
@@ -442,7 +442,7 @@ export class Spotmap {
                 .on( 'addline', ( e: L.LeafletEvent ) => {
                     (
                         e as L.LeafletEvent & { line: L.Polyline }
-                     ).line.bindPopup( entry.name + downloadLink );
+                    ).line.bindPopup( entry.name + downloadLink );
                 } );
 
             const html = ` ${ getColorDot( color ) }${ downloadLink }`;
