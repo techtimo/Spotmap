@@ -3,8 +3,34 @@ name: CI
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'webpack.config.js'
+      - 'package*.json'
+      - 'tsconfig.json'
+      - 'babel.config.js'
+      - 'jest.config.js'
+      - 'jest.setup.js'
+      - 'spotmap.php'
+      - '**.php'
+      - 'composer*.json'
+      - 'phpunit.xml'
+      - 'tests/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'webpack.config.js'
+      - 'package*.json'
+      - 'tsconfig.json'
+      - 'babel.config.js'
+      - 'jest.config.js'
+      - 'jest.setup.js'
+      - 'spotmap.php'
+      - '**.php'
+      - 'composer*.json'
+      - 'phpunit.xml'
+      - 'tests/**'
 
 jobs:
   test-js:
@@ -31,3 +57,39 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-build
+          path: |
+            build/
+            public/
+          retention-days: 1
+
+  test-php:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Start wp-env
+        run: npm run wp-env start
+
+      - name: Create test database
+        run: npm run wp-env -- run cli bash -- -c "mysql -h mysql -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS wordpress_test'"
+
+      - name: Run PHP tests
+        run: npm run test:php
+
