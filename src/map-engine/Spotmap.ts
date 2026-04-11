@@ -190,7 +190,7 @@ export class Spotmap {
 
         // Create the Leaflet map
         this.map = L.map( el, {
-            scrollWheelZoom: this.options.scrollWheelZoom ?? false,
+            scrollWheelZoom: this.options.scrollWheelZoom ?? true,
             dragging: this.options.enablePanning ?? true,
             zoomControl: this.options.zoomControl ?? true,
         } );

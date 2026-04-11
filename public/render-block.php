@@ -76,7 +76,7 @@ $options = wp_json_encode( array(
 	),
 	'gpx'             => ! empty( $attributes['gpx'] ) ? $attributes['gpx'] : array(),
 	'enablePanning'     => isset( $attributes['enablePanning'] ) ? (bool) $attributes['enablePanning'] : true,
-	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : false,
+	'scrollWheelZoom'   => isset( $attributes['scrollWheelZoom'] ) ? (bool) $attributes['scrollWheelZoom'] : true,
 	'locateButton'      => isset( $attributes['locateButton'] ) ? (bool) $attributes['locateButton'] : false,
 	'fullscreenButton'  => isset( $attributes['fullscreenButton'] ) ? (bool) $attributes['fullscreenButton'] : true,
 	'navigationButtons' => isset( $attributes['navigationButtons'] ) && is_array( $attributes['navigationButtons'] )
