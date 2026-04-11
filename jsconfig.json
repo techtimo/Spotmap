@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "lib": [ "ES2022", "DOM" ],
+        "checkJs": false
+    },
+    "include": [ "src/**/*.js", "src/**/*.jsx", "scripts/**/*.js" ],
+    "exclude": [ "node_modules", "build", "src/**/__tests__/**/*" ]
+}
