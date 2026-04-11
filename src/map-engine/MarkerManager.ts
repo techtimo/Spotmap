@@ -20,7 +20,7 @@ export class MarkerManager {
     private readonly map: L.Map;
     private readonly layers: SpotmapLayers;
     private readonly layerManager: LayerManager;
-    private readonly canvasRenderer: L.Canvas;
+    private readonly canvasRenderer: L.Renderer;
     private readonly markerById = new Map<
         number,
         L.Marker | L.CircleMarker
@@ -33,7 +33,7 @@ export class MarkerManager {
         map: L.Map,
         layers: SpotmapLayers,
         layerManager: LayerManager,
-        canvasRenderer: L.Canvas,
+        canvasRenderer: L.Renderer,
         debugEnabled = false
     ) {
         this.canvasRenderer = canvasRenderer;
