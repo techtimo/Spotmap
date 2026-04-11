@@ -182,7 +182,7 @@ class Spotmap_Public{
 				'count'=> 10,
 				'types'=>'HELP,HELP-CANCEL,OK,CUSTOM',
 				'feeds' => $this->db->get_all_feednames(),
-				'group'=>'',
+				'group'=>'type,feed_name',
 				'date-range-from' => '',
 				'date' => '',
 				'date-range-to' => '',
@@ -268,6 +268,8 @@ class Spotmap_Public{
 				'locate-button' => FALSE,
 				'fullscreen-button' => TRUE,
 				'navigation-buttons' => TRUE,
+				'scroll-wheel-zoom' => TRUE,
+				'enable-panning' => TRUE,
 			], $atts ),
 			$atts);
 		if (array_key_exists('feeds',$atts)){
@@ -394,6 +396,8 @@ class Spotmap_Public{
 			'locateButton' => (bool) $a['locate-button'],
 			'fullscreenButton' => (bool) $a['fullscreen-button'],
 			'navigationButtons' => $a['navigation-buttons'] ? [ 'enabled' => true, 'allPoints' => true, 'latestPoint' => true, 'gpxTracks' => true ] : [ 'enabled' => false ],
+			'scrollWheelZoom' => (bool) $a['scroll-wheel-zoom'],
+			'enablePanning' => (bool) $a['enable-panning'],
 			'mapId' => $map_id
 		]);
 		// error_log($options);

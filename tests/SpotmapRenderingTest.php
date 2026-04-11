@@ -198,7 +198,7 @@ class SpotmapRenderingTest extends WP_UnitTestCase
         $block = $this->extract_options($this->render_block([]));
 
         // Keys intentionally present only in the block (no shortcode equivalent).
-        $block_only = [ 'height', 'enablePanning', 'scrollWheelZoom' ];
+        $block_only = [ 'height' ];
 
         // Keys intentionally present only in the shortcode (no block equivalent).
         // NOTE: shortcode 'last-point' is a convenience flag that PHP expands into
