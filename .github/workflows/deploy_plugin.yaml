@@ -67,7 +67,7 @@ jobs:
 
       - name: Install PHP dependencies
         if: steps.tag_check.outputs.exists == 'false'
-        run: composer install --no-dev --optimize-autoloader
+        run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
       - name: Build
         if: steps.tag_check.outputs.exists == 'false'
