@@ -19,7 +19,7 @@ There is more you can do. Check the Usage section.
 
 ## User Guide
 
-For details on features, installation, usage, and frequently asked questions, see [readme.txt](./readme.txt).
+For details on features, installation, usage, and frequently asked questions, see [pluginreadme.md](./pluginreadme.md).
 
 ## Development
 
