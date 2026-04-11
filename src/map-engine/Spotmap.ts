@@ -424,6 +424,7 @@ export class Spotmap {
                 ? ` <a href="${ entry.url }" download title="Download GPX" style="text-decoration:none;color:inherit;vertical-align:middle;" onclick="event.stopPropagation()">${ DOWNLOAD_SVG }</a>`
                 : '';
 
+            const lines: L.Polyline[] = [];
             const track = new L.GPX( entry.url, gpxOptions )
                 .on( 'loaded', () => {
                     if ( this._destroyed || ! this.map ) {
@@ -438,11 +439,20 @@ export class Spotmap {
                             this.options.mapcenter === 'gpx' ? 'gpx' : 'all'
                         );
                     }
+                    const statsHtml = buildGpxStatsHtml(
+                        track as unknown as GpxTrackStats
+                    );
+                    const fullHtml =
+                        `<b>${ entry.name }</b>${ downloadLink }` + statsHtml;
+                    for ( const line of lines ) {
+                        line.setPopupContent( fullHtml );
+                    }
                 } )
                 .on( 'addline', ( e: L.LeafletEvent ) => {
-                    (
-                        e as L.LeafletEvent & { line: L.Polyline }
-                    ).line.bindPopup( entry.name + downloadLink );
+                    const line = ( e as L.LeafletEvent & { line: L.Polyline } )
+                        .line;
+                    line.bindPopup( entry.name + downloadLink );
+                    lines.push( line );
                 } );
 
             const html = ` ${ getColorDot( color ) }${ downloadLink }`;
@@ -657,4 +667,85 @@ export class Spotmap {
     private debug( ...args: unknown[] ): void {
         debugLog( !! this.options?.debug, ...args );
     }
+}
+
+interface GpxTrackStats {
+    get_distance: () => number;
+    get_moving_time: () => number;
+    get_total_time: () => number;
+    get_elevation_gain: () => number;
+    get_elevation_loss: () => number;
+    get_elevation_max: () => number;
+    get_elevation_min: () => number;
+    get_moving_speed: () => number;
+    get_duration_string: ( duration: number, hidems?: boolean ) => string;
+    m_to_km: ( v: number ) => number;
+}
+
+function buildGpxStatsHtml( track: GpxTrackStats ): string {
+    const rows: Array< [ string, string ] > = [];
+
+    const dist = track.get_distance();
+    if ( dist > 0 ) {
+        rows.push( [
+            'Distance',
+            `${ track.m_to_km( dist ).toFixed( 1 ) } km`,
+        ] );
+    }
+
+    const movingTime = track.get_moving_time();
+    if ( movingTime > 0 ) {
+        rows.push( [
+            'Moving time',
+            track.get_duration_string( movingTime, true ),
+        ] );
+    }
+
+    const totalTime = track.get_total_time();
+    if ( totalTime > 0 && totalTime !== movingTime ) {
+        rows.push( [
+            'Total time',
+            track.get_duration_string( totalTime, true ),
+        ] );
+    }
+
+    const speed = track.get_moving_speed();
+    if ( speed > 0 && isFinite( speed ) ) {
+        rows.push( [ 'Avg speed', `${ speed.toFixed( 1 ) } km/h` ] );
+    }
+
+    const gain = track.get_elevation_gain();
+    const loss = track.get_elevation_loss();
+    if ( gain > 0 || loss > 0 ) {
+        rows.push( [
+            '\u2191\u202fGain\u2002/\u2002\u2193\u202fLoss',
+            `${ Math.round( gain ) }\u202fm\u2002/\u2002${ Math.round(
+                loss
+            ) }\u202fm`,
+        ] );
+    }
+
+    const elevMin = track.get_elevation_min();
+    const elevMax = track.get_elevation_max();
+    if ( elevMax > 0 || elevMin > 0 ) {
+        rows.push( [
+            'Elevation',
+            `${ Math.round( elevMin ) }\u202f\u2013\u202f${ Math.round(
+                elevMax
+            ) }\u202fm`,
+        ] );
+    }
+
+    if ( rows.length === 0 ) {
+        return '';
+    }
+
+    const tableRows = rows
+        .map(
+            ( [ label, value ] ) =>
+                `<tr><td style="padding:1px 8px 1px 0;color:#666">${ label }</td>` +
+                `<td style="padding:1px 0;white-space:nowrap">${ value }</td></tr>`
+        )
+        .join( '' );
+    return `<table style="margin-top:6px;font-size:0.85em;border-collapse:collapse">${ tableRows }</table>`;
 }
