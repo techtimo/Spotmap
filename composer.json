@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "type": "wordpress-plugin",
     "require": {
-        "symfony/yaml": "^7.0",
+        "symfony/yaml": "^8.0",
         "brianhenryie/strauss": "^0.19"
     },
     "require-dev": {
