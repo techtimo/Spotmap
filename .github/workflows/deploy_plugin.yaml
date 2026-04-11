@@ -75,8 +75,8 @@ jobs:
 
       - name: Package plugin zip
         if: steps.tag_check.outputs.exists == 'false'
-        run: npm run plugin-zip
-        # Creates spotmap.zip containing a spotmap/ folder
+        run: npx wp-scripts plugin-zip
+        # Build and composer install are done in prior steps; skip them here
 
       - name: Extract zip for SVN
         if: steps.tag_check.outputs.exists == 'false'
