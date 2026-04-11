@@ -2,8 +2,10 @@
 /* eslint-disable no-console */
 /**
  * Syncs the version from package.json into:
- *   - spotmap.php  (Plugin header "Version:" and SPOTMAP_VERSION constant)
- *   - readme.txt   (Stable tag:)
+ *   - spotmap.php        (Plugin header "Version:" and SPOTMAP_VERSION constant)
+ *   - composer.json      ("version" field)
+ *   - readme.txt         (Stable tag: — skipped for pre-release versions)
+ *   - tests/bootstrap.php (SPOTMAP_VERSION constant)
  *
  * Usage: node scripts/bump-version.js
  * Typically called via: npm run version:bump
@@ -61,5 +63,17 @@ composer = composer.replace(
 
 fs.writeFileSync( composerFile, composer );
 console.log( `  composer.json updated` );
+
+// --- tests/bootstrap.php ---
+const bootstrapFile = path.join( root, 'tests', 'bootstrap.php' );
+let bootstrap = fs.readFileSync( bootstrapFile, 'utf8' );
+
+bootstrap = bootstrap.replace(
+    /^(define\(\s*'SPOTMAP_VERSION',\s*')[\d.]+(-[\w.]+)?(')/m,
+    `$1${ version }$3`
+);
+
+fs.writeFileSync( bootstrapFile, bootstrap );
+console.log( `  tests/bootstrap.php updated` );
 
 console.log( 'Done.' );
