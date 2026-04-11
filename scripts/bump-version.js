@@ -4,7 +4,7 @@
  * Syncs the version from package.json into:
  *   - spotmap.php        (Plugin header "Version:" and SPOTMAP_VERSION constant)
  *   - composer.json      ("version" field)
- *   - readme.txt         (Stable tag: — skipped for pre-release versions)
+ *   - pluginreadme.md    (Stable tag: — skipped for pre-release versions)
  *   - tests/bootstrap.php (SPOTMAP_VERSION constant)
  *
  * Usage: node scripts/bump-version.js
@@ -37,18 +37,18 @@ php = php.replace(
 fs.writeFileSync( phpFile, php );
 console.log( `  spotmap.php updated` );
 
-// --- readme.txt ---
-const readmeFile = path.join( root, 'readme.txt' );
+// --- pluginreadme.md ---
+const readmeFile = path.join( root, 'pluginreadme.md' );
 let readme = fs.readFileSync( readmeFile, 'utf8' );
 
 // Only update Stable tag for stable releases (no pre-release suffix)
 if ( /^[\d]+\.[\d]+\.[\d]+$/.test( version ) ) {
     readme = readme.replace( /^(Stable tag:\s*)[\d.]+/m, `$1${ version }` );
     fs.writeFileSync( readmeFile, readme );
-    console.log( `  readme.txt Stable tag updated` );
+    console.log( `  pluginreadme.md Stable tag updated` );
 } else {
     console.log(
-        `  readme.txt Stable tag skipped (pre-release: ${ version })`
+        `  pluginreadme.md Stable tag skipped (pre-release: ${ version })`
     );
 }
 
