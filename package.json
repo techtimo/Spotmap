@@ -45,7 +45,7 @@
         "@wordpress/api-fetch": "^7.42.0",
         "@wordpress/components": "^32.4.0",
         "@wordpress/data": "*",
-        "@wordpress/env": "^10.39.0",
+        "@wordpress/env": "^11.3.0",
         "@wordpress/i18n": "^6.15.0",
         "@wordpress/icons": "^11.8.0",
         "@wordpress/scripts": "^31.6.0",
