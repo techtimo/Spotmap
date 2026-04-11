@@ -48,6 +48,7 @@ jobs:
       - name: Upload JS coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           flags: js
 
@@ -95,6 +96,7 @@ jobs:
       - name: Upload PHP coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/clover.xml
           flags: php
 
