@@ -1,70 +1,182 @@
 <?php
 class Spotmap_Public{
-	
-	public $db;
 
-	function __construct() {
+	private const SHORTCODE_TAGS = [
+		'show_spotmap'        => [ 'spotmap', 'Spotmap' ],
+		'show_point_overview' => [ 'spotmessages', 'Spotmessages' ],
+	];
+
+	public $db;
+	public $admin;
+	private ?bool $enqueue_cache = null;
+
+	function __construct( $admin = null ) {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
-		$this->db = new Spotmap_Database();
-		$this->admin = new Spotmap_Admin();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-options.php';
+		$this->db    = new Spotmap_Database();
+		$this->admin = $admin ?? new Spotmap_Admin();
     }
 
+	private function should_enqueue(): bool {
+		if ( $this->enqueue_cache !== null ) {
+			return $this->enqueue_cache;
+		}
+		global $post;
+		if ( ! is_a( $post, 'WP_Post' ) ) {
+			return $this->enqueue_cache = false;
+		}
+		if ( has_block( 'spotmap/spotmap', $post ) || has_block( 'spotmap/spotmessages', $post ) ) {
+			return $this->enqueue_cache = true;
+		}
+		foreach ( self::SHORTCODE_TAGS as $tags ) {
+			foreach ( $tags as $tag ) {
+				if ( has_shortcode( $post->post_content, $tag ) ) {
+					return $this->enqueue_cache = true;
+				}
+			}
+		}
+		return $this->enqueue_cache = false;
+	}
+
 	public function enqueue_styles() {
+		if ( ! $this->should_enqueue() ) {
+			return;
+		}
 		wp_enqueue_style( 'leaflet', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
 		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
         wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
 		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
 		// wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
-		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-5.15-all.min.css');
+		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-all.min.css');
 		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
     }
 
+	public function register_post_meta(): void {
+		foreach ( [ 'post', 'page' ] as $post_type ) {
+			foreach ( [ '_spotmap_latitude', '_spotmap_longitude' ] as $key ) {
+				register_post_meta( $post_type, $key, [
+					'show_in_rest'  => true,
+					'single'        => true,
+					'type'          => 'string',
+					'default'       => '',
+					'auth_callback' => function() {
+						return current_user_can( 'edit_posts' );
+					},
+				] );
+			}
+		}
+	}
+
+	public function register_block(){
+		$block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap';
+		register_block_type( $block_path );
+		$messages_block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmessages';
+		if ( is_dir( $messages_block_path ) ) {
+			register_block_type( $messages_block_path );
+		} else {
+			error_log( 'Spotmap: build/spotmessages/ is missing — run npm run build.' );
+		}
+	}
+
 	public function enqueue_block_editor_assets(){
-		$this->enqueue_scripts();
+		// Always enqueue map-engine scripts in the editor regardless of whether
+		// the block is already saved in the post — new blocks need them too.
+		$map_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap-map.asset.php';
+		$map_asset = file_exists( $map_asset_file ) ? include $map_asset_file : [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_script(
+			'spotmap-handler',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
+			array_merge(
+				$map_asset['dependencies'],
+				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
+			),
+			$map_asset['version'],
+			true
+		);
+		wp_enqueue_script( 'leaflet',               plugins_url( 'leaflet/leaflet.js', __FILE__ ) );
+		wp_enqueue_script( 'leaflet-fullscreen',    plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js', [ 'leaflet' ] );
+		wp_enqueue_script( 'leaflet-gpx',           plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js' );
+		wp_enqueue_script( 'leaflet-easybutton',    plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js' );
+		wp_enqueue_script( 'leaflet-swisstopo',     plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js' );
+		wp_enqueue_script( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js' );
+		wp_enqueue_script( 'leaflet-text-path',     plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js' );
+		$this->localize_js_script( 'spotmap-handler' );
 		$this->enqueue_styles();
-		wp_enqueue_script( 'spotmap-block', plugins_url('js/block.js', __FILE__),['wp-blocks','wp-element','wp-block-editor','wp-components','wp-compose',]);
-		$this->localize_js_script('spotmap-block');
-		register_block_type( 'spotmap/spotmap', array(
-			'editor_script' => 'spotmap-block',
-			'render_callback' => [$this, 'show_spotmap_block'],
-		) );
+		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
+		$this->localize_js_script( 'spotmap-spotmessages-editor-script' );
+
+		// Post location sidebar — Gutenberg plugin that adds a map picker to the
+		// Document sidebar. Only functional when "posts" is a configured feed.
+		$post_location_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/post-location.asset.php';
+		$post_location_asset = file_exists( $post_location_asset_file )
+			? include $post_location_asset_file
+			: [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_script(
+			'spotmap-post-location',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/post-location.js',
+			array_merge( $post_location_asset['dependencies'], [ 'leaflet' ] ),
+			$post_location_asset['version'],
+			true
+		);
+		$this->localize_js_script( 'spotmap-post-location' );
 	}
 
 	public function enqueue_scripts(){
-        wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
+		if ( ! $this->should_enqueue() ) {
+			return;
+		}
+        // wp_enqueue_script('spotmap-handler', plugins_url('js/maphandler.js', __FILE__), ['jquery','moment','lodash'], false, true);
+		$map_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap-map.asset.php';
+		$map_asset = file_exists( $map_asset_file ) ? include $map_asset_file : [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_script(
+			'spotmap-handler',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
+			array_merge(
+				$map_asset['dependencies'],
+				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
+			),
+			$map_asset['version'],
+			true
+		);
 		$this->localize_js_script('spotmap-handler');
 		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
-        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js');
+        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js', ['leaflet']);
         wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
         wp_enqueue_script('leaflet-easybutton',plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js');
         wp_enqueue_script('leaflet-swisstopo',plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js');
         wp_enqueue_script('leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js');
-        // wp_enqueue_script('leaflet-text-path', 'https://makinacorpus.github.io/Leaflet.TextPath/leaflet.textpath.js');
 		wp_enqueue_script('leaflet-text-path',plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js');
 
 	}
 
 	function localize_js_script($script_slug){
+		$default_values  = Spotmap_Options::get_settings();
+		$posts_type_feeds = array_filter(
+			Spotmap_Options::get_feeds(),
+			fn( $f ) => ( $f['type'] ?? '' ) === 'posts'
+		);
 		wp_localize_script($script_slug, 'spotmapjsobj', [
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'maps' => $this->admin->get_maps(),
-			'overlays' => $this->admin->get_overlays(),
-			'url' =>  plugin_dir_url( __FILE__ ),
-			'feeds' => $this->db->get_all_feednames(),
-			'defaultValues' => get_option('spotmap_default_values'),
-			'marker' => get_option('spotmap_marker'),
-
+			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+			'maps'           => $this->admin->get_maps(),
+			'overlays'       => $this->admin->get_overlays(),
+			'url'            => plugin_dir_url( __FILE__ ),
+			'feeds'          => $this->db->get_all_feednames(),
+			'defaultValues'  => $default_values,
+			'marker'         => Spotmap_Options::get_marker_options(),
+			'postsFeedNames' => array_values( array_column( $posts_type_feeds, 'name' ) ),
 		]);
 	}
 
 	public function register_shortcodes(){
-		add_shortcode('spotmap', [$this,'show_spotmap'] );
-		add_shortcode('Spotmap', [$this,'show_spotmap'] );
-		add_shortcode('spotmessages', [$this,'show_point_overview'] );
-		add_shortcode('Spotmessages', [$this,'show_point_overview'] );
+		foreach ( self::SHORTCODE_TAGS as $method => $tags ) {
+			foreach ( $tags as $tag ) {
+				add_shortcode( $tag, [ $this, $method ] );
+			}
+		}
 	}
 	function show_point_overview($atts){
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
+		$default_filter_points = Spotmap_Options::get_setting('filter-points');
 		$a = array_merge(
 			shortcode_atts([
 				'count'=> 10,
@@ -75,7 +187,7 @@ class Spotmap_Public{
 				'date' => '',
 				'date-range-to' => '',
 				'auto-reload' => FALSE,
-				'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
+				'filter-points' => $default_filter_points,
 			], $atts),
 			$atts);
 		// get the keys that don't require a value
@@ -108,7 +220,6 @@ class Spotmap_Public{
 				'from' => $a['date-range-from'],
 				'to' => $a['date-range-to']
 			],
-			'date' => $a['date'],
 			'orderBy' => "time DESC",
 			'limit' => $a['count'],
 			'groupBy' => $a['group'],
@@ -133,14 +244,15 @@ class Spotmap_Public{
 		}
 		// error_log("Shortcode init vals: ".wp_json_encode($atts));
 		// $atts['feeds'] = $atts['devices'];
+		$defaults = Spotmap_Options::get_settings();
 		$a = array_merge(
 			shortcode_atts( [
-				'height' => !empty( get_option('spotmap_default_values')['height'] ) ?get_option('spotmap_default_values')['height'] : 500,
-				'mapcenter' => !empty( get_option('spotmap_default_values')['mapcenter'] ) ?get_option('spotmap_default_values')['mapcenter'] : 'all',
+				'height' => $defaults['height'],
+				'mapcenter' => $defaults['mapcenter'],
 				'feeds' => $this->db->get_all_feednames(),
-				'width' => !empty(get_option('spotmap_default_values')['width']) ?get_option('spotmap_default_values')['width'] : 'normal',
-				'colors' => !empty(get_option('spotmap_default_values')['color']) ?get_option('spotmap_default_values')['color'] : 'blue,red',
-				'splitlines' => !empty(get_option('spotmap_default_values')['splitlines']) ?get_option('spotmap_default_values')['splitlines'] : '12',
+				'width' => $defaults['width'],
+				'colors' => $defaults['color'],
+				'splitlines' => $defaults['splitlines'],
 				'auto-reload' => FALSE,
 				'last-point' => FALSE,
 				'date-range-from' => NULL,
@@ -149,10 +261,13 @@ class Spotmap_Public{
 				'gpx-name' => [],
 				'gpx-url' => [],
 				'gpx-color' => ['blue', 'gold', 'red', 'green', 'orange', 'yellow', 'violet'],
-				'maps' => !empty( get_option('spotmap_default_values')['maps'] ) ?get_option('spotmap_default_values')['maps'] : 'openstreetmap,opentopomap',
-				'map-overlays' => !empty( get_option('spotmap_default_values')['map-overlays'] ) ?get_option('spotmap_default_values')['map-overlays'] : NULL,
-				'filter-points' => !empty( get_option('spotmap_default_values')['filter-points'] ) ?get_option('spotmap_default_values')['filter-points'] : 5,
+				'maps' => $defaults['maps'],
+				'map-overlays' => $defaults['map-overlays'],
+				'filter-points' => $defaults['filter-points'],
 				'debug'=> FALSE,
+				'locate-button' => FALSE,
+				'fullscreen-button' => TRUE,
+				'navigation-buttons' => TRUE,
 			], $atts ),
 			$atts);
 		if (array_key_exists('feeds',$atts)){
@@ -214,6 +329,15 @@ class Spotmap_Public{
 			}
 		}
 
+		// If last-point is set, mark it on every feed style so the engine highlights
+		// the latest point — matching the per-feed lastPoint toggle in the block editor.
+		if ( ! empty( $a['last-point'] ) ) {
+			foreach ( $styles as &$style ) {
+				$style['lastPoint'] = true;
+			}
+			unset( $style );
+		}
+
 		// valid inputs for gpx tracks?
 		$gpx = [];
 		if(!empty($a['gpx-url'])){
@@ -241,6 +365,16 @@ class Spotmap_Public{
 				];
 			}
 		}
+		// If a single date is given, expand it to a full-day dateRange so the engine
+		// receives only dateRange (matching the block renderer).
+		if ( ! empty( $a['date'] ) && empty( $a['date-range-from'] ) && empty( $a['date-range-to'] ) ) {
+			$parsed = date_create( $a['date'] );
+			if ( $parsed !== null ) {
+				$day = date_format( $parsed, 'Y-m-d' );
+				$a['date-range-from'] = $day . ' 00:00:00';
+				$a['date-range-to']   = $day . ' 23:59:59';
+			}
+		}
 		$map_id = "spotmap-container-".mt_rand();
 		// generate the option object for init the map
 		$options = wp_json_encode([
@@ -248,7 +382,6 @@ class Spotmap_Public{
 			'filterPoints' => $a['filter-points'],
 			'styles' => $styles,
 			'gpx' => $gpx,
-			'date' => $a['date'],
 			'dateRange' => [
 				'from' => $a['date-range-from'],
 				'to' => $a['date-range-to']
@@ -257,8 +390,10 @@ class Spotmap_Public{
 			'maps' => $a['maps'],
 			'mapOverlays' => $a['map-overlays'],
 			'autoReload' => $a['auto-reload'],
-			'lastPoint' => $a['last-point'],
 			'debug' => $a['debug'],
+			'locateButton' => (bool) $a['locate-button'],
+			'fullscreenButton' => (bool) $a['fullscreen-button'],
+			'navigationButtons' => $a['navigation-buttons'] ? [ 'enabled' => true, 'allPoints' => true, 'latestPoint' => true, 'gpxTracks' => true ] : [ 'enabled' => false ],
 			'mapId' => $map_id
 		]);
 		// error_log($options);
@@ -276,16 +411,156 @@ class Spotmap_Public{
 
 	public function get_positions(){
 		// error_log(print_r($_POST,true));
-		if(empty($_POST['feeds'])){
-			wp_send_json(['error'=> false,'empty'=>true,'title'=>'No feeds defined','message'=> ""]);
-		} else {
-			$points = $this->db->get_points($_POST);
-			if(empty($points)){
-				$points = ['error'=> true,'empty'=>true,'title'=>'No points to show (yet)','message'=> ""];
-			}
-			error_log(wp_send_json($points));
-			wp_send_json($points);
+		if ( empty( $_POST['feeds'] ) ) {
+			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No feeds defined', 'message' => '' ] );
+			return;
 		}
+
+		$requested_feeds = (array) $_POST['feeds'];
+		$results         = [];
+
+		// Virtual feeds (type='posts') are backed by post meta, not the GPS
+		// points table. Identify them by their configured type, not their name,
+		// so the feed name can be freely chosen by the user.
+		$configured   = array_filter( Spotmap_Options::get_feeds(), fn( $f ) => ! empty( $f['name'] ) );
+		$type_by_name = array_column( array_values( $configured ), 'type', 'name' );
+
+		$posts_feed_names = [];
+		$db_feed_names    = [];
+		foreach ( $requested_feeds as $name ) {
+			if ( ( $type_by_name[ $name ] ?? '' ) === 'posts' ) {
+				$posts_feed_names[] = $name;
+			} else {
+				$db_feed_names[] = $name;
+			}
+		}
+
+		if ( ! empty( $posts_feed_names ) ) {
+			$results = array_merge( $results, $this->get_post_feed_points( $_POST, $posts_feed_names ) );
+		}
+
+		$requested_feeds = $db_feed_names;
+
+		if ( ! empty( $requested_feeds ) ) {
+			$filter          = $_POST;
+			$filter['feeds'] = $requested_feeds;
+			$db_points       = $this->db->get_points( $filter );
+			if ( is_array( $db_points ) && ! isset( $db_points['error'] ) ) {
+				$media_ids = array_map(
+					fn( $p ) => (int) $p->model,
+					array_filter( $db_points, fn( $p ) => $p->type === 'MEDIA' && ! empty( $p->model ) )
+				);
+				if ( ! empty( $media_ids ) ) {
+					update_postmeta_cache( $media_ids );
+				}
+				foreach ( $db_points as $point ) {
+					if ( $point->type === 'MEDIA' && ! empty( $point->model ) ) {
+						$point->message = wp_get_attachment_image_url( (int) $point->model, 'medium' ) ?: null;
+					}
+				}
+				$results = array_merge( $results, $db_points );
+			} elseif ( empty( $results ) ) {
+				wp_send_json( $db_points );
+				return;
+			}
+		}
+
+		if ( empty( $results ) ) {
+			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No points to show (yet)', 'message' => '' ] );
+			return;
+		}
+
+		wp_send_json( $results );
+	}
+
+	private function get_post_feed_points( array $filter, array $feed_names ): array {
+		$args = [
+			'post_type'      => [ 'post', 'page' ],
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'ASC',
+			'meta_query'     => [
+				'relation' => 'AND',
+				[
+					'key'     => '_spotmap_latitude',
+					'value'   => '',
+					'compare' => '!=',
+				],
+				[
+					'key'     => '_spotmap_longitude',
+					'value'   => '',
+					'compare' => '!=',
+				],
+			],
+		];
+
+		$date_query = [];
+		$date_range = $filter['date-range'] ?? [];
+		foreach ( [ 'from' => 'after', 'to' => 'before' ] as $range_key => $wp_key ) {
+			$val = $date_range[ $range_key ] ?? '';
+			if ( empty( $val ) ) {
+				continue;
+			}
+			if ( substr( $val, 0, 5 ) === 'last-' ) {
+				$rel_string = str_replace( '-', ' ', substr( $val, 5 ) );
+				$date       = date_create( '@' . strtotime( '-' . $rel_string ) );
+			} else {
+				$date = date_create( $val );
+			}
+			if ( $date !== null && $date !== false ) {
+				$date_query[] = [ $wp_key => date_format( $date, 'Y-m-d H:i:s' ), 'inclusive' => true ];
+			}
+		}
+		if ( ! empty( $date_query ) ) {
+			$date_query['relation'] = 'AND';
+			$args['date_query']     = $date_query;
+		}
+
+		$posts = get_posts( $args );
+		$points = [];
+
+		// Each posts-type feed gets the same set of located posts. Using the
+		// first feed name is the common case; multiple posts-type feeds would
+		// duplicate points intentionally (user chose to add them twice).
+		$feed_name = $feed_names[0];
+
+		foreach ( $posts as $post ) {
+			$lat = (float) get_post_meta( $post->ID, '_spotmap_latitude', true );
+			$lng = (float) get_post_meta( $post->ID, '_spotmap_longitude', true );
+
+			if ( $lat === 0.0 && $lng === 0.0 ) {
+				continue;
+			}
+
+			$unixtime  = (int) get_post_time( 'U', false, $post );
+			$image_url = null;
+			if ( has_post_thumbnail( $post->ID ) ) {
+				$image_url = get_the_post_thumbnail_url( $post->ID, 'medium' );
+			}
+
+			$excerpt = has_excerpt( $post )
+				? wp_strip_all_tags( get_the_excerpt( $post ) )
+				: null;
+
+			$points[] = (object) [
+				'id'        => $post->ID,
+				'feed_name' => $feed_name,
+				'latitude'  => $lat,
+				'longitude' => $lng,
+				'altitude'  => 0,
+				'type'      => 'POST',
+				'unixtime'  => $unixtime,
+				'date'      => wp_date( get_option( 'date_format' ), $unixtime ),
+				'time'      => wp_date( get_option( 'time_format' ), $unixtime ),
+				'message'   => get_the_title( $post ),
+				'url'       => get_permalink( $post ),
+				'image_url' => $image_url,
+				'excerpt'   => $excerpt,
+			];
+		}
+
+		return $points;
 	}
 
 }

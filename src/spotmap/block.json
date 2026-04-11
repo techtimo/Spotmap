@@ -1,0 +1,87 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "spotmap/spotmap",
+    "title": "Spotmap",
+    "category": "embed",
+    "icon": "location-alt",
+    "description": "Show Spotmap for live and historical tracking / GPX data.",
+    "keywords": [ "map", "gps", "spot", "gpx", "tracking" ],
+    "supports": {
+        "align": [ "wide", "full" ],
+        "html": false
+    },
+    "attributes": {
+        "maps": {
+            "type": "array",
+            "default": []
+        },
+        "feeds": {
+            "type": "array",
+            "default": []
+        },
+        "styles": {
+            "type": "object",
+            "default": {}
+        },
+        "height": {
+            "type": "number",
+            "default": 500
+        },
+        "mapcenter": {
+            "type": "string",
+            "default": "all"
+        },
+        "filterPoints": {
+            "type": "number",
+            "default": 5
+        },
+        "autoReload": {
+            "type": "boolean",
+            "default": false
+        },
+        "debug": {
+            "type": "boolean",
+            "default": false
+        },
+        "dateRange": {
+            "type": "object",
+            "default": { "from": "", "to": "", "mode": "range" }
+        },
+        "gpx": {
+            "type": "array",
+            "default": []
+        },
+        "mapOverlays": {
+            "type": "array",
+            "default": []
+        },
+        "enablePanning": {
+            "type": "boolean",
+            "default": true
+        },
+        "scrollWheelZoom": {
+            "type": "boolean",
+            "default": true
+        },
+        "locateButton": {
+            "type": "boolean",
+            "default": false
+        },
+        "fullscreenButton": {
+            "type": "boolean",
+            "default": true
+        },
+        "navigationButtons": {
+            "type": "object",
+            "default": {
+                "enabled": true,
+                "allPoints": true,
+                "latestPoint": true,
+                "gpxTracks": true
+            }
+        }
+    },
+    "editorScript": "file:./index.js",
+    "render": "file:../../public/render-block.php"
+}

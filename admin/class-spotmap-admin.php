@@ -1,556 +1,339 @@
 <?php
 
-class Spotmap_Admin {
+class Spotmap_Admin
+{
+    public $db;
 
-	public $db;
+    public function __construct()
+    {
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-database.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-options.php';
+        $this->db = new Spotmap_Database();
+    }
 
-	function __construct() {
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-database.php';
-		$this->db = new Spotmap_Database();
-	}
-	
-	public function enqueue_scripts(){
-		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-5.15-all.min.css');
-		wp_enqueue_script('spotmap-settings', plugins_url('js/settings.js', __FILE__), ['jquery'], false, true);
-	}
+    public function enqueue_scripts($hook)
+    {
+        if ($hook !== 'settings_page_spotmap') {
+            return;
+        }
 
-	public function add_cron_schedule($schedules){
-		$schedules['twohalf_min'] = array(
-			'interval' => 150,
-			'display'  => esc_html__( 'Every 2.5 Minutes' ),
-		);
-		return $schedules;
-	}
-	public function add_options_page(){
-		add_options_page( 'Spotmap Options', 'Spotmap 🗺', 'manage_options', 'spotmap', [$this,'display_options_page'] );
-	}
+        wp_enqueue_style('font-awesome', plugin_dir_url(__DIR__) . 'includes/css/font-awesome-all.min.css');
 
-	public function register_settings(){
-		// error_log(print_r(get_option('spotmap_marker'),TRUE));
-		
-		// FEED SECTION
-		foreach (get_option("spotmap_api_providers") as $provider => $name) {
-			$ids = get_option("spotmap_".$provider."_id");
-			
-			$count = empty($ids) ? 1 : count($ids);
+        $asset_file = plugin_dir_path(__DIR__) . 'build/spotmap-admin.asset.php';
+        $asset      = file_exists($asset_file)
+            ? require $asset_file
+            : [ 'dependencies' => [], 'version' => '1.0.0' ];
 
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_name',['sanitize_callback'=>[$this, 'validate_feed_name']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_id', ['sanitize_callback'=>[$this, 'validate_feed_id']]);
-			register_setting( 'spotmap-feed-group', 'spotmap_'.$provider.'_password');
-			if($count < 1){
-				continue;
-			}
-			add_settings_section(
-				$provider.'-feeds',
-				$name,
-				[$this,'settings_section_'.$provider],
-				'spotmap-feed-group'
-			);
-			for ($i=0; $i < $count; $i++) { 
-				$settings = [
-					'name' => ['label' => __('Feed Name'), 'type' => 'text'], 
-					'id' => ['label' => __('Feed Id'), 'type' => 'text'], 
-					'password' => ['label' => __('Feed password'), 'type' => 'password', "description" => __("Leave this empty if the feed is public")], 
-				];
-				foreach ($settings as $key => $value) {
-					$pre_populated_value = '';
-					$option = get_option('spotmap_'.$provider.'_' . $key . '');
-					if (!empty($option)){
-						$pre_populated_value =  get_option('spotmap_'.$provider.'_' . $key . '')[$i];
-					}
-					add_settings_field(
-						'spotmap_'.$provider.'_' . $key . '['.$i.']',
-						$value["label"],
-						[$this, 'generate_settings'],
-						'spotmap-feed-group',
-						'findmespot-feeds',
-						['id' => 'spotmap_'.$provider.'_' . $key . '['.$i.']',
-						'value' => $pre_populated_value,
-						'description' => isset($value["description"]) ? $value["description"] : '',
-						'type' => isset($value["type"]) ? $value["type"] : '',]
-					);
-				}
-			}
-		}
-		// MARKER SHAPE SECTION
-		register_setting( 'spotmap-marker-group', 'spotmap_marker');
-		$point_types = ['HELP','HELP-CANCEL','CUSTOM','OK','STATUS','UNLIMITED-TRACK','NEWMOVEMENT','STOP','MEDIA'];
-		add_settings_section(
-			'spotmap-marker-shape-section',
-			__('Marker display options'),
-			[$this,'settings_section_marker'],
-			'spotmap-marker-group'
-		);
-		$dropdown_options = [
-			[ __("Tiny dot"), "circle-dot"],
-			[ __("Medium marker"), "circle"],
-			[ __("Big marker"), "marker"],
-		];
-		$settings = [];
-		foreach ($point_types as $point_type) {
-			$settings[$point_type] = [
-				"type" => "dropdown",
-				"options" => $dropdown_options,
-				"id" => "spotmap_marker[" . $point_type . "][iconShape]",
-				"value" => isset( get_option('spotmap_marker')[$point_type]['iconShape'] ) ? get_option('spotmap_marker')[$point_type]['iconShape'] : ''
-			];
-		}
-		$this::add_bulk_settings($settings,'spotmap-marker-group','spotmap-marker-shape-section');
+        wp_enqueue_script(
+            'spotmap-admin',
+            plugin_dir_url(__DIR__) . 'build/spotmap-admin.js',
+            $asset['dependencies'],
+            $asset['version'],
+            true
+        );
 
-		// MARKER ICON SECTION
-		add_settings_section(
-			'spotmap-marker-icon-section',
-			__('Marker icon options'),
-			[$this,'settings_section_icons'],
-			'spotmap-marker-group',
-		);
-		// error_log(print_r(get_option('spotmap_marker'),TRUE));
+        wp_localize_script('spotmap-admin', 'spotmapAdminData', [
+            'restUrl'  => rest_url('spotmap/v1/'),
+            'nonce'    => wp_create_nonce('wp_rest'),
+            'REDACTED' => Spotmap_Rest_Api::REDACTED,
+            'feeds'    => $this->db->get_all_feednames(),
+        ]);
 
-		$settings = [];
-		foreach ($point_types as $point_type) {
-			$settings[$point_type] = [
-				"type" => "icon",
-				"size" => 30,
-				"id" => "spotmap_marker[".$point_type."][icon]",
-				"value" => isset(get_option('spotmap_marker')[$point_type]['icon'] ) ? get_option('spotmap_marker')[$point_type]['icon'] : '',
-			];
-		}
+        if (file_exists(plugin_dir_path(__DIR__) . 'build/spotmap-admin.css')) {
+            wp_enqueue_style(
+                'spotmap-admin',
+                plugin_dir_url(__DIR__) . 'build/spotmap-admin.css',
+                [ 'wp-components' ],
+                $asset['version']
+            );
+        }
 
-		$this::add_bulk_settings($settings,'spotmap-marker-group','spotmap-marker-icon-section');
-		
+        // Enqueue the Spotmap map engine for the Edit Points tab.
+        $public_url = plugin_dir_url(__DIR__) . 'public/';
+        wp_enqueue_style('spotmap-leaflet', $public_url . 'leaflet/leaflet.css');
+        wp_enqueue_style('spotmap-beautify-marker', $public_url . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
+        wp_enqueue_style('spotmap-custom', $public_url . 'css/custom.css');
 
-		// CUSTOM MESSAGES 
-		
-		add_settings_section(
-			'spotmap-marker-custom-message-section',
-			__('Set Custom messages'),
-			[$this,'settings_section_messages'],
-			'spotmap-marker-group'
-		);
-		$settings = [];
-		foreach ($point_types as $point_type) {
-			$settings[$point_type] = [
-				"type" => in_array($point_type,["HELP", "HELP-CANCEL", "CUSTOM", "OK"]) ? "textarea" : "text",
-				"id" => "spotmap_marker[".$point_type."][customMessage]",
-				"value" => isset(get_option('spotmap_marker')[$point_type]['customMessage'] ) ? get_option('spotmap_marker')[$point_type]['customMessage'] : '',
-			];
-		}
+        wp_enqueue_script('spotmap-leaflet', $public_url . 'leaflet/leaflet.js', [], false, true);
+        wp_enqueue_script('spotmap-beautify-marker', $public_url . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js', [ 'spotmap-leaflet' ], false, true);
+        wp_enqueue_script('spotmap-text-path', $public_url . 'leaflet-textpath/leaflet.textpath.js', [ 'spotmap-leaflet' ], false, true);
 
-		$this::add_bulk_settings($settings,'spotmap-marker-group','spotmap-marker-custom-message-section');
+        $map_asset_file = plugin_dir_path(__DIR__) . 'build/spotmap-map.asset.php';
+        $map_asset      = file_exists($map_asset_file)
+            ? require $map_asset_file
+            : [ 'dependencies' => [], 'version' => '1.0.0' ];
+        wp_enqueue_script(
+            'spotmap-map-admin',
+            plugin_dir_url(__DIR__) . 'build/spotmap-map.js',
+            array_merge($map_asset['dependencies'], [ 'spotmap-leaflet', 'spotmap-beautify-marker', 'spotmap-text-path' ]),
+            $map_asset['version'],
+            true
+        );
+        wp_localize_script('spotmap-map-admin', 'spotmapjsobj', [
+            'ajaxUrl'       => admin_url('admin-ajax.php'),
+            'maps'          => $this->get_maps(),
+            'overlays'      => $this->get_overlays(),
+            'url'           => $public_url,
+            'feeds'         => $this->db->get_all_feednames(),
+            'defaultValues' => Spotmap_Options::get_settings(),
+            'marker'        => Spotmap_Options::get_marker_options(),
+        ]);
+    }
 
+    public function ensure_cron_scheduled()
+    {
+        if (get_transient('spotmap_cron_checked')) {
+            return;
+        }
+        if (! wp_next_scheduled('spotmap_api_crawler_hook')) {
+            wp_schedule_event(time(), 'twohalf_min', 'spotmap_api_crawler_hook');
+        }
+        set_transient('spotmap_cron_checked', 1, 5 * MINUTE_IN_SECONDS);
+    }
 
-		// API SECTION
-		register_setting( 'spotmap-thirdparties-group', 'spotmap_api_tokens');
-		add_settings_section(
-			'spotmap-thirdparty-section',
-			__('Thirdparty API Tokens'),
-			[$this, 'settings_section_thirdparty'],
-			'spotmap-thirdparties-group'
-		);
-		$settings = [
-			'timezonedb'=> [
-				"label" => "timezonedb.com",
-				"type" => 'text',
-				"description" => __("Do you travel to other timezones? Store and show the local time of a position with a timezonedb API token. <a href=\"https://timezonedb.com/register\">Register for free</a>"),
-			],
-			'mapbox'=> [
-				"label" => "mapbox.com",
-				"type" => 'text',
-				"description" => __("Get Satelite  images and nice looking maps. The maps cover the whole world. Sign up for a free <a href=\"https://account.mapbox.com/access-tokens/\">Mapbox API Token</a>. Remember to restrict the token usage to your domain only."),
-			],
-			'thunderforest'=> [
-				"label" => "thunderforest.com",
-				"type" => 'text',
-				"description" => __("Get another set of maps with Thunderforest. Create a free account <a href=\"https://manage.thunderforest.com/users/sign_up?plan_id=5\">here</a>."),
-			],
-			'linz.govt.nz'=> [
-				"label" => "Land Information New Zealand",
-				"type" => 'text',
-				"description" => "Kia Ora! " . __("Are you planning to have an adventure in New Zealand? Register a free account at <a href=\"https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key\">Land Information New Zealand</a> to get the official NZ Topo Map."), 
-			],
-			'geoservices.ign.fr'=> [
-				"label" => "Géoportail France",
-				"type" => 'text',
-				"description" => __("Please create create an accoun <a href=\"https://geoservices.ign.fr/user/register\">here</a>. And create a key under 'Mes clés de services web' Once an account is created make sure to secure your key with a referer"),
-			],
-			'osdatahub.os.uk'=> [
-				"label" => "UK Ordnance Survey",
-				"type" => 'text',
-				"description" => "For adventures in the UK, you can create a free plan at the <a href=\"https://osdatahub.os.uk/plans\">UK Ordnance Survey</a>. Afterwards follow the guide on <a href=\"https://osdatahub.os.uk/docs/wmts/gettingStarted\">how to create a project</a>.",
-			],
-		];
-		foreach ($settings as $index => &$setting) {
-			$setting["id"] = 'spotmap_api_tokens['.$index.']';
-			$setting["value"] = isset( get_option('spotmap_api_tokens')[$index] ) ? get_option('spotmap_api_tokens')[$index] : '';
-		}
+    public function add_cron_schedule($schedules)
+    {
+        $schedules['twohalf_min'] = [
+            'interval' => 150,
+            'display'  => esc_html__('Every 2.5 Minutes'),
+        ];
+        return $schedules;
+    }
 
-		$this::add_bulk_settings($settings,'spotmap-thirdparties-group','spotmap-thirdparty-section');
+    public function add_options_page()
+    {
+        add_options_page('Spotmap Options', 'Spotmap 🗺', 'manage_options', 'spotmap', [ $this, 'display_options_page' ]);
+    }
 
-		// DEFAULT SECTION
-		add_settings_section(
-			'spotmap-defaults',
-			__('Default Values'),
-			[$this,'settings_section_defaults'],
-			'spotmap-defaults-group'
-		);
-		$settings = [
-				'maps' =>  [
-					"type" => "textarea",
-				],
-				'height' =>  [
-					"type" => "number",
-				],
-				'mapcenter' =>  [
-					"type" => "dropdown",
-					"options" => [
-						["all"],
-						["last"],
-						["last-trip"],
-						["gpx"]
-					]
-				],
-				'width' =>  [
-					"type" => "dropdown",
-					"options" => [
-						["normal"],
-						["full"]
-					]
-				],
-				'color' =>  [
-					"type" => "text",
-				],
-				'splitlines' =>  [
-					"type" => "number",
-				],
-		];
-		foreach ($settings as $index => &$setting) {
-			$setting["id"] = 'spotmap_default_values['.$index.']';
-			$setting["value"] = isset( get_option('spotmap_default_values')[$index] ) ? get_option('spotmap_default_values')[$index] : '';
-		}
-		$this::add_bulk_settings($settings,'spotmap-defaults-group','spotmap-defaults');
-	}
+    public function display_options_page()
+    {
+        echo '<div id="spotmap-admin-root" class="wrap"></div>';
+    }
 
+    public function add_link_plugin_overview($links)
+    {
+        $mylinks = [
+            '<a href="' . admin_url('options-general.php?page=spotmap#feeds') . '">' . __('Settings') . '</a>',
+            '<a href="https://wordpress.org/support/plugin/spotmap/">' . __('Get Support') . '</a>',
+        ];
+        return array_merge($mylinks, $links);
+    }
 
-	function add_bulk_settings($settings, $settings_group, $settings_section){
-		foreach ($settings as $index => $value) {
-			add_settings_field(
-				$value["id"],
-				isset($value["label"])? $value["label"] : $index,
-				[$this, 'generate_settings'],
-				$settings_group,
-				$settings_section,
-				$value
-			);
-		}
-	}
+    /**
+     * Called by cron. Fetches new data from all configured tracking feeds.
+     * Note: The SPOT API must not be polled more than once per 150 seconds.
+     */
+    public function get_feed_data()
+    {
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-api-crawler.php';
 
-	function generate_settings($args){
-		// error_log(print_r($args,TRUE));
-		foreach (['text', 'password','number',] as $type) {
-			if ($args['type'] == $type) { 
-				$this::generate_text_field($args);
-			}
-		}
-		if('textarea' == $args['type']) {
-			$this::generate_textarea($args);
-		}
-		if('dropdown' == $args['type']) {
-			$this::generate_dropdown_field($args);
-		}
-		if('icon' == $args['type']) {
-			$this::generate_icon_field($args);
-		}
-	}
-	function generate_textarea($args){
-		$maxlength = isset( $args['maxlength'] ) ? $args['maxlength'] : '500'; 
-		$cols = isset( $args['cols'] ) ? $args['cols'] : '50'; 
-		$rows = isset( $args['rows'] ) ? $args['rows'] : '2'; 
-		
-		?>
-		<textarea type="text" maxlength="<?php echo $maxlength?>" cols="<?php echo $cols?>" rows="<?php echo $rows?>" name="<?php echo $args['id']?>"><?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?></textarea>
-		<?php
-	}
-	
-	function generate_text_field($args){
-		$size = isset( $args['size'] ) ? ' size="'.$args['size'].'"' : ' size="50"';
-		?>
-		<input type="<?php echo $args['type']?>" <?php echo $size?> name="<?php echo $args['id']?>" value="<?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?>">
-		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
-		
-		<?php
-	}
-	function generate_icon_field($args){
-		$size = isset( $args['size'] ) ? ' size="'.$args['size'].'"' : ' size="50"'; 
-		// get the value of the setting we've registered with register_setting()
-		?>
-		<input class=spotmap-icon-input type="<?php echo $args['type']?>" <?php echo $size?> name="<?php echo $args['id']?>" value="<?php echo isset( $args['value'] ) ? esc_attr( $args['value'] ) : ''; ?>">
-		<?php echo isset( $args['value'] ) ? ' <i id="'.$args['id'].'-icon" style="font-size: 24px;" class="fas fa-'.$args['value'].'"></i>' : ''; ?>
-		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
-		
-		<?php
-	}
+        $feeds              = Spotmap_Options::get_feeds();
+        $findmespot_crawler = null;
+        $victron_crawler    = null;
+        foreach ($feeds as $feed) {
+            if (! empty($feed['paused'])) {
+                continue;
+            }
+            $type = $feed['type'] ?? '';
+            if ($type === 'findmespot') {
+                if ($findmespot_crawler === null) {
+                    $findmespot_crawler = new Spotmap_Api_Crawler('findmespot');
+                }
+                $findmespot_crawler->get_data(
+                    $feed['name']     ?? '',
+                    $feed['feed_id']  ?? '',
+                    $feed['password'] ?? ''
+                );
+            } elseif ($type === 'victron') {
+                if ($victron_crawler === null) {
+                    $victron_crawler = new Spotmap_Api_Crawler('victron');
+                }
+                $victron_crawler->get_data(
+                    $feed['name']            ?? '',
+                    $feed['installation_id'] ?? '',
+                    $feed['token']           ?? ''
+                );
+            }
+        }
+    }
 
-	function generate_dropdown_field($args){
-		?>
-		<select name="<?php echo $args['id']?>">
-		<?php foreach ($args['options'] as $key ) {
-			$option_label = isset($key["label"])? $key["label"] : $key[0];
-			$option_value = $option_label;
-			if(isset($key["value"])){
-				$option_value = $key["value"];
-			}
-			else if(!isset($key["value"]) && isset($key[1])){
-				$option_value = $key[1];
-			}
-			$option_value = isset($key["value"])? $key["value"] : $key[1];
-			$selected = $args["value"] == $option_value ? 'selected="selected"': '';
-			echo '<option '.$selected.' name="spotmap_options" value="'.$option_value.'">'.$option_label.'</option>';
-		
-		} 
-		?></select>
+    public function get_local_timezone()
+    {
+        global $wpdb;
+        $row = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE local_timezone IS NULL ORDER BY time DESC LIMIT 1;");
 
-		<?php echo isset( $args['description'] ) ? "<p class=\"description\">".$args['description']."</p>" : ''; ?>
-		
-		<?php
-	}
+        if (empty($row)) {
+            return;
+        }
+        $token = Spotmap_Options::get_api_token('timezonedb');
+        if (empty($token)) {
+            return;
+        }
+        $url      = "http://api.timezonedb.com/v2.1/get-time-zone?key=" . $token . "&format=json&by=position&lat=" . $row->latitude . "&lng=" . $row->longitude;
+        $response = wp_remote_get($url);
+        if (wp_remote_retrieve_response_code($response) != 200) {
+            wp_schedule_single_event(time() + 8, 'spotmap_get_timezone_hook');
+            return;
+        }
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE `{$wpdb->prefix}spotmap_points` SET `local_timezone` = %s WHERE id = %s",
+                [ $data['zoneName'], $row->id ]
+            )
+        );
+        wp_schedule_single_event(time() + 2, 'spotmap_get_timezone_hook');
+    }
 
-	function settings_section_findmespot($args){
-		echo '<p id='.$args['id'].'>'.__('Enter your SPOT XML Feed details here. If you are not sure what you should enter here, head over to the <a href="https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support">API support page from SPOT</a> to get more information').'.</p>';
-	}
-	
-	function settings_section_messages($args){
-		echo '<p id='.$args['id'].'>'.__("Do you share sensible data in your messages sent from your spot? (e.g. phone numbers)").'<br>' . __("Here you can override the displayed message.").'</p>';
-	}
-	function settings_section_icons($args){
-		echo '<p id='.$args['id'].'>'.__("In this section you can modify the icons that are displayed on the map. (If you have chosen a medium or big marker)").'.<br>' . 
-		__("Search under the following link for other icons that suits your needs") . ': <a target="_blank" href="https://fontawesome.com/icons?d=gallery&p=2&q=search&m=free">fontawesome.com</a>.</br></p>';
-	}	
-	function settings_section_marker($args){
-		echo '<p id='.$args['id'].'>'.__("Change the marker size for each message type.").'<br>
-		</p>';
-	}
-	function settings_section_thirdparty($args){
-		echo '<p id='.$args['id'].'>'.__("Here you have links to a variety of different services. Each one of them is free for personal use. Follow the stated link, create an account and copy the API Key in the corresponding field.").'<br>
-		</p>';
-	}
-	
-	function settings_section_defaults($args){
-		echo '<p id='.$args['id'].'>'.__("Change the default values for shortcodes attributes.")."<br>".__("Changes made here could lead to malfunctions.").'
-		</p>';
-	}
-	
-	function validate_feed_name($new_feed_name){
-		foreach ($new_feed_name as $index => &$feed_name) {
-			$feed_name = sanitize_text_field($feed_name);
-			$old_feed_name = get_option("spotmap_findmespot_name")[$index];
-			if(empty($feed_name)){
-				continue;
-			} else if ($feed_name == $old_feed_name){
-				continue;
-			}
-			$feed_id= get_option("spotmap_findmespot_id")[$index];
-			$result = $this->db->rename_feed_name($old_feed_name, $feed_name);
-		}
-		return $new_feed_name;
-	}
-	
-	function validate_feed_id($new_feed_id){
-		foreach ($new_feed_id as $index => &$feed_id) {
-			$feed_id = sanitize_text_field($feed_id);
-			// error_log($feed_id);
-			$old_feed_id = get_option("spotmap_findmespot_id")[$index];
-			if(empty($feed_id)){
-				unset($new_feed_id[$index]);
-				continue;
-			} else if ($feed_id == $old_feed_id){
-				continue;
-			}
+    public function get_maps_config_content($section)
+    {
+        static $config = null;
+        if ($config === null) {
+            $maps_file = plugin_dir_path(dirname(__FILE__)) . 'config/maps.yaml';
+            if (! file_exists($maps_file)) {
+                return null;
+            }
+            $config = \Spotmap\Symfony\Component\Yaml\Yaml::parseFile($maps_file);
+        }
+        return $config[ $section ] ?? null;
+    }
 
-			$feed_url = 'https://api.findmespot.com/spot-main-web/consumer/rest-api/2.0/public/feed/'.$feed_id.'/message.json';
-			$json = json_decode( wp_remote_retrieve_body( wp_remote_get( $feed_url )), true);
-			//if feed is empty bail out here
-			if (empty($json) || isset($json['response']['errors']) && $json['response']['errors']['error']['code'] === "E-0160"){
-				// error_log('stay with old value');
-				add_settings_error( 'spotmap_feed_id', '', 'Error: The feed id: "'.$feed_id.'" is not valid.', 'error' );
-			}
-		}
-		return $new_feed_id;
-	}
+    public function get_overlays()
+    {
+        return $this->get_maps_config_content('overlays');
+    }
 
-	function display_options_page(){
-		include_once  plugin_dir_path( dirname( __FILE__ ) ) . 'admin/partials/spotmap-admin-display.php';
-	}
+    public function get_maps()
+    {
+        $maps      = $this->get_maps_config_content('baseLayers');
+        $api_names = [
+            [ 'option' => 'mapbox',             'token' => 'mapboxToken' ],
+            [ 'option' => 'thunderforest',       'token' => 'thunderforestToken' ],
+            [ 'option' => 'linz.govt.nz',        'token' => 'LINZToken' ],
+            [ 'option' => 'geoservices.ign.fr',  'token' => 'geoportailToken' ],
+            [ 'option' => 'osdatahub.os.uk',     'token' => 'osdatahubToken' ],
+        ];
+        $api_tokens = Spotmap_Options::get_api_tokens();
+        foreach ($maps as $name => &$data) {
+            foreach ($api_names as $item) {
+                if (isset($data['options'][ $item['token'] ])) {
+                    if (! empty($api_tokens[ $item['option'] ])) {
+                        $data['options'][ $item['token'] ] = $api_tokens[ $item['option'] ];
+                    } else {
+                        unset($maps[ $name ]);
+                    }
+                }
+            }
+        }
+        return $maps;
+    }
 
-	function allow_gpx_upload($mime_types){
-		$mime_types['gpx'] = 'text/xml'; 
-		return $mime_types;
-	}
-	function add_link_plugin_overview( $links ) {
-		$mylinks = [
-			'<a href="' . admin_url( 'options-general.php?page=spotmap' ) . '">'.__("Settings").'</a>',
-			'<a href="https://wordpress.org/support/plugin/spotmap/">'.__("Get Support").'</a>',
-		];
-		return array_merge( $mylinks,$links );
-	}
+    public function allow_gpx_upload($mime_types)
+    {
+        $mime_types['gpx'] = 'text/xml';
+        return $mime_types;
+    }
 
-	/**
-	 * This function gets called by cron. It checks the SPOT API for new data.
-	 * Note: The SPOT API shouldn't be called more often than 150sec otherwise the servers ip will be blocked.
-	 */
-	function get_feed_data(){
-		// error_log("Checking for new feed data ...");
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-spotmap-api-crawler.php';
-		foreach (get_option("spotmap_api_providers") as $key => $name) {
-			$ids = get_option("spotmap_".$key."_id");
-			$count = count($ids);
-			if($count < 1){
-				continue;
-			}
-			$crawler = new Spotmap_Api_Crawler("findmespot");
-			for ($i=0; $i < $count; $i++) {
-				if($key == 'findmespot'){
-					$feed_name = get_option('spotmap_'.$key.'_name')[$i];
-					$id = $ids[$i];
-					$pwd = get_option('spotmap_'.$key.'_password')[$i];
-					
-					$crawler->get_data($feed_name, $id, $pwd);
-				}
-			}
+    public function add_images_to_map($attachment_id): int
+    {
+        $media_feeds = array_filter(
+            Spotmap_Options::get_feeds(),
+            fn ($f) => ($f['type'] ?? '') === 'media'
+        );
+        if (empty($media_feeds)) {
+            return 0;
+        }
 
-		}
-		// error_log("cron job started");
-        if (!get_option('spotmap_options')) {
-			// trigger_error('no values found');
-			return;
-		}
-		foreach (get_option("spotmap_options") as $key => $count) {
-			if($count < 1){
-				continue;
-			}
-			
-		}
-	}
-	function get_local_timezone(){
-		global $wpdb;
-		$row = $wpdb->get_row("SELECT * FROM " . $wpdb->prefix . "spotmap_points WHERE local_timezone IS NULL ORDER BY time DESC LIMIT 1;");
-		// error_log('get tz data');
+        $filepath  = get_attached_file($attachment_id);
+        $file_type = wp_check_filetype($filepath);
+        if (! in_array($file_type['type'], [ 'image/jpeg', 'image/tiff' ], true)) {
+            return 0;
+        }
+        $exif = exif_read_data($filepath, 0, true);
+        if (! isset($exif['GPS'])) {
+            return 0;
+        }
+        if (! isset($exif['EXIF']['DateTimeOriginal'])) {
+            return 0;
+        }
+        if (! isset($exif['GPS']['GPSLatitude'], $exif['GPS']['GPSLatitudeRef'],
+            $exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef'])) {
+            return 0;
+        }
 
-		if(empty($row)){
-			return;
-		}
-		$token = get_option('spotmap_api_tokens')['timezonedb'];
-		$url = "http://api.timezonedb.com/v2.1/get-time-zone?key=".get_option('spotmap_api_tokens')["timezonedb"]."&format=json&by=position&lat=".$row->latitude."&lng=".$row->longitude;
-		$response = wp_remote_get( $url );
-		// error_log( wp_remote_retrieve_response_code($response) );
-		$json = wp_remote_retrieve_body( $response );
-		if ( wp_remote_retrieve_response_code($response) != 200){
-			// wait a sec longer ....
-			wp_schedule_single_event( time()+8, 'spotmap_get_timezone_hook' );
-			return;
-		}
-		$response = json_decode($json, true);
-		// error_log(print_r(json_decode($json, true),true));
-		$wpdb->query( $wpdb->prepare( "
-			UPDATE `{$wpdb->prefix}spotmap_points`
-			SET `local_timezone` = %s
-			WHERE id = %s",
-			[$response['zoneName'],$row->id] ) 
-		);
-		wp_schedule_single_event( time()+2, 'spotmap_get_timezone_hook' );
-	}
-	function get_maps_config_content($section){
-		$maps_file = plugin_dir_path( dirname( __FILE__ ) ) . 'config/maps.json';
-		if(file_exists($maps_file)){
-			return json_decode(file_get_contents($maps_file),true)[$section];
-		}
-		return;
-	}
+        $latitude  = $this->gps($exif['GPS']['GPSLatitude'], $exif['GPS']['GPSLatitudeRef']);
+        $longitude = $this->gps($exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef']);
+        $timestamp = strtotime($exif['EXIF']['DateTimeOriginal']);
+        $inserted = 0;
+        foreach ($media_feeds as $feed) {
+            $feed_name = $feed['name'] ?? 'media';
+            $result    = $this->db->insert_point([
+                'latitude'      => $latitude,
+                'longitude'     => $longitude,
+                'unixTime'      => $timestamp,
+                'timestamp'     => $timestamp,
+                'feedName'      => $feed_name,
+                'feedId'        => $feed_name,
+                'messengerName' => $feed_name,
+                'messageType'   => 'MEDIA',
+                'modelId'       => $attachment_id,
+            ]);
+            if ($result !== false) {
+                $inserted++;
+            }
+        }
+        return $inserted;
+    }
 
-	public function get_overlays(){
-		return $this->get_maps_config_content("overlays");
-	}
+    public function import_existing_media(): int
+    {
+        $media_feeds = array_filter(
+            Spotmap_Options::get_feeds(),
+            fn ($f) => ($f['type'] ?? '') === 'media'
+        );
+        if (empty($media_feeds)) {
+            return 0;
+        }
 
-	public function get_maps(){
-		$maps = $this->get_maps_config_content("baseLayers");
+        $attachments = get_posts([
+            'post_type'      => 'attachment',
+            'post_mime_type' => 'image',
+            'posts_per_page' => -1,
+        ]);
 
-		// remove maps which need an API key
-		$api_names = [
-			["option" => 'mapbox', "token"=>"mapboxToken"],
-			["option" => 'thunderforest', "token"=>"thunderforestToken"],
-			["option" => 'linz.govt.nz', "token"=>"LINZToken"],
-			["option" => 'geoservices.ign.fr', "token"=>"geoportailToken"],
-			["option" => 'osdatahub.os.uk', "token"=>"osdatahubToken"],
-		];
-		$api_tokens = get_option('spotmap_api_tokens');
-		foreach ($maps as $name => &$data) {
-			foreach ($api_names as $i => $options) {
-				if(isset($data['options'][$options['token']])){
-					if(!empty($api_tokens[$options['option']])){
-						$data['options'][$options['token']] = $api_tokens[$options['option']];
-					} else {
-						unset($maps[$name]);
-					}
-				}
-			}
-		}
-		return $maps;
-	}
-	public function delete_images_from_map($attachment_id) {
-		error_log($attachment_id . "is being deleted");
-		// if($this->db->does_media_exist($attachment_id)){
-			$this->db->delete_media_point($attachment_id);
-		// }
-	}
+        $imported = 0;
+        foreach ($attachments as $attachment) {
+            if ($this->db->does_media_exist($attachment->ID)) {
+                continue;
+            }
+            $imported += $this->add_images_to_map($attachment->ID);
+        }
+        return $imported;
+    }
 
-	// This functions get's called when new media is uploaded and adds it to the spotmap table if GPS info is part of EXIF data
-	public function add_images_to_map($attachment_id) {
-		$guid = get_post_field('guid', $attachment_id);
-		$filepath = get_attached_file($attachment_id);
-		$exif = exif_read_data($filepath, 0, true);
-		// error_log("exif: ".print_r($exif,true));
-		// if media has no GPS/timetaken info skip
-		if (!isset($exif["GPS"])) { return; }
-		if (!isset($exif["EXIF"]['DateTimeOriginal'])) { return; }
-		
-		$latitude = $this->gps($exif["GPS"]["GPSLatitude"], $exif["GPS"]["GPSLatitudeRef"]);
-		$longitude = $this->gps($exif["GPS"]["GPSLongitude"], $exif["GPS"]["GPSLongitudeRef"]);
-		$timestamp = strtotime($exif["EXIF"]['DateTimeOriginal']);
-		$image = get_post_field('guid', $attachment_id);
+    public function delete_images_from_map($attachment_id)
+    {
+        $this->db->delete_media_point($attachment_id);
+    }
 
-		$this->db->insert_point([
-			"latitude" => $latitude,
-			"longitude" => $longitude,
-			"unixTime" => $timestamp,
-			"timestamp" => $longitude,
-			"feedName" => "media",
-			"feedId" => "media",
-			"messengerName" => "media",
-			"messageType" => "MEDIA",
-			"modelId" => $attachment_id,
-			"messageContent" => $image
-
-
-		]);
-		// error_log("location: ".$latitude.' '.$longitude);
-		// update_post_meta( $attachment_id, 'Location', ['latitude' => $latitude,'longitude' => $longitude]);
-	}
-	// https://stackoverflow.com/questions/2526304/php-extract-gps-exif-data
-	private function gps($coordinate, $hemisphere) {
-		if (is_string($coordinate)) {
-		  $coordinate = array_map("trim", explode(",", $coordinate));
-		}
-		for ($i = 0; $i < 3; $i++) {
-		  $part = explode('/', $coordinate[$i]);
-		  if (count($part) == 1) {
-			$coordinate[$i] = $part[0];
-		  } else if (count($part) == 2) {
-			$coordinate[$i] = floatval($part[0])/floatval($part[1]);
-		  } else {
-			$coordinate[$i] = 0;
-		  }
-		}
-		list($degrees, $minutes, $seconds) = $coordinate;
-		$sign = ($hemisphere == 'W' || $hemisphere == 'S') ? -1 : 1;
-		return $sign * ($degrees + $minutes/60 + $seconds/3600);
-	  }
+    // https://stackoverflow.com/questions/2526304/php-extract-gps-exif-data
+    private function gps($coordinate, $hemisphere)
+    {
+        if (is_string($coordinate)) {
+            $coordinate = array_map('trim', explode(',', $coordinate));
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $part = explode('/', $coordinate[ $i ]);
+            if (count($part) == 1) {
+                $coordinate[ $i ] = $part[0];
+            } elseif (count($part) == 2) {
+                $coordinate[ $i ] = floatval($part[0]) / floatval($part[1]);
+            } else {
+                $coordinate[ $i ] = 0;
+            }
+        }
+        list($degrees, $minutes, $seconds) = $coordinate;
+        $sign = ($hemisphere == 'W' || $hemisphere == 'S') ? -1 : 1;
+        return $sign * ($degrees + $minutes / 60 + $seconds / 3600);
+    }
 }

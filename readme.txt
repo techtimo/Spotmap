@@ -1,204 +1,202 @@
-=== Spotmap ===
-Contributors: techtimo
-Donate link: paypal.me/ebaytimo
-Tags: findmespot, find me spot, saved by spot, spot gps, spot tracker, spotbeacon, liveposition, gpx, gps tracking, gps tracker, spottrace, spotwalla
-License: GPL2
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Requires at least: 5.3
-Tested up to: 5.8
+# Spotmap
 
-See your Spot device movements on an embedded map inside your Blog! 🗺 Add GPX tracks, routes and waypoints to see a planned route.
+Contributors: techtimo  
+Donate link: paypal.me/ebaytimo  
+Tags: gps, tracking, map, gpx, live tracking, osmand, teltonika, spot, tracker, victron
+License: GPL2  
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Requires at least: 6.5
+Requires PHP: 8.2
+Tested up to: 7.0
+Stable tag: 1.0.0
+
+Live GPS tracking for WordPress — display positions from SPOT, OsmAnd, and Teltonika devices on interactive maps. Self-hosted, privacy-friendly. 🗺
 
 ## Description
 
-Spot does not offer the storage of points free of charge for long term. That's where Spotmap comes into the game:
-Your Wordpress Site will store all positions ever sent. It checks for new positions every 2.5 minutes.
-It supports different devices (They can even belong to different accounts).
+Spotmap turns your WordPress site into a self-hosted GPS tracking platform. Connect your devices, and Spotmap stores every position in your own database — no third-party cloud required.
 
-The map can fetch new points autmatically without relaoding the entire Post.
+### Supported devices
 
+* **SPOT** (FindMeSPOT) — automatic feed polling via XML API
+* **OsmAnd** — receives positions via HTTP from the OsmAnd smartphone app
+* **Teltonika** — direct integration for Teltonika GPS routers and trackers
+* **WordPress Media Library** — photos with GPS EXIF data appear as points on the map under the feed name `media`
+* **Zoleo** — planned
 
+### Map & visualization
 
-🆕 Support of Gutenberg block editor. Just type `/spotmap` and open the settings on the right.
+* Interactive Leaflet map with full **Gutenberg block** support — type `/spotmap` in the editor
+* Wide range of tile providers: OpenStreetMap, Mapbox, Thunderforest, LINZ (NZ), IGN France, UK Ordnance Survey, USGS, OpenSeaMap, ESRI Ocean, and any custom XYZ tile URL
+* GPX track overlay via the built-in **GPX manager** — upload and manage GPX files for planned routes, waypoints, and recorded tracks
+* Photo EXIF GPS display — images from your media library with location data appear on the map
+* Configurable line breaks when no positions arrive within a set time interval
+* Multiple feeds and devices on a single map, each with its own color
+* Configurable marker styles and icons
 
-Currently only the GPX colors cannot be cahnged individually inside the block settings.
+### Filtering & interaction
 
-With a shortcode you can add an embedded map to your post or page. By default it will show all positions ever sent.
-If needed the map can show a subset of the data. i.e. the last weekend getaway.
+* Rich **time filtering** including relative ranges like "last 24 hours" or "last 7 days", and absolute date ranges
+* Interactive **data table** linked to the map — click a check-in to zoom to that position
+* Initial map state options: show all points, zoom to last position, or zoom to last trip
+* Auto-refresh without full page reload
 
-Next planned features (Not necessarily in right order): 
+### Data management
 
-- grouping of points (partially implemented)
+* **Long-term position storage** — your data stays in your WordPress database for as long as you want
+* Convert tracked positions to **GPX export**
+* Manage, move, and delete points from the WordPress dashboard
+* Upload and organize GPX files through the GPX manager
 
-- support of other tracking devices (Garmin InReach, ...)
+### Performance
 
-- Translatable version of the plugin
+* Rewritten map engine in TypeScript for better reliability
+* Significantly faster rendering with large numbers of points compared to 0.11.x
 
-- Full support of the Spotmap block for Gutenberg
+### Why Spotmap?
 
-- delete/move points from the Dashboard
-
-- export to gpx files 
-
-👉 If you feel like this plugin is missing importants part, let me know. Maybe I have some free time to change this fact. 😉
-
+Most GPS tracking solutions lock your data into a vendor cloud. SPOT's own platform doesn't even offer free long-term storage. Spotmap keeps everything on your server — whether you're documenting a sailing trip, sharing a bike tour with friends and family, or tracking vehicles. Your data, your rules.
 
 ## Installation
 
-After installing the plugin, head over to your Dashboard  `Settings > Spotmap`. Add a feed by selecting `findmespot` from the dropdown and hit "Add Feed".
+1. Install from the WordPress plugin directory or upload the `spotmap` folder to `/wp-content/plugins/`
+2. Activate the plugin through the **Plugins** menu
+3. Go to **Settings > Spotmap** and add your first feed
+4. In the block editor, type `/spotmap` to insert a map into any post or page
 
-Now you can enter your XML Feed Id, a name for the feed and a password if you have one.  Press "Save". A few minutes later Wordpress will download the points that are present in the XML Feed.
+### Connecting devices
 
-In the mean time you can create an empty map with the Shortcode: 
-`[spotmap]`
+**SPOT:** Create an XML Feed in your SPOT account ([instructions](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed)). Enter the Feed ID in Spotmap settings. Positions are polled automatically. Your Feed ID looks like: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
-If you use the block editor Gutenberg, you can search for a block named 'Spotmap'.
+**OsmAnd:** Configure OsmAnd's online tracking to send positions to the REST endpoint shown in Spotmap settings.
 
-🎉 Congrats! You just created your first Spotmap. 🎉
+**Teltonika:** Point your Teltonika device's data sending configuration to the endpoint shown in Spotmap settings.
 
-If you use the Block editor make sure to select the map and click on the settings icon in the top right corner, in order to see all settings related to the map.
+**Photos:** Upload geotagged images to your WordPress media library. Spotmap reads the EXIF GPS data and displays them under the feed name `media`.
 
-If you use the shortcode,check the Additional attributes section.
-👉 If you need help to configure your map, post a question in the [support forum](https://wordpress.org/support/plugin/spotmap/). 👈
-### Additional attributes
+## Security
 
-If you add new maps, check the FAQ
+### Message content and phone numbers
 
-To fine tune the map, there are some attributes we can pass with the shortcode:
+SPOT devices can include a phone number or personal message in their transmission data. This information is stored in the database and may appear in marker popups on your map.
+To overwrite this content, use the **Marker** section in `Settings > Spotmap`.
+Setting a feed password in your SPOT account (and entering it in the plugin settings) ensures that the message content is not stored in the WordPress database and thus not accessible by the public.
 
-_Note:_ all the Default values of the attributes can be changed in the settings in Dashboard. This comes in handy, if you use several maps on the blog, and you like to configure them all in one place. Of course you can still use the attributes to overide the default values.
+### Live location privacy
 
-#### Map
+The plugin offers a cosmetic filter to hide points newer than a configurable threshold (e.g. 30 minutes, 2 hours, or 1 day). This prevents the most recent positions from appearing on the public map.
 
-- `maps=opentopomap` will show only the opentopomap as map. Default `"openstreetmap,opentopomap"`.
-  If you create a mapbox API Key and store it in the settings page. You can choose other map types as well: `mb-outdoors,mb-streets,mb-satelite` 
-  Use it like this: `maps="mb-satelite,mb-streets,openstreetmap"` This will show a satelite image as the selected map, but it can be changed to the other two maps (mb-streets, openstreetmap).
+**Important:** this filter is display-only. The REST API endpoint exposed by the plugin can return all points stored in the database, regardless of the block filter setting. There is currently no way to fully hide the latest positions from a technically capable visitor. If hiding live locations from the API is a requirement, you should restrict access to the REST API endpoint at the server or WordPress level.
 
-- `map-overlays=openseamap` can be added to see the openseamap overlay in the map. (You need to zoom in quite a bit).
+### Map tokens
 
-- `height=600` can define the height of the map in pixels. 
+API tokens for tile layer providers (Mapbox, Thunderforest, LINZ, IGN France, OS UK, etc.) are stored in WordPress settings and embedded in the page HTML at render time. Any visitor who views the page source can read your token.
 
-- `width=full` if you add this the map will appear in full width. Default is `normal`.
+To reduce the risk of token abuse, **restrict each token to your domain using the provider's referrer/HTTP origin restrictions** (e.g. `https://yoursite.com/*`).
 
-- `mapcenter=last` can be used to zoom into the last known position. Default `all`. Can be set to `'gpx'` to center all GPX files (see below for configurations).
+### SQL injection prevention
 
-### Feeds
-
-- `splitlines=8` will split the lines between points if two points are sent with a difference greater than X hours. Default 12. Set to 0 if you don't like to see any line.
-
-- `date-range-from=2021-01-01` can be used to show all points starting from date and time X. (Can lie in the future).
-
-- `date-range-to=2022-01-01 19:00` can be used to show all points until date and time X.
-
-- `auto-reload` will auto update the map without the need to reload the page. (This hasn't been tested much...)
-
-- `last-point` will show the last sent point as big marker, to be easily found. Can also be used with a limited range of colors (yellow,red,green,black,gray,blue) like `last-point=red`
-
-- `feeds` can be set, if multiple feeds get used. (See example below, if you have only one spot this is not needed)
-
-#### GPX
-**The following attributes can be used to show GPX tracks:**
-
-- `gpx-name="Track 1,Track 2"` give the tracks a nice name. (Spaces can be used)
-
-- `gpx-url="yourwordpress.com/wp-content/track1.gpx,yourwordpress.com/wp-content/track2.gpx"` specify the URL of the GPX files. (You can upload GPX files to your media library. Make sure to not use 'http://'!)
-
-- `gpx-color="green,#347F33"` give your tracks some color. (It can be any color you can think of, or some hex values)
-
-If there are areas where tracks overlap each other, the track named first will be on top of the others.
-
-_Note:_ `feeds` must always match your feed name.
-This will show a bigger map and the points are all in yellow:
-
-`[spotmap height=600 width=full feeds="My Spot Feed" colors=yellow]`
-
-This will show a map where we zoom into the last known position, and we only show data from the the first of May:
-
-`[spotmap mapcenter=last feeds="My Spot" colors=red date-range-from="2020-05-01"]`
-
-
-We can also show multiple feeds in different colors on a same day (from 0:00:00 to 23:59:59):
-
-`[spotmap mapcenter=last feeds="My first spot,My other Device" colors="gray,green" date="2020-06-01"]` 
-
+All database queries use prepared statements as of version 1.0.
 
 ## Frequently Asked Questions
 
-### How do I get my Feed ID?
-You need to create an XML Feed in your spot account. ([See here](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) for more details)
-Unless you like to group devices under one name, it's good to create one feed per device, so you can manage the devices independently. 
-Your XML Feed id should look similar to this: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
+### Which GPS devices are supported?
 
-### Which 3rd Party Services are getting used?
-The plugin uses the following thrid party services:
-1.  From [SPOT LLC](http://findmespot.com) it uses the [Public API](https://www.findmespot.com/en-us/support/spot-x/get-help/general/spot-api-support) to get the points.
-2. (optionally) [TimeZoneDB.com](TimeZoneDB.com)  To calculate the localtime of sent positions. Create an account [here](https://timezonedb.com/register). Paste the key in the settings page.
-3. (optionally) [Mapbox, Inc.](mapbox.com) To get satelite images and nice looking maps, you can sign up for a [Mapbox API Token](https://account.mapbox.com/access-tokens/). I recommend to restrict the token usage to your domain only.
-4. (optionally) [Thunderforest](thunderforest.com) To get another set of maps. Create an account [here](https://manage.thunderforest.com/users/sign_up?plan_id=5). Paste the key in the settings page.
-5. (optionally) [Land Information New Zealand (LINZ)](https://www.linz.govt.nz) To get the official Topo Maps of NZ create an account [here](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key). Paste the key in the settings page.
-6. (optionally) [Géoportail France](https://geoservices.ign.fr/) To get the official Topo Maps of IGN France. Create an account [here](https://geoservices.ign.fr/user/register) (french only). Paste the key in the settings page.
-7. (optionally) [UK Ordnance Survey](https://osdatahub.os.uk) To get the official UK OS maps. Create a free plan [here](https://osdatahub.os.uk/plans). And follow this guide on how to [create a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
+SPOT satellite communicators (via FindMeSPOT XML feed), OsmAnd (via HTTP), and Teltonika GPS routers and trackers (direct integration). You can also display GPS coordinates from geotagged photos in your WordPress media library. Zoleo support is planned.
 
+### Can I show multiple devices on one map?
 
-### Can I use/add other maps?
-Have you created your mapbox/thunderforest API key yet? If not this is a good way to start and get other map styles. See the question 'Which 3rd Party Services are getting used?' for details
-If you still search for another map: Start a search [here](https://leaflet-extras.github.io/leaflet-providers/preview/) and also [here](https://wiki.openstreetmap.org/wiki/Tiles).
-If you have found a map, create a new post in the [support forum](https://wordpress.org/support/plugin/spotmap/).
+Yes. Configure multiple feeds and display them on a single map, each with its own color.
 
-### I have a question, an idea, found a bug... 
-Head over to the wordpress.org [support forum](https://wordpress.org/support/plugin/spotmap/), and ask your question there. I'm happy to assist you! 😊
+### Does Spotmap work with the block editor?
+
+Yes. Spotmap includes a full Gutenberg block with live preview. Type `/spotmap` in the editor and configure all options in the block sidebar.
+
+### Can I filter the map to show only recent positions?
+
+Yes. Spotmap supports rich time filtering including relative ranges like "last 12 hours" or "last 3 days", as well as absolute date ranges.
+
+### Can I display photo locations on the map?
+
+Yes. Upload geotagged photos to your WordPress media library. Spotmap reads the GPS EXIF data and shows them on the map under the feed name `media`.
+
+### Can I export my tracking data?
+
+Yes. You can convert tracked positions to GPX files directly from the plugin.
+
+### Can I add GPX tracks to show a planned route?
+
+Yes. Use the built-in GPX manager to upload and organize GPX files. Tracks, routes, and waypoints are displayed as overlays on the map.
+
+### What map styles are available?
+
+Spotmap uses Leaflet and supports any XYZ tile provider. OpenStreetMap is included by default. Optional providers include Mapbox, Thunderforest, LINZ (New Zealand topos), IGN France, UK Ordnance Survey, USGS, OpenSeaMap, and ESRI Ocean layers. You can also add any custom tile URL. Browse available maps at [leaflet-providers](https://leaflet-extras.github.io/leaflet-providers/preview/) and [OpenStreetMap wiki](https://wiki.openstreetmap.org/wiki/Tiles).
+
+### Is Spotmap suitable for shared hosting?
+
+Yes, for SPOT, OsmAnd, and photo EXIF. All three use HTTP-based data transfer. Teltonika integration may require additional configuration depending on your device model and hosting.
+
+### Which third-party services does the plugin use?
+
+1. [SPOT LLC](http://findmespot.com) — [Public API](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) for position data
+2. (optional) [TimeZoneDB.com](https://timezonedb.com) — local time calculation for positions. [Create an account](https://timezonedb.com/register) and add the key in settings.
+3. (optional) [Mapbox](https://mapbox.com) — satellite imagery and map styles. [Get an API token](https://account.mapbox.com/access-tokens/). Restrict the token to your domain.
+4. (optional) [Thunderforest](https://thunderforest.com) — additional map styles. [Sign up](https://manage.thunderforest.com/users/sign_up?plan_id=5).
+5. (optional) [LINZ](https://www.linz.govt.nz) — official New Zealand topo maps. [Create an API key](https://www.linz.govt.nz/data/linz-data-service/guides-and-documentation/creating-an-api-key).
+6. (optional) [Géoportail France](https://geoservices.ign.fr/) — official IGN France maps. [Register](https://geoservices.ign.fr/user/register).
+7. (optional) [UK Ordnance Survey](https://osdatahub.os.uk) — official UK OS maps. [Create a free plan](https://osdatahub.os.uk/plans) and [set up a project](https://osdatahub.os.uk/docs/wmts/gettingStarted).
+
+### How does Spotmap compare to other GPS tracking plugins?
+
+Spotmap fills a unique niche in the WordPress plugin ecosystem:
+
+**vs. Trackserver** — Trackserver is the closest alternative and supports a wide range of phone tracking apps (TrackMe, OruxMaps, µLogger, GPSLogger, and others). If your primary use case is recording tracks from a smartphone app, Trackserver covers more protocols. However, Spotmap offers several things Trackserver does not:
+
+* **Satellite communicator support** — Spotmap works with SPOT devices (and Zoleo is planned), which matters for off-grid adventures where your phone has no signal. Trackserver only supports phone-based tracking apps.
+* **Teltonika device support** — direct integration for GPS routers and vehicle trackers.
+* **Modern editor experience** — Spotmap has a full Gutenberg block with live preview and sidebar settings. Trackserver is shortcode-only with 20+ attributes to configure manually.
+* **Built-in GPX manager** — upload and organize GPX files from the dashboard instead of referencing URLs in shortcodes.
+* **Photo EXIF integration** — geotagged images from the media library appear on the map automatically.
+* **Rich time filtering UI** — relative ranges like "last 24 hours" with a visual interface instead of shortcode parameters.
+* **Interactive data table** — click a position to zoom to it on the map.
+
+**vs. GPS Plotter** — Android-phone-only, Google Maps dependent, no GPX support, no satellite devices.
+
+**In short:** if you track with a satellite communicator, a Teltonika device, or want a modern block-editor experience with visual filtering and data management, Spotmap is the better fit. If you need protocol support for niche phone tracking apps (TrackMe, µLogger, OwnTracks), check out Trackserver.
+
+### I have a question, an idea, or found a bug
+
+Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) or open an issue on [GitHub](https://github.com/techtimo/Spotmap).
 
 ## Screenshots
- 
-1. This screenshot was taken after using the plugin for 3 months.
-2. You can click on every sent positions to get more information. Points sent from a 'normal' Tracking will appear as small dots.
+
+1. Three months of tracking data with colored track lines and GPX overlays
+2. Click any position to see details — marker popups with timestamp and message
+3. The Gutenberg block with live map preview
+4. Time filtering with relative ranges
+5. Interactive feed data table
+6. The GPX manager
+7. Multiple devices on a single map with different colors
 
 ## Changelog
-= 0.12.0 =
-- support for media uploads shown in the map
-- images you upload to wordpress will be added to the wordpress spotmap table using the feed 'media' if GPS location are part of the EXIF data.
-- with date-range filter described above you can show only images taken in a specific range.
-- If you upgrade from a previous version you have to mnaully run this command if you like to use the media feature: "ALTER TABLE `wordpress_local`.`wp_spotmap_points` CHANGE COLUMN `id` `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT ;"
 
-= 0.11.2 =
-- new marker styles and options how to configure them. Changeable icons
-- maps with many points will load faster
-- tested with WP 5.8
-- Thirdparty API options page includes many comments to better understand what each service is for.
-- new initial map state added: 'last-trip'. Zooms to the last line on the map (In the feed settings splitlines must be activated to work)
+### 1.0.0
 
-= 0.10.3 =
-- added UK  Ordnance Survey
-- added US Geological Survey maps
-- possability to hide nearby points of the same type
-
-= 0.10.2 =
-- tested Wordpress 5.7 
-- add last-point option to show the latest position as a big marker. (Requested by Elia)
-- fix reload issue of the map inside Gutenberg if no changes were made
-
-= 0.10.1 =
-Full Gutenberg Block support
-added NZtopomap
-added France IGN Topo map token
-
-= 0.9 =
-- new shortcode to show table of messages
-- add gpx overlays
-- new maps available (mapbox, thunderforest, swisstopo)
-
-= 0.7 =
-- added support for multiple feeds
-- filter for certain date ranges
-- added a Gutenberg Block (still experimental!)
-
+* New: **OsmAnd** device support — receive positions via HTTP
+* New: **Teltonika** device support — direct integration
+* New: **Photo EXIF GPS** — images with GPS data from the media library can appear on the map if configured
+* New: Built-in **GPX manager** — upload and manage GPX files
+* New: Rich **time filtering** with relative ranges (last X hours/days) and absolute date ranges
+* New: Interactive **data table** linked to map — click a row to zoom to that position
+* New: **GPX export** — convert tracked positions to GPX files
+* Improved: Full **Gutenberg block** with live preview and block sidebar settings
+* Improved: In unlikely cases WP simply deleted the cron job to fetch new points, this will not happen anymore
+* Improved: Map engine rewritten to support **faster map rendering** with large numbers of points
+* Improved: last-point marker is now customizable via additional CSS 
+* Fix: `id` column gains `AUTO_INCREMENT` (was missing in 0.11.2); migration runs automatically on update
 
 ## Upgrade Notice
- 
-= 0.9 =
-If you upgrade to this version from a previous, please uninstall the plugin first.
-If you have data in the db you don't want to loose, please create a post in the support forum.
 
-Adding Gpx support to show a planned route. Adding different maps.
-Adding a table to quickly see the last sent messages. ([spotmessages])
+### 1.0.0
 
+Major update with multi-device support (OsmAnd, Teltonika), GPX manager, time filtering, data table, photo EXIF display, and significant performance improvements. The database is migrated automatically — no manual SQL required. Your existing GPS data is preserved.
