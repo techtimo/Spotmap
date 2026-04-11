@@ -36,6 +36,7 @@ vendor/
 README.md
 CLAUDE.md
 LICENSE
+pluginreadme.md
 
 # IDE / editor
 .editorconfig
