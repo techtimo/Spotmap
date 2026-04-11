@@ -80,5 +80,8 @@
         "version:bump": "node scripts/bump-version.js",
         "plugin-zip": "npm run build && npm run composer -- install --no-dev --optimize-autoloader && wp-scripts plugin-zip && node -e \"const fs=require('fs'),{execSync}=require('child_process');const v=fs.readFileSync('spotmap.php','utf8').match(/Version:\\s+(\\S+)/)[1];fs.renameSync('spotmap.zip',`spotmap-${v}.zip`);console.log(`Created spotmap-${v}.zip`);\"",
         "composer": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap composer"
+    },
+    "overrides": {
+        "serialize-javascript": "^7.0.3"
     }
 }
