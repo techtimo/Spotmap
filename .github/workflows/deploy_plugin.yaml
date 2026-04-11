@@ -75,14 +75,20 @@ jobs:
 
       - name: Package plugin zip
         if: steps.tag_check.outputs.exists == 'false'
-        run: npx wp-scripts plugin-zip
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npx wp-scripts plugin-zip
+          mv spotmap.zip spotmap-${VERSION}.zip
         # Build and composer install are done in prior steps; skip them here
 
       - name: Extract zip for SVN
         if: steps.tag_check.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p /tmp/plugin-build
-          unzip -q spotmap.zip -d /tmp/plugin-build
+          unzip -q spotmap-${VERSION}.zip -d /tmp/plugin-build
 
       - name: Deploy to WordPress.org SVN
         if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
@@ -126,6 +132,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
-          files: spotmap.zip
+          files: spotmap-${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
