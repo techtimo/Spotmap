@@ -89,6 +89,10 @@ export class MarkerManager {
 
         const iconShape = this.getIconShape( point );
         const popupHtml = MarkerManager.getPopupHtml( point );
+        const popupOptions: L.PopupOptions = {
+            autoPan: false,
+            maxWidth: 280,
+        };
         let marker: L.Marker | L.CircleMarker;
 
         if ( iconShape === 'circle-dot' ) {
@@ -100,13 +104,140 @@ export class MarkerManager {
                 color,
                 fillColor: 'white',
                 fillOpacity: 1,
-            } ).bindPopup( popupHtml );
+            } ).bindPopup( popupHtml, popupOptions );
         } else {
             const markerOptions = this.getMarkerOptions( point );
             marker = L.marker( coordinates, markerOptions ).bindPopup(
-                popupHtml
+                popupHtml,
+                popupOptions
             );
         }
+
+        marker.on( 'popupopen', ( e ) => {
+            const popup = e.popup;
+            const container = popup.getElement();
+            if ( ! container ) {
+                return;
+            }
+
+            // Build prev/next nav targets for POST and MEDIA popups.
+            // Injection happens inside finalizePopup() so it survives popup.update().
+            let prev: L.Marker | L.CircleMarker | null = null;
+            let next: L.Marker | L.CircleMarker | null = null;
+            if ( point.type === 'POST' || point.type === 'MEDIA' ) {
+                const typeMarkers: ( L.Marker | L.CircleMarker )[] = [];
+                for ( let i = 0; i < feed.points.length; i++ ) {
+                    if ( feed.points[ i ].type === point.type ) {
+                        typeMarkers.push( feed.markers[ i ] );
+                    }
+                }
+                const idx = typeMarkers.indexOf( marker );
+                prev = idx > 0 ? typeMarkers[ idx - 1 ] : null;
+                next =
+                    idx < typeMarkers.length - 1
+                        ? typeMarkers[ idx + 1 ]
+                        : null;
+            }
+
+            // Called after popup.update() so any re-render doesn't wipe our nav.
+            const injectNav = () => {
+                if ( ! ( prev || next ) ) return;
+                const content = container.querySelector(
+                    '.leaflet-popup-content'
+                );
+                if ( ! content || content.querySelector( '.spotmap-popup-nav' ) ) return;
+                const nav = document.createElement( 'div' );
+                nav.className = 'spotmap-popup-nav';
+                nav.style.cssText =
+                    'display:flex;justify-content:space-between;margin-top:8px;border-top:1px solid #eee;padding-top:6px;';
+                const makeBtn = (
+                    label: string,
+                    target: L.Marker | L.CircleMarker | null
+                ) => {
+                    const btn = document.createElement( 'button' );
+                    btn.textContent = label;
+                    btn.style.cssText = `background:none;border:none;font-size:20px;line-height:1;padding:0 6px;color:${
+                        target ? '#007cba' : '#ccc'
+                    };cursor:${ target ? 'pointer' : 'default' };`;
+                    btn.disabled = ! target;
+                    if ( target ) {
+                        btn.addEventListener( 'click', () =>
+                            target.openPopup()
+                        );
+                    }
+                    return btn;
+                };
+                nav.appendChild( makeBtn( '‹', next ) );
+                nav.appendChild( makeBtn( '›', prev ) );
+                content.appendChild( nav );
+            };
+
+            // Pan once after the popup and any images have fully rendered.
+            // autoPan is disabled on the popup to prevent Leaflet's premature
+            // pan (5px default padding) from firing before we measure.
+            const doPan = () => {
+                const closeBtn = container.querySelector(
+                    '.leaflet-popup-close-button'
+                ) as HTMLElement | null;
+                const topEl = closeBtn ?? container;
+                const mapEl = this.map.getContainer();
+                const mapRect = mapEl.getBoundingClientRect();
+                const popupRect = container.getBoundingClientRect();
+                const topRect = topEl.getBoundingClientRect();
+
+                let dy = 0;
+                let dx = 0;
+                const pad = 10;
+
+                if ( topRect.top < mapRect.top + pad ) {
+                    dy = topRect.top - mapRect.top - pad;
+                } else if ( popupRect.bottom > mapRect.bottom - pad ) {
+                    dy = popupRect.bottom - mapRect.bottom + pad;
+                }
+                if ( popupRect.left < mapRect.left + pad ) {
+                    dx = popupRect.left - mapRect.left - pad;
+                } else if ( popupRect.right > mapRect.right - pad ) {
+                    dx = popupRect.right - mapRect.right + pad;
+                }
+
+                if ( dx !== 0 || dy !== 0 ) {
+                    this.map.panBy( [ dx, dy ] );
+                }
+            };
+
+            const imgs = Array.from( container.querySelectorAll( 'img' ) ).filter(
+                ( img ) => ! img.complete
+            );
+            if ( imgs.length === 0 ) {
+                injectNav();
+                requestAnimationFrame( doPan );
+            } else {
+                let loaded = 0;
+                imgs.forEach( ( img ) => {
+                    img.addEventListener(
+                        'load',
+                        () => {
+                            loaded++;
+                            if ( loaded === imgs.length ) {
+                                // Reposition the tip without replacing content
+                                // (popup.update() would wipe our injected nav).
+                                ( popup as unknown as { _updatePosition?: () => void } )._updatePosition?.();
+                                injectNav();
+                                requestAnimationFrame( doPan );
+                            }
+                        },
+                        { once: true }
+                    );
+                    img.addEventListener( 'error', () => {
+                        loaded++;
+                        if ( loaded === imgs.length ) {
+                            injectNav();
+                            requestAnimationFrame( doPan );
+                        }
+                    }, { once: true } );
+                } );
+            }
+        } );
 
         feed.points.push( point );
         feed.markers.push( marker );
@@ -231,7 +362,29 @@ export class MarkerManager {
     /**
      * Generate the popup HTML for a point.
      */
+    private static popupImageHtml( src: string ): string {
+        return `<img src="${ src }" style="display:block;width:100%;max-height:180px;object-fit:cover;margin-bottom:4px;" loading="lazy" alt="" /><br>`;
+    }
+
     static getPopupHtml( entry: SpotPoint ): string {
+        if ( entry.type === 'POST' ) {
+            let html = '';
+            if ( entry.image_url ) {
+                html += MarkerManager.popupImageHtml( entry.image_url );
+            }
+            const title = entry.message ?? 'Post';
+            if ( entry.url ) {
+                html += `<b><a href="${ entry.url }" target="_blank" rel="noopener noreferrer">${ title }</a></b><br>`;
+            } else {
+                html += `<b>${ title }</b><br>`;
+            }
+            if ( entry.excerpt ) {
+                html += `<span style="font-size:0.9em">${ entry.excerpt }</span><br>`;
+            }
+            html += `<span style="font-size:0.85em;color:#888">${ entry.date }</span>`;
+            return html;
+        }
+
         let html = `<b>${ entry.type }</b><br>`;
         html += `Time: ${ entry.time }<br>Date: ${ entry.date }<br>`;
 
@@ -245,7 +398,7 @@ export class MarkerManager {
         }
 
         if ( entry.message && entry.type === 'MEDIA' ) {
-            html += `<img width="180" src="${ entry.message }" class="attachment-thumbnail size-thumbnail" alt="" decoding="async" loading="lazy" /><br>`;
+            html += MarkerManager.popupImageHtml( entry.message );
         } else if ( entry.message ) {
             html += `${ entry.message }<br>`;
         }

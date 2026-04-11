@@ -114,6 +114,19 @@ class Spotmap_Providers
                     ],
                 ],
 
+                'posts' => [
+                    'label'  => 'Blog Posts',
+                    'fields' => [
+                        [
+                            'key'         => 'name',
+                            'type'        => 'text',
+                            'label'       => 'Feed Name',
+                            'required'    => true,
+                            'description' => 'A unique name used to identify this feed in the map block.',
+                        ],
+                    ],
+                ],
+
                 // Future providers — add crawler implementation alongside each entry.
                 // 'garmin' => [
                 //     'label'  => 'Garmin inReach',

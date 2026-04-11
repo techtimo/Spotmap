@@ -133,7 +133,7 @@ export default function FeedModal( {
     const [ fields, setFields ] = useState( () => {
         const initial = {};
         provider?.fields.forEach( ( f ) => {
-            initial[ f.key ] = feed?.[ f.key ] ?? '';
+            initial[ f.key ] = feed?.[ f.key ] ?? f.default ?? '';
         } );
         // Generate the ingest key upfront for new push-type feeds so the URL
         // is visible before the user hits Save.
@@ -337,6 +337,15 @@ export default function FeedModal( {
                             { provider?.label ?? type }
                         </p>
                     </BaseControl>
+                ) }
+
+                { type === 'posts' && (
+                    <Notice status="info" isDismissible={ false }>
+                        Shows published posts and pages that have a location set
+                        via the <strong>Post Location</strong> panel in the
+                        editor sidebar. No data is fetched from external
+                        services.
+                    </Notice>
                 ) }
 
                 { provider?.fields.map( ( field ) => {

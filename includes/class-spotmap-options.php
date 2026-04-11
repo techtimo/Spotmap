@@ -67,6 +67,10 @@ class Spotmap_Options
                 'iconShape' => 'marker',
                 'icon'      => 'camera-retro',
             ],
+            'POST' => [
+                'iconShape' => 'marker',
+                'icon'      => 'thumbtack',
+            ],
         ];
     }
 

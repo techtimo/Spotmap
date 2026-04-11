@@ -118,6 +118,12 @@ export interface SpotPoint {
     /** Server-side rolling-anchor suppression count — pings merged into this row. */
     hidden_points?: number;
     hiddenPoints?: { count: number; radius: number };
+    /** Permalink — set for POST-type points. */
+    url?: string;
+    /** Featured image URL — set for POST-type points that have a thumbnail. */
+    image_url?: string;
+    /** Post excerpt — set for POST-type points that have a manual excerpt. */
+    excerpt?: string;
 }
 
 export type PointType =
@@ -129,7 +135,8 @@ export type PointType =
     | 'MEDIA'
     | 'NEWMOVEMENT'
     | 'STATUS'
-    | 'STOP';
+    | 'STOP'
+    | 'POST';
 
 /** Internal structure for a feed's map layers */
 export interface FeedLayer {
