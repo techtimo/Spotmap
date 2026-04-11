@@ -5,7 +5,7 @@
     "type": "wordpress-plugin",
     "require": {
         "symfony/yaml": "^7.0",
-        "brianhenryie/strauss": "^0.19"
+        "brianhenryie/strauss": "^0.27"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
