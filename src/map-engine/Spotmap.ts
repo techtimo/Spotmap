@@ -101,7 +101,7 @@ export class Spotmap {
             ) ) {
                 this.latestUnixtimeByFeed.set(
                     feedName,
-                    feed.points.at( -1 )?.unixtime ?? 0
+                    feed.points[ feed.points.length - 1 ]?.unixtime ?? 0
                 );
             }
             this.startAutoReload( this.reloadBody );

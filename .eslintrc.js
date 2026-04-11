@@ -1,5 +1,8 @@
 module.exports = {
     extends: [ 'plugin:@wordpress/eslint-plugin/recommended' ],
+    env: {
+        browser: true,
+    },
     rules: {
         // @wordpress/* packages are WordPress externals, not bundled deps
         'import/no-unresolved': [ 'error', { ignore: [ '^@wordpress/' ] } ],
