@@ -1,16 +1,17 @@
 name: Release & Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - spotmap.php
   workflow_dispatch:
 
 jobs:
   release:
     name: Release & Deploy to WP.org
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -56,6 +57,14 @@ jobs:
           # If a concurrent run already pushed this tag, the push above fails
           # and the job exits here — before wasting time on the build.
 
+      - name: Download build artifact
+        if: steps.tag_check.outputs.exists == 'false' && github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: js-build
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Node
         if: steps.tag_check.outputs.exists == 'false'
         uses: actions/setup-node@v6
@@ -72,7 +81,7 @@ jobs:
         run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
       - name: Build
-        if: steps.tag_check.outputs.exists == 'false'
+        if: steps.tag_check.outputs.exists == 'false' && github.event_name == 'workflow_dispatch'
         run: npm run build
 
       - name: Extract release notes
