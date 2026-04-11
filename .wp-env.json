@@ -1,5 +1,6 @@
 {
     "core": null,
+    "phpVersion": "8.4",
     "plugins": [ "." ],
     "config": {
         "WP_DEBUG": true,
