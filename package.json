@@ -82,6 +82,7 @@
         "composer": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap composer"
     },
     "overrides": {
-        "serialize-javascript": "^7.0.3"
+        "serialize-javascript": "^7.0.3",
+        "minimatch": "^9.0.7"
     }
 }
