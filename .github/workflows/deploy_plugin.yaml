@@ -23,6 +23,11 @@ jobs:
           VERSION=$(grep -oP "(?<=Version:\s{0,20})\S+" spotmap.php | head -1)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Detected version: $VERSION"
+          if echo "$VERSION" | grep -qP '[a-zA-Z]'; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Check if tag already exists
         id: tag_check
@@ -75,7 +80,7 @@ jobs:
           unzip -q spotmap.zip -d /tmp/plugin-build
 
       - name: Deploy to WordPress.org SVN
-        if: steps.tag_check.outputs.exists == 'false'
+        if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}

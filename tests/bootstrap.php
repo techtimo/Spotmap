@@ -15,7 +15,7 @@ require_once dirname(__DIR__) . '/includes/class-spotmap-rest-api.php';
 require_once dirname(__DIR__) . '/includes/class-spotmap-ingest.php';
 
 // Matches the constant defined in spotmap.php — needed by Spotmap_Migrator::run().
-define('SPOTMAP_VERSION', '1.0.0');
+define('SPOTMAP_VERSION', '1.0.0-rc.1');
 
 // Recreate the plugin table from the authoritative schema before all tests.
 // DROP + CREATE ensures a stale schema from a previous run never causes column errors.
