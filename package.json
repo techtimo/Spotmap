@@ -42,7 +42,7 @@
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
         "@types/leaflet": "^1.9.21",
-        "@wordpress/api-fetch": "^7.42.0",
+        "@wordpress/api-fetch": "^7.43.0",
         "@wordpress/components": "^32.4.0",
         "@wordpress/data": "*",
         "@wordpress/env": "^10.39.0",
