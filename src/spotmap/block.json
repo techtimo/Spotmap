@@ -5,7 +5,7 @@
     "title": "Spotmap",
     "category": "embed",
     "icon": "location-alt",
-    "description": "Display a Leaflet map with GPS tracking points from your SPOT device.",
+    "description": "Show Spotmap for live and historical tracking / GPX data.",
     "keywords": [ "map", "gps", "spot", "gpx", "tracking" ],
     "supports": {
         "align": [ "wide", "full" ],
