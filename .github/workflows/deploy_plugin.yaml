@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - spotmap.php
+  workflow_dispatch:
 
 jobs:
   release:
