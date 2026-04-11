@@ -101,6 +101,17 @@ To reduce the risk of token abuse, **restrict each token to your domain using th
 
 All database queries use prepared statements as of version 1.0.
 
+## Shortcodes
+
+Spotmap ships two shortcodes for themes or page builders that don't use the block editor.
+
+**`[spotmap]`** — embeds an interactive map
+**`[spotmessages]`** — embeds a table of SPOT messages and check-ins
+
+The shortcodes have **full feature parity with the Gutenberg block**: every option available in the block sidebar — feeds, time filtering, map tiles, GPX overlays, colors, line splitting, navigation buttons, scroll-wheel zoom, panning control, and more — can also be set as a shortcode attribute.
+
+For the full attribute reference, see **[README-SHORTCODE.md](https://github.com/techtimo/Spotmap/blob/main/README-SHORTCODE.md)** on GitHub.
+
 ## Frequently Asked Questions
 
 ### Which GPS devices are supported?
