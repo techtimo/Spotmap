@@ -1256,7 +1256,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                 } }
                             >
                                 <SelectControl
-                                    __nextHasNoMarginBottom
                                     __next40pxDefaultSize
                                     label={ __( 'Zoom to' ) }
                                     value={ attributes.mapcenter }
@@ -1283,7 +1282,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     }
                                 />
                                 <RangeControl
-                                    __nextHasNoMarginBottom
                                     __next40pxDefaultSize
                                     label={ __( 'Height (px)' ) }
                                     value={ attributes.height }
@@ -1295,7 +1293,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     step={ 50 }
                                 />
                                 <ToggleControl
-                                    __nextHasNoMarginBottom
                                     label={ __( 'Enable panning' ) }
                                     checked={ attributes.enablePanning }
                                     onChange={ ( value ) =>
@@ -1305,7 +1302,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     }
                                 />
                                 <ToggleControl
-                                    __nextHasNoMarginBottom
                                     label={ __( 'Scroll wheel zoom' ) }
                                     checked={ attributes.scrollWheelZoom }
                                     onChange={ ( value ) =>
@@ -1337,7 +1333,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     ) }
                                 />
                                 <ToggleControl
-                                    __nextHasNoMarginBottom
                                     label={ __( 'Auto-reload' ) }
                                     checked={ attributes.autoReload }
                                     onChange={ ( value ) =>
@@ -1348,7 +1343,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     ) }
                                 />
                                 <ToggleControl
-                                    __nextHasNoMarginBottom
                                     label={ __( 'Location button' ) }
                                     checked={ attributes.locateButton }
                                     onChange={ ( value ) =>
@@ -1358,7 +1352,6 @@ export default function Edit( { attributes, setAttributes } ) {
                                     }
                                 />
                                 <ToggleControl
-                                    __nextHasNoMarginBottom
                                     label={ __( 'Fullscreen button' ) }
                                     checked={ attributes.fullscreenButton }
                                     onChange={ ( value ) =>
@@ -1384,10 +1377,12 @@ export default function Edit( { attributes, setAttributes } ) {
             { /* Sidebar — Advanced only */ }
             <InspectorAdvancedControls>
                 <ToggleControl
-                    __nextHasNoMarginBottom
                     label={ __( 'Debug' ) }
                     checked={ attributes.debug }
                     onChange={ ( value ) => setAttributes( { debug: value } ) }
+                    help={ __(
+                        'Log map engine decisions (data fetching, point filtering, layer updates) to the browser console.'
+                    ) }
                 />
             </InspectorAdvancedControls>
 

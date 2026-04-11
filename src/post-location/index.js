@@ -2,7 +2,13 @@ import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/editor';
 import { useSelect } from '@wordpress/data';
 import { useEntityProp } from '@wordpress/core-data';
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from '@wordpress/element';
+import {
+    forwardRef,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+    useState,
+} from '@wordpress/element';
 
 const LS_KEY = 'spotmap_post_location_last_center';
 
@@ -22,7 +28,10 @@ function saveLastCenter( lat, lng, zoom ) {
     } catch ( e ) {}
 }
 
-const PostLocationMap = forwardRef( function PostLocationMap( { lat, lng, onChange }, ref ) {
+const PostLocationMap = forwardRef( function PostLocationMap(
+    { lat, lng, onChange },
+    ref
+) {
     const containerRef = useRef( null );
     const mapRef = useRef( null );
     const markerRef = useRef( null );
@@ -153,20 +162,29 @@ const PostLocationMap = forwardRef( function PostLocationMap( { lat, lng, onChan
 
 function PostLocationPanel() {
     const postsFeedNames = window.spotmapjsobj?.postsFeedNames ?? [];
-    if ( postsFeedNames.length === 0 ) {
-        return null;
-    }
 
     const postType = useSelect(
         ( select ) => select( 'core/editor' ).getCurrentPostType(),
         []
     );
 
-    if ( ! [ 'post', 'page' ].includes( postType ) ) {
+    const [ meta, setMeta ] = useEntityProp(
+        'postType',
+        postType ?? 'post',
+        'meta'
+    );
+
+    const [ locating, setLocating ] = useState( false );
+    const [ locateError, setLocateError ] = useState( null );
+    const mapComponentRef = useRef( null );
+
+    if ( postsFeedNames.length === 0 ) {
         return null;
     }
 
-    const [ meta, setMeta ] = useEntityProp( 'postType', postType, 'meta' );
+    if ( ! [ 'post', 'page' ].includes( postType ) ) {
+        return null;
+    }
 
     const rawLat = meta?._spotmap_latitude;
     const rawLng = meta?._spotmap_longitude;
@@ -174,10 +192,6 @@ function PostLocationPanel() {
     const lng = rawLng ? parseFloat( rawLng ) : null;
     const hasLocation =
         lat !== null && lng !== null && ! isNaN( lat ) && ! isNaN( lng );
-
-    const [ locating, setLocating ] = useState( false );
-    const [ locateError, setLocateError ] = useState( null );
-    const mapComponentRef = useRef( null );
 
     const handleChange = ( newLat, newLng ) => {
         setMeta( {
