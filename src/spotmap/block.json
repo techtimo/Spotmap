@@ -62,7 +62,7 @@
         },
         "scrollWheelZoom": {
             "type": "boolean",
-            "default": false
+            "default": true
         },
         "locateButton": {
             "type": "boolean",

@@ -962,7 +962,7 @@ export default function Edit( { attributes, setAttributes } ) {
         }
         if ( spotmapRef.current ) {
             spotmapRef.current.updateScrollWheelZoom(
-                attributes.scrollWheelZoom ?? false
+                attributes.scrollWheelZoom ?? true
             );
         }
     }, [ attributes.scrollWheelZoom ] );
