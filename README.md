@@ -1,6 +1,8 @@
 # 🗺 Spotmap
 
 [![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)
+[![CI](https://github.com/techtimo/Spotmap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techtimo/Spotmap/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/techtimo/Spotmap/graph/badge.svg)](https://codecov.io/gh/techtimo/Spotmap)
 
 Spotmap is a WordPress plugin that turns your site into a self-hosted GPS tracking platform. It displays live and historical positions from SPOT, OsmAnd, Victron, and Teltonika devices on interactive Leaflet maps via a Gutenberg block or shortcode. It also lets you assign coordinates to any post or page — tagged posts appear on the map as clickable markers that link directly to the article, making it easy to build location-based content archives such as travel diaries and trip reports. GPX track overlays and photo EXIF locations are supported as well.
 
