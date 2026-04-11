@@ -80,7 +80,9 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          cp pluginreadme.md readme.txt
           npx wp-scripts plugin-zip
+          rm readme.txt
           mv spotmap.zip spotmap-${VERSION}.zip
         # Build and composer install are done in prior steps; skip them here
 
@@ -127,13 +129,30 @@ jobs:
               --non-interactive \
               -m "Release $VERSION"
 
+      - name: Extract release notes
+        if: steps.tag_check.outputs.exists == 'false'
+        id: release_notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Strip -rc.N / -beta.N etc. to get the base version for changelog lookup
+          BASE_VERSION=$(echo "$VERSION" | sed 's/-.*//')
+          NOTES=$(awk "/^### ${BASE_VERSION}$/{found=1; next} found && /^### /{exit} found{print}" pluginreadme.md | sed '/^[[:space:]]*$/d')
+          if [ -z "$NOTES" ]; then
+            NOTES="See [pluginreadme.md](https://github.com/techtimo/Spotmap/blob/main/pluginreadme.md) for the full changelog."
+          fi
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         if: steps.tag_check.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
+          name: Spotmap ${{ steps.version.outputs.version }}
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          body: ${{ steps.release_notes.outputs.notes }}
           files: spotmap-${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
