@@ -74,6 +74,7 @@
         "test:js": "wp-scripts test-unit-js",
         "test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c \"XDEBUG_MODE=off composer run test\"",
         "test:e2e": "playwright test",
+        "check-licenses": "wp-scripts check-licenses --ignore=@fortawesome/fontawesome-free",
         "packages-update": "wp-scripts packages-update",
         "version:bump": "node scripts/bump-version.js",
         "plugin-zip": "npm run build && npm run composer -- install --no-dev && wp-scripts plugin-zip",

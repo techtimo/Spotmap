@@ -113,7 +113,7 @@ class Spotmap_Admin
     public function add_link_plugin_overview($links)
     {
         $mylinks = [
-            '<a href="' . admin_url('options-general.php?page=spotmap') . '">' . __('Settings') . '</a>',
+            '<a href="' . admin_url('options-general.php?page=spotmap#feeds') . '">' . __('Settings') . '</a>',
             '<a href="https://wordpress.org/support/plugin/spotmap/">' . __('Get Support') . '</a>',
         ];
         return array_merge($mylinks, $links);
