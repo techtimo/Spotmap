@@ -20,9 +20,13 @@ jobs:
       - name: Read version from spotmap.php
         id: version
         run: |
-          VERSION=$(grep -oP "(?<=Version:\s{0,20})\S+" spotmap.php | head -1)
+          VERSION=$(grep -oP "Version:\s+\K\S+" spotmap.php | head -1)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Detected version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not extract version from spotmap.php"
+            exit 1
+          fi
           if echo "$VERSION" | grep -qP '[a-zA-Z]'; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
