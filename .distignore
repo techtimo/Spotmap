@@ -1,0 +1,56 @@
+# Source files (compiled into build/)
+src/
+
+# Build tooling
+scripts/
+webpack.config.js
+tsconfig.json
+babel.config.js
+jest.config.js
+jest.setup.js
+package.json
+package-lock.json
+composer.lock
+
+# Tests
+tests/
+phpunit.xml
+playwright.config.ts
+test-results/
+coverage/
+.env
+
+# Examples / dev setup
+examples/
+
+# Composer dev dependencies (vendor/ is rebuilt --no-dev by the deploy action)
+vendor/
+
+# CI / GitHub
+.github/
+.gitattributes
+.gitignore
+.distignore
+
+# Docs / meta (not needed in plugin zip)
+README.md
+CLAUDE.md
+LICENSE
+
+# IDE / editor
+.editorconfig
+.vscode/
+
+# Linting / formatting configs
+.eslintignore
+.eslintrc*
+.prettierrc*
+.stylelintignore
+.php-cs-fixer.dist.php
+phpcs.xml
+phpcs.xml.dist
+
+# Dev environment
+.env.example
+.wp-env.json
+.wp-env.override.json

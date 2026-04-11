@@ -1,0 +1,5 @@
+*
+!.gitignore
+!class-spotmap-public.php
+!render-block.php
+!render-block-messages.php
