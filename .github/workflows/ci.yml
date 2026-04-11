@@ -5,33 +5,19 @@ on:
     branches: [main]
     paths:
       - 'src/**'
-      - 'webpack.config.js'
-      - 'package*.json'
-      - 'tsconfig.json'
-      - 'babel.config.js'
-      - 'jest.config.js'
-      - 'jest.setup.js'
-      - 'spotmap.php'
       - '**.php'
-      - 'composer*.json'
+      - '*.json'
       - 'phpunit.xml'
-      - 'tests/**'
+      - '*.js'
   pull_request:
     branches: [main]
     paths:
       - 'src/**'
-      - 'webpack.config.js'
-      - 'package*.json'
-      - 'tsconfig.json'
-      - 'babel.config.js'
-      - 'jest.config.js'
-      - 'jest.setup.js'
-      - 'spotmap.php'
       - '**.php'
-      - 'composer*.json'
-      - 'phpunit.xml'
-      - 'tests/**'
+      - '*.json'
 
+      - 'phpunit.xml'
+      - '*.js'
 jobs:
   test-js:
     name: JS Tests & Build
@@ -53,7 +39,13 @@ jobs:
         run: npm ci
 
       - name: Run JS tests
-        run: npm run test:js
+        run: npm run test:js -- --coverage
+
+      - name: Upload JS coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          flags: js
 
       - name: Build
         run: npm run build
@@ -91,5 +83,11 @@ jobs:
         run: npm run wp-env -- run cli bash -- -c "mysql -h mysql -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS wordpress_test'"
 
       - name: Run PHP tests
-        run: npm run test:php
+        run: npm run wp-env -- run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c "XDEBUG_MODE=coverage composer run test:coverage"
+
+      - name: Upload PHP coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/clover.xml
+          flags: php
 
