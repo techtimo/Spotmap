@@ -81,7 +81,7 @@ jobs:
         run: npm ci
 
       - name: Install PHP dependencies
-        run: composer install --optimize-autoloader --ignore-platform-req=ext-redis
+        run: composer install --optimize-autoloader --ignore-platform-req=ext-redis --ignore-platform-req=php
 
       - name: Start wp-env
         run: npm run wp-env start
