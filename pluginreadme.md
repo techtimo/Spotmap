@@ -2,7 +2,7 @@
 
 Contributors: techtimo  
 Donate link: paypal.me/ebaytimo  
-Tags: gps, tracking, map, gpx, live tracking, osmand, teltonika, spot, tracker, victron
+Tags: gps, tracking, map, gpx, live tracking, osmand, teltonika, spot, tracker, victron, post location
 License: GPL2  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.5
@@ -16,12 +16,14 @@ Live GPS tracking for WordPress — display positions from SPOT, OsmAnd, and Tel
 
 Spotmap turns your WordPress site into a self-hosted GPS tracking platform. Connect your devices, and Spotmap stores every position in your own database — no third-party cloud required.
 
-### Supported devices
+### Supported devices (data feeds)
 
 * **SPOT** (FindMeSPOT) — automatic feed polling via XML API
 * **OsmAnd** — receives positions via HTTP from the OsmAnd smartphone app
 * **Teltonika** — direct integration for Teltonika GPS routers and trackers
 * **WordPress Media Library** — photos with GPS EXIF data appear as points on the map under the feed name `media`
+* **Post Locations** — assign GPS coordinates to any WordPress post, page, or custom post type via the block editor sidebar. Posts appear on the map as clickable markers that link directly to the article so readers can jump from the map to the full story.
+
 * **Zoleo** — planned
 
 ### Map & visualization
@@ -32,6 +34,7 @@ Spotmap turns your WordPress site into a self-hosted GPS tracking platform. Conn
 * Photo EXIF GPS display — images from your media library with location data appear on the map
 * Configurable line breaks when no positions arrive within a set time interval
 * Multiple feeds and devices on a single map, each with its own color
+* **Post location markers** — each marker shows the post title and links to the article, turning any map block into a navigable index of location-tagged content
 * Configurable marker styles and icons
 
 ### Filtering & interaction
@@ -120,6 +123,10 @@ Yes. Spotmap supports rich time filtering including relative ranges like "last 1
 
 Yes. Upload geotagged photos to your WordPress media library. Spotmap reads the GPS EXIF data and shows them on the map under the feed name `media`.
 
+### Can I pin WordPress posts and pages to a map?
+
+Yes. Open any post or page in the block editor and expand the **Post Location** panel in the sidebar. Enter a latitude and longitude to pin that post to the map. When a Spotmap block is configured to show the `posts` feed, all location-tagged posts appear as markers. Clicking a marker opens the article, making it easy to build location-based content archives — travel diaries, trip reports, photo essays, and more.
+
 ### Can I export my tracking data?
 
 Yes. You can convert tracked positions to GPX files directly from the plugin.
@@ -184,6 +191,7 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 
 * New: **OsmAnd** device support — receive positions via HTTP
 * New: **Teltonika** device support — direct integration
+* New: **Post Locations** — assign GPS coordinates to any post or page via the block editor sidebar; posts appear on the map as markers that link to the article
 * New: **Photo EXIF GPS** — images with GPS data from the media library can appear on the map if configured
 * New: Built-in **GPX manager** — upload and manage GPX files
 * New: Rich **time filtering** with relative ranges (last X hours/days) and absolute date ranges

@@ -2,8 +2,7 @@
 
 [![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)
 
-Spotmap is a Wordpress plugin that can show an embedded map  with all the recent positions of a Spot beacon
-([findmespot.com](http://findmespot.com)). In addition it can display GPX tracks to show where you intend to go.
+Spotmap is a WordPress plugin that turns your site into a self-hosted GPS tracking platform. It displays live and historical positions from SPOT, OsmAnd, Victron, and Teltonika devices on interactive Leaflet maps via a Gutenberg block or shortcode. It also lets you assign coordinates to any post or page — tagged posts appear on the map as clickable markers that link directly to the article, making it easy to build location-based content archives such as travel diaries and trip reports. GPX track overlays and photo EXIF locations are supported as well.
 
 The following screenshot was taken after using the plugin for 3 months:
 
