@@ -266,9 +266,7 @@ export default function EditPointsTab( { onNoticeChange } ) {
                                 );
                                 const popup = marker.getPopup();
                                 if ( popup ) {
-                                    replacement.bindPopup(
-                                        popup.getContent()
-                                    );
+                                    replacement.bindPopup( popup.getContent() );
                                 }
                                 feedLayer.featureGroup.removeLayer( marker );
                                 feedLayer.featureGroup.addLayer( replacement );

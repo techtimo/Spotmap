@@ -110,6 +110,7 @@ class Spotmap
         $spotmap_public = new Spotmap_Public($this->admin);
         $this->loader->add_action('init', $spotmap_public, 'register_shortcodes');
         $this->loader->add_action('init', $spotmap_public, 'register_block');
+        $this->loader->add_action('init', $spotmap_public, 'register_post_meta');
         $this->loader->add_action('wp_enqueue_scripts', $spotmap_public, 'enqueue_styles');
         $this->loader->add_action('wp_enqueue_scripts', $spotmap_public, 'enqueue_scripts');
         $this->loader->add_action('enqueue_block_editor_assets', $spotmap_public, 'enqueue_block_editor_assets');

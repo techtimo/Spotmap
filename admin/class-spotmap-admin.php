@@ -264,22 +264,19 @@ class Spotmap_Admin
         $latitude  = $this->gps($exif['GPS']['GPSLatitude'], $exif['GPS']['GPSLatitudeRef']);
         $longitude = $this->gps($exif['GPS']['GPSLongitude'], $exif['GPS']['GPSLongitudeRef']);
         $timestamp = strtotime($exif['EXIF']['DateTimeOriginal']);
-        $image     = get_post_field('guid', $attachment_id);
-
         $inserted = 0;
         foreach ($media_feeds as $feed) {
             $feed_name = $feed['name'] ?? 'media';
             $result    = $this->db->insert_point([
-                'latitude'       => $latitude,
-                'longitude'      => $longitude,
-                'unixTime'       => $timestamp,
-                'timestamp'      => $timestamp,
-                'feedName'       => $feed_name,
-                'feedId'         => $feed_name,
-                'messengerName'  => $feed_name,
-                'messageType'    => 'MEDIA',
-                'modelId'        => $attachment_id,
-                'messageContent' => $image,
+                'latitude'      => $latitude,
+                'longitude'     => $longitude,
+                'unixTime'      => $timestamp,
+                'timestamp'     => $timestamp,
+                'feedName'      => $feed_name,
+                'feedId'        => $feed_name,
+                'messengerName' => $feed_name,
+                'messageType'   => 'MEDIA',
+                'modelId'       => $attachment_id,
             ]);
             if ($result !== false) {
                 $inserted++;

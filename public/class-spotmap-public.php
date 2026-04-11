@@ -51,6 +51,22 @@ class Spotmap_Public{
 		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
     }
 
+	public function register_post_meta(): void {
+		foreach ( [ 'post', 'page' ] as $post_type ) {
+			foreach ( [ '_spotmap_latitude', '_spotmap_longitude' ] as $key ) {
+				register_post_meta( $post_type, $key, [
+					'show_in_rest'  => true,
+					'single'        => true,
+					'type'          => 'string',
+					'default'       => '',
+					'auth_callback' => function() {
+						return current_user_can( 'edit_posts' );
+					},
+				] );
+			}
+		}
+	}
+
 	public function register_block(){
 		$block_path = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap';
 		register_block_type( $block_path );
@@ -88,6 +104,21 @@ class Spotmap_Public{
 		$this->enqueue_styles();
 		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
 		$this->localize_js_script( 'spotmap-spotmessages-editor-script' );
+
+		// Post location sidebar — Gutenberg plugin that adds a map picker to the
+		// Document sidebar. Only functional when "posts" is a configured feed.
+		$post_location_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/post-location.asset.php';
+		$post_location_asset = file_exists( $post_location_asset_file )
+			? include $post_location_asset_file
+			: [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_script(
+			'spotmap-post-location',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/post-location.js',
+			array_merge( $post_location_asset['dependencies'], [ 'leaflet' ] ),
+			$post_location_asset['version'],
+			true
+		);
+		$this->localize_js_script( 'spotmap-post-location' );
 	}
 
 	public function enqueue_scripts(){
@@ -119,16 +150,20 @@ class Spotmap_Public{
 	}
 
 	function localize_js_script($script_slug){
-		$default_values = Spotmap_Options::get_settings();
+		$default_values  = Spotmap_Options::get_settings();
+		$posts_type_feeds = array_filter(
+			Spotmap_Options::get_feeds(),
+			fn( $f ) => ( $f['type'] ?? '' ) === 'posts'
+		);
 		wp_localize_script($script_slug, 'spotmapjsobj', [
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'maps' => $this->admin->get_maps(),
-			'overlays' => $this->admin->get_overlays(),
-			'url' =>  plugin_dir_url( __FILE__ ),
-			'feeds' => $this->db->get_all_feednames(),
-			'defaultValues' => $default_values,
-			'marker' => Spotmap_Options::get_marker_options(),
-
+			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+			'maps'           => $this->admin->get_maps(),
+			'overlays'       => $this->admin->get_overlays(),
+			'url'            => plugin_dir_url( __FILE__ ),
+			'feeds'          => $this->db->get_all_feednames(),
+			'defaultValues'  => $default_values,
+			'marker'         => Spotmap_Options::get_marker_options(),
+			'postsFeedNames' => array_values( array_column( $posts_type_feeds, 'name' ) ),
 		]);
 	}
 
@@ -376,15 +411,156 @@ class Spotmap_Public{
 
 	public function get_positions(){
 		// error_log(print_r($_POST,true));
-		if(empty($_POST['feeds'])){
-			wp_send_json(['error'=> false,'empty'=>true,'title'=>'No feeds defined','message'=> ""]);
-		} else {
-			$points = $this->db->get_points($_POST);
-			if(empty($points)){
-				$points = ['error'=> true,'empty'=>true,'title'=>'No points to show (yet)','message'=> ""];
-			}
-			wp_send_json($points);
+		if ( empty( $_POST['feeds'] ) ) {
+			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No feeds defined', 'message' => '' ] );
+			return;
 		}
+
+		$requested_feeds = (array) $_POST['feeds'];
+		$results         = [];
+
+		// Virtual feeds (type='posts') are backed by post meta, not the GPS
+		// points table. Identify them by their configured type, not their name,
+		// so the feed name can be freely chosen by the user.
+		$configured   = array_filter( Spotmap_Options::get_feeds(), fn( $f ) => ! empty( $f['name'] ) );
+		$type_by_name = array_column( array_values( $configured ), 'type', 'name' );
+
+		$posts_feed_names = [];
+		$db_feed_names    = [];
+		foreach ( $requested_feeds as $name ) {
+			if ( ( $type_by_name[ $name ] ?? '' ) === 'posts' ) {
+				$posts_feed_names[] = $name;
+			} else {
+				$db_feed_names[] = $name;
+			}
+		}
+
+		if ( ! empty( $posts_feed_names ) ) {
+			$results = array_merge( $results, $this->get_post_feed_points( $_POST, $posts_feed_names ) );
+		}
+
+		$requested_feeds = $db_feed_names;
+
+		if ( ! empty( $requested_feeds ) ) {
+			$filter          = $_POST;
+			$filter['feeds'] = $requested_feeds;
+			$db_points       = $this->db->get_points( $filter );
+			if ( is_array( $db_points ) && ! isset( $db_points['error'] ) ) {
+				$media_ids = array_map(
+					fn( $p ) => (int) $p->model,
+					array_filter( $db_points, fn( $p ) => $p->type === 'MEDIA' && ! empty( $p->model ) )
+				);
+				if ( ! empty( $media_ids ) ) {
+					update_postmeta_cache( $media_ids );
+				}
+				foreach ( $db_points as $point ) {
+					if ( $point->type === 'MEDIA' && ! empty( $point->model ) ) {
+						$point->message = wp_get_attachment_image_url( (int) $point->model, 'medium' ) ?: null;
+					}
+				}
+				$results = array_merge( $results, $db_points );
+			} elseif ( empty( $results ) ) {
+				wp_send_json( $db_points );
+				return;
+			}
+		}
+
+		if ( empty( $results ) ) {
+			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No points to show (yet)', 'message' => '' ] );
+			return;
+		}
+
+		wp_send_json( $results );
+	}
+
+	private function get_post_feed_points( array $filter, array $feed_names ): array {
+		$args = [
+			'post_type'      => [ 'post', 'page' ],
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+			'orderby'        => 'date',
+			'order'          => 'ASC',
+			'meta_query'     => [
+				'relation' => 'AND',
+				[
+					'key'     => '_spotmap_latitude',
+					'value'   => '',
+					'compare' => '!=',
+				],
+				[
+					'key'     => '_spotmap_longitude',
+					'value'   => '',
+					'compare' => '!=',
+				],
+			],
+		];
+
+		$date_query = [];
+		$date_range = $filter['date-range'] ?? [];
+		foreach ( [ 'from' => 'after', 'to' => 'before' ] as $range_key => $wp_key ) {
+			$val = $date_range[ $range_key ] ?? '';
+			if ( empty( $val ) ) {
+				continue;
+			}
+			if ( substr( $val, 0, 5 ) === 'last-' ) {
+				$rel_string = str_replace( '-', ' ', substr( $val, 5 ) );
+				$date       = date_create( '@' . strtotime( '-' . $rel_string ) );
+			} else {
+				$date = date_create( $val );
+			}
+			if ( $date !== null && $date !== false ) {
+				$date_query[] = [ $wp_key => date_format( $date, 'Y-m-d H:i:s' ), 'inclusive' => true ];
+			}
+		}
+		if ( ! empty( $date_query ) ) {
+			$date_query['relation'] = 'AND';
+			$args['date_query']     = $date_query;
+		}
+
+		$posts = get_posts( $args );
+		$points = [];
+
+		// Each posts-type feed gets the same set of located posts. Using the
+		// first feed name is the common case; multiple posts-type feeds would
+		// duplicate points intentionally (user chose to add them twice).
+		$feed_name = $feed_names[0];
+
+		foreach ( $posts as $post ) {
+			$lat = (float) get_post_meta( $post->ID, '_spotmap_latitude', true );
+			$lng = (float) get_post_meta( $post->ID, '_spotmap_longitude', true );
+
+			if ( $lat === 0.0 && $lng === 0.0 ) {
+				continue;
+			}
+
+			$unixtime  = (int) get_post_time( 'U', false, $post );
+			$image_url = null;
+			if ( has_post_thumbnail( $post->ID ) ) {
+				$image_url = get_the_post_thumbnail_url( $post->ID, 'medium' );
+			}
+
+			$excerpt = has_excerpt( $post )
+				? wp_strip_all_tags( get_the_excerpt( $post ) )
+				: null;
+
+			$points[] = (object) [
+				'id'        => $post->ID,
+				'feed_name' => $feed_name,
+				'latitude'  => $lat,
+				'longitude' => $lng,
+				'altitude'  => 0,
+				'type'      => 'POST',
+				'unixtime'  => $unixtime,
+				'date'      => wp_date( get_option( 'date_format' ), $unixtime ),
+				'time'      => wp_date( get_option( 'time_format' ), $unixtime ),
+				'message'   => get_the_title( $post ),
+				'url'       => get_permalink( $post ),
+				'image_url' => $image_url,
+				'excerpt'   => $excerpt,
+			];
+		}
+
+		return $points;
 	}
 
 }

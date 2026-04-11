@@ -6,6 +6,7 @@ module.exports = {
         ...defaultConfig.entry(),
         'spotmap-map': './src/map-engine/index.ts',
         'spotmap-admin': './src/spotmap-admin/index.js',
+        'post-location': './src/post-location/index.js',
     },
     module: {
         ...defaultConfig.module,

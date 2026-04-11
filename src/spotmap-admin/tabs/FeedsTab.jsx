@@ -16,6 +16,7 @@ import GpxDownloadModal from '../components/GpxDownloadModal';
 import ProviderSelector from '../components/ProviderSelector';
 
 const isMediaFeed = ( type ) => type === 'media';
+const SINGLETON_TYPES = [ 'media', 'posts' ];
 
 const STORAGE_KEY = 'spotmap_feeds_view';
 const DEFAULT_VIEW = {
@@ -490,6 +491,9 @@ export default function FeedsTab( {
                     <ProviderSelector
                         providers={ providers }
                         value=""
+                        disabledTypes={ SINGLETON_TYPES.filter( ( t ) =>
+                            feeds?.some( ( f ) => f.type === t )
+                        ) }
                         onChange={ ( type ) => {
                             setShowPicker( false );
                             setEditingFeed( { type } );

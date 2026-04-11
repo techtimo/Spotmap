@@ -226,6 +226,61 @@ function MediaIcon() {
     );
 }
 
+function PostsIcon() {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            style={ { width: '44px', height: '44px' } }
+            aria-hidden="true"
+        >
+            { /* Document */ }
+            <rect
+                x="3"
+                y="2"
+                width="13"
+                height="17"
+                rx="1.5"
+                fill="#e8e8e8"
+                stroke="#b0b0b0"
+                strokeWidth="1"
+            />
+            <line
+                x1="6"
+                y1="6"
+                x2="13"
+                y2="6"
+                stroke="#888"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+            />
+            <line
+                x1="6"
+                y1="9"
+                x2="13"
+                y2="9"
+                stroke="#888"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+            />
+            <line
+                x1="6"
+                y1="12"
+                x2="10"
+                y2="12"
+                stroke="#888"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+            />
+            { /* Location pin */ }
+            <path
+                d="M17 10c-2.21 0-4 1.79-4 4 0 3 4 7 4 7s4-4 4-7c0-2.21-1.79-4-4-4zm0 5.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                fill="#007cba"
+            />
+        </svg>
+    );
+}
+
 /** Fallback for providers without a dedicated icon. */
 function GenericProviderIcon() {
     return (
@@ -262,13 +317,14 @@ const PROVIDER_ICONS = {
     osmand: OsmAndIcon,
     victron: VictronIcon,
     media: MediaIcon,
+    posts: PostsIcon,
 };
 
 // ---------------------------------------------------------------------------
 // Tile grid
 // ---------------------------------------------------------------------------
 
-export default function ProviderSelector( { providers, value, onChange } ) {
+export default function ProviderSelector( { providers, value, onChange, disabledTypes = [] } ) {
     const entries = Object.entries( providers );
 
     return (
@@ -292,26 +348,38 @@ export default function ProviderSelector( { providers, value, onChange } ) {
             >
                 { entries.map( ( [ key, provider ] ) => {
                     const selected = key === value;
+                    const disabled = disabledTypes.includes( key );
                     const IconComponent =
                         PROVIDER_ICONS[ key ] ?? GenericProviderIcon;
                     return (
                         <button
                             key={ key }
                             type="button"
-                            onClick={ () => onChange( key ) }
+                            disabled={ disabled }
+                            onClick={ () => ! disabled && onChange( key ) }
+                            title={
+                                disabled
+                                    ? `${ provider.label } is already configured`
+                                    : undefined
+                            }
                             style={ {
                                 border: `2px solid ${
                                     selected ? '#007cba' : '#ddd'
                                 }`,
                                 borderRadius: '8px',
                                 padding: '14px 8px 10px',
-                                cursor: 'pointer',
+                                cursor: disabled ? 'not-allowed' : 'pointer',
                                 textAlign: 'center',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 gap: '8px',
-                                background: selected ? '#f0f8ff' : '#fff',
+                                background: disabled
+                                    ? '#f5f5f5'
+                                    : selected
+                                    ? '#f0f8ff'
+                                    : '#fff',
+                                opacity: disabled ? 0.5 : 1,
                                 boxShadow: selected
                                     ? '0 0 0 1px #007cba'
                                     : 'none',
@@ -340,6 +408,17 @@ export default function ProviderSelector( { providers, value, onChange } ) {
                                 } }
                             >
                                 { provider.label }
+                                { disabled && (
+                                    <span
+                                        style={ {
+                                            display: 'block',
+                                            fontSize: '0.85em',
+                                            color: '#888',
+                                        } }
+                                    >
+                                        Already added
+                                    </span>
+                                ) }
                             </span>
                         </button>
                     );

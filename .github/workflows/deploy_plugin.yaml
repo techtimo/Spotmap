@@ -2,7 +2,7 @@ name: Release & Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - spotmap.php
 
