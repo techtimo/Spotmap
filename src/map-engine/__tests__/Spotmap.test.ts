@@ -103,7 +103,19 @@ function buildLeafletMock() {
             GPX: jest.fn().mockImplementation( () => {
                 const emitter = createEventEmitter();
                 capturedGpxEmitter = emitter;
-                return emitter;
+                return Object.assign( emitter, {
+                    addTo: jest.fn().mockReturnThis(),
+                    get_distance: jest.fn().mockReturnValue( 0 ),
+                    get_moving_time: jest.fn().mockReturnValue( 0 ),
+                    get_total_time: jest.fn().mockReturnValue( 0 ),
+                    get_elevation_gain: jest.fn().mockReturnValue( 0 ),
+                    get_elevation_loss: jest.fn().mockReturnValue( 0 ),
+                    get_elevation_max: jest.fn().mockReturnValue( 0 ),
+                    get_elevation_min: jest.fn().mockReturnValue( 0 ),
+                    get_moving_speed: jest.fn().mockReturnValue( 0 ),
+                    get_duration_string: jest.fn().mockReturnValue( '' ),
+                    m_to_km: jest.fn().mockReturnValue( 0 ),
+                } );
             } ),
             BeautifyIcon: {
                 icon: jest.fn().mockReturnValue( {} ),
@@ -118,6 +130,7 @@ function buildLeafletMock() {
                 .fn()
                 .mockReturnValue( { addTo: jest.fn().mockReturnThis() } ),
             canvas: jest.fn().mockReturnValue( {} ),
+            svg: jest.fn().mockReturnValue( {} ),
         },
     };
 }
