@@ -76,13 +76,13 @@ jobs:
         if: steps.tag_check.outputs.exists == 'false'
         run: npm ci
 
+      - name: Install PHP dependencies
+        if: steps.tag_check.outputs.exists == 'false'
+        run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+
       - name: Start wp-env
         if: steps.tag_check.outputs.exists == 'false'
         run: npm run wp-env start
-
-      - name: Install PHP dependencies
-        if: steps.tag_check.outputs.exists == 'false'
-        run: npm run composer -- install --no-dev --optimize-autoloader --ignore-platform-reqs
 
       - name: Build
         if: steps.tag_check.outputs.exists == 'false' && github.event_name == 'workflow_dispatch'

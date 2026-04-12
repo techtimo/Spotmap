@@ -26,8 +26,6 @@ jobs:
   test-js:
     name: JS Tests & Build
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
@@ -46,7 +44,7 @@ jobs:
         run: npm run test:js -- --coverage
 
       - name: Upload JS coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
@@ -56,7 +54,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: js-build
           path: |
@@ -94,7 +92,7 @@ jobs:
         run: npm run wp-env -- run tests-cli --env-cwd=wp-content/plugins/Spotmap sh -c "XDEBUG_MODE=coverage composer run test:coverage"
 
       - name: Upload PHP coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/clover.xml
