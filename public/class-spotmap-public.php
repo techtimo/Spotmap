@@ -42,13 +42,14 @@ class Spotmap_Public{
 		if ( ! $this->should_enqueue() ) {
 			return;
 		}
-		wp_enqueue_style( 'leaflet', plugin_dir_url( __FILE__ ) . 'leaflet/leaflet.css');
-		wp_enqueue_style( 'custom', plugin_dir_url( __FILE__ ) . 'css/custom.css');
-        wp_enqueue_style( 'leaflet-fullscreen', plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.css');
-		wp_enqueue_style( 'leaflet-easybutton', plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.css');
-		// wp_enqueue_style( 'dashicon', '/wp-includes/css/dashicons.css');
-		wp_enqueue_style( 'font-awesome', plugin_dir_url( __DIR__ ). 'includes/css/font-awesome-all.min.css');
-		wp_enqueue_style( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
+		$map_asset_file = plugin_dir_path( dirname( __FILE__ ) ) . 'build/spotmap-map.asset.php';
+		$map_asset = file_exists( $map_asset_file ) ? include $map_asset_file : [ 'dependencies' => [], 'version' => false ];
+		wp_enqueue_style(
+			'spotmap-map',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.css',
+			[],
+			$map_asset['version']
+		);
     }
 
 	public function register_post_meta(): void {
@@ -86,20 +87,10 @@ class Spotmap_Public{
 		wp_enqueue_script(
 			'spotmap-handler',
 			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
-			array_merge(
-				$map_asset['dependencies'],
-				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
-			),
+			array_merge( $map_asset['dependencies'], [ 'jquery' ] ),
 			$map_asset['version'],
 			true
 		);
-		wp_enqueue_script( 'leaflet',               plugins_url( 'leaflet/leaflet.js', __FILE__ ) );
-		wp_enqueue_script( 'leaflet-fullscreen',    plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js', [ 'leaflet' ] );
-		wp_enqueue_script( 'leaflet-gpx',           plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js' );
-		wp_enqueue_script( 'leaflet-easybutton',    plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js' );
-		wp_enqueue_script( 'leaflet-swisstopo',     plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js' );
-		wp_enqueue_script( 'leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js' );
-		wp_enqueue_script( 'leaflet-text-path',     plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js' );
 		$this->localize_js_script( 'spotmap-handler' );
 		$this->enqueue_styles();
 		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
@@ -114,7 +105,7 @@ class Spotmap_Public{
 		wp_enqueue_script(
 			'spotmap-post-location',
 			plugin_dir_url( dirname( __FILE__ ) ) . 'build/post-location.js',
-			array_merge( $post_location_asset['dependencies'], [ 'leaflet' ] ),
+			$post_location_asset['dependencies'],
 			$post_location_asset['version'],
 			true
 		);
@@ -131,22 +122,11 @@ class Spotmap_Public{
 		wp_enqueue_script(
 			'spotmap-handler',
 			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.js',
-			array_merge(
-				$map_asset['dependencies'],
-				[ 'jquery', 'leaflet', 'leaflet-fullscreen', 'leaflet-gpx', 'leaflet-easybutton', 'leaflet-beautify-marker', 'leaflet-text-path' ]
-			),
+			array_merge( $map_asset['dependencies'], [ 'jquery' ] ),
 			$map_asset['version'],
 			true
 		);
-		$this->localize_js_script('spotmap-handler');
-		wp_enqueue_script('leaflet',  plugins_url( 'leaflet/leaflet.js', __FILE__ ));
-        wp_enqueue_script('leaflet-fullscreen',plugin_dir_url( __FILE__ ) . 'leafletfullscreen/leaflet.fullscreen.js', ['leaflet']);
-        wp_enqueue_script('leaflet-gpx',plugin_dir_url( __FILE__ ) . 'leaflet-gpx/gpx.js');
-        wp_enqueue_script('leaflet-easybutton',plugin_dir_url( __FILE__ ) . 'leaflet-easy-button/easy-button.js');
-        wp_enqueue_script('leaflet-swisstopo',plugin_dir_url( __FILE__ ) . 'leaflet-tilelayer-swisstopo/Leaflet.TileLayer.Swiss.umd.js');
-        wp_enqueue_script('leaflet-beautify-marker', plugin_dir_url( __FILE__ ) . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js');
-		wp_enqueue_script('leaflet-text-path',plugin_dir_url( __FILE__ ) . 'leaflet-textpath/leaflet.textpath.js');
-
+		$this->localize_js_script( 'spotmap-handler' );
 	}
 
 	function localize_js_script($script_slug){
