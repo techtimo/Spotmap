@@ -111,9 +111,10 @@ export default function EditPointsTab( { onNoticeChange } ) {
             return;
         }
         if ( typeof window.Spotmap === 'undefined' ) {
+            const missing = typeof window.L === 'undefined' ? 'Leaflet (L)' : 'Spotmap';
             onNoticeChange( {
                 status: 'error',
-                text: 'Map engine not loaded. Try refreshing the page.',
+                text: `Map engine not loaded (${ missing } is undefined). Check the browser console for script errors — a JavaScript conflict or ad-blocker may be preventing one of the map scripts from loading.`,
             } );
             return;
         }

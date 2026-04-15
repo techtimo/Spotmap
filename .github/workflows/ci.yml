@@ -9,6 +9,8 @@ on:
       - '*.json'
       - 'phpunit.xml'
       - '*.js'
+      - 'tests/e2e/**'
+      - 'playwright.config.ts'
   pull_request:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - '*.json'
       - 'phpunit.xml'
       - '*.js'
+      - 'tests/e2e/**'
+      - 'playwright.config.ts'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -97,4 +101,46 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/clover.xml
           flags: php
+
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: test-js
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: js-build
+
+      - name: Install PHP dependencies
+        run: composer install --optimize-autoloader --ignore-platform-req=ext-redis --ignore-platform-req=php
+
+      - name: Start wp-env
+        run: npm run wp-env start
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          SPOTMAP_TOKEN_MAPBOX: ${{ secrets.SPOTMAP_TOKEN_MAPBOX }}
+          SPOTMAP_TOKEN_THUNDERFOREST: ${{ secrets.SPOTMAP_TOKEN_THUNDERFOREST }}
+          SPOTMAP_TOKEN_TIMEZONEDB: ${{ secrets.SPOTMAP_TOKEN_TIMEZONEDB }}
+          SPOTMAP_TOKEN_LINZ: ${{ secrets.SPOTMAP_TOKEN_LINZ }}
+          SPOTMAP_TOKEN_GEOPORTAIL: ${{ secrets.SPOTMAP_TOKEN_GEOPORTAIL }}
+          SPOTMAP_TOKEN_OSDATAHUB: ${{ secrets.SPOTMAP_TOKEN_OSDATAHUB }}
 

@@ -502,7 +502,7 @@ export class Spotmap {
             icon,
             zIndexOffset: Z_INDEX_LAST_POINT,
         } )
-            .bindPopup( MarkerManager.getPopupHtml( lp ) )
+            .bindPopup( MarkerManager.getPopupHtml( lp, this.options.feeds.length ) )
             .addTo( feed.featureGroup );
     }
 
