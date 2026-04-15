@@ -13,6 +13,7 @@ includes/webfonts/
 
 # Test artifacts
 .phpunit.result.cache
+.php-cs-fixer.cache
 coverage/
 
 # E2E — private tokens, temp files, and Playwright output
