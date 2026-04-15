@@ -64,11 +64,6 @@ declare global {
 
         function easyBar( buttons: L.Control[] ): L.Control;
 
-        namespace Control {
-            class FullScreen extends L.Control {
-                constructor( options?: Record< string, unknown > );
-            }
-        }
     }
 }
 

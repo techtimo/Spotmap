@@ -3,7 +3,6 @@ import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Leaflet plugins
-import 'leaflet.fullscreen';
 import 'leaflet.fullscreen/dist/Control.FullScreen.css';
 import 'leaflet-gpx';
 import 'leaflet-easybutton';

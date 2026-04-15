@@ -13,6 +13,7 @@ import {
     Z_INDEX_LAST_POINT,
 } from './constants';
 import { debug as debugLog, getColorDot } from './utils';
+import { FullScreen as LeafletFullScreen } from 'leaflet.fullscreen';
 
 const DOWNLOAD_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" style="vertical-align:middle;fill:currentColor"><path d="M18 11.3l-1-1.1-4 3.9V4h-1.7v10.1l-4-3.9-1.1 1.1 5.9 5.8 5.9-5.8zm-2.9 7.2H8.9v1.5h6.2v-1.5z"/></svg>';
@@ -197,8 +198,8 @@ export class Spotmap {
         this.map.attributionControl.setPrefix( '' );
 
         // Optional controls
-        if ( this.options.fullscreenButton !== false && L.Control.FullScreen ) {
-            new L.Control.FullScreen().addTo( this.map );
+        if ( this.options.fullscreenButton !== false ) {
+            new LeafletFullScreen().addTo( this.map );
         }
         if ( this.options.scaleControl !== false ) {
             L.control.scale().addTo( this.map );
