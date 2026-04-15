@@ -43,6 +43,9 @@ export class DataFetcher {
                 for ( const [ subKey, subVal ] of Object.entries(
                     value as Record< string, unknown >
                 ) ) {
+                    if ( subVal === undefined || subVal === null ) {
+                        continue;
+                    }
                     params.append( `${ key }[${ subKey }]`, String( subVal ) );
                 }
             } else {

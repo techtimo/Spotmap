@@ -274,7 +274,9 @@ export class Spotmap {
                     'Feed error:',
                     ( response as { title?: string } ).title
                 );
-            } else if ( ! response.empty ) {
+            }
+
+            if ( ! response.error && ! response.empty ) {
                 for ( const entry of response as import('./types').SpotPoint[] ) {
                     this.ensureFeedLayer( entry.feed_name );
                     this.markerManager.addPoint( entry );
@@ -287,7 +289,7 @@ export class Spotmap {
             this.addLastPointMarkers();
 
             if (
-                response.empty &&
+                ( response.empty || response.error ) &&
                 ( ! this.options.gpx || this.options.gpx.length === 0 )
             ) {
                 this.showEmptyState();
