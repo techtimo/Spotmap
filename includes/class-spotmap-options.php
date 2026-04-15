@@ -71,6 +71,10 @@ class Spotmap_Options
                 'iconShape' => 'marker',
                 'icon'      => 'thumbtack',
             ],
+            'SOS' => [
+                'iconShape' => 'marker',
+                'icon'      => 'triangle-exclamation',
+            ],
         ];
     }
 
