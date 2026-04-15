@@ -15,7 +15,20 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 
 const root = path.resolve( __dirname, '..' );
-const version = require( path.join( root, 'package.json' ) ).version;
+
+const arg = process.argv[ 2 ];
+let version;
+
+if ( arg ) {
+    // Update package.json with the supplied version
+    const pkgFile = path.join( root, 'package.json' );
+    const pkg = JSON.parse( fs.readFileSync( pkgFile, 'utf8' ) );
+    pkg.version = arg;
+    fs.writeFileSync( pkgFile, JSON.stringify( pkg, null, 4 ) + '\n' );
+    version = arg;
+} else {
+    version = require( path.join( root, 'package.json' ) ).version;
+}
 
 if ( ! version ) {
     console.error( 'Could not read version from package.json' );
