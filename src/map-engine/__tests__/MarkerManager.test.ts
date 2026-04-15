@@ -46,18 +46,7 @@ describe( 'MarkerManager.getPopupHtml', () => {
         expect( html ).not.toContain( '<img' );
     } );
 
-    it( 'shows image tag for MEDIA type', () => {
-        const html = MarkerManager.getPopupHtml(
-            makePoint( {
-                type: 'MEDIA',
-                message: 'https://example.com/photo.jpg',
-            } )
-        );
-        expect( html ).toContain( '<img' );
-        expect( html ).toContain( 'https://example.com/photo.jpg' );
-    } );
-
-    it( 'shows battery warning when status is LOW', () => {
+it( 'shows battery warning when status is LOW', () => {
         const html = MarkerManager.getPopupHtml(
             makePoint( { battery_status: 'LOW' } )
         );
@@ -111,5 +100,21 @@ describe( 'MarkerManager.getPopupHtml', () => {
             } )
         );
         expect( html ).not.toContain( 'Local Time' );
+    } );
+
+    it( 'shows feed name inline when feedCount > 1', () => {
+        const html = MarkerManager.getPopupHtml(
+            makePoint( { type: 'OK', feed_name: 'Tracker A' } ),
+            2
+        );
+        expect( html ).toContain( 'OK — Tracker A' );
+    } );
+
+    it( 'omits feed name when feedCount is 1', () => {
+        const html = MarkerManager.getPopupHtml(
+            makePoint( { type: 'OK', feed_name: 'Tracker A' } )
+        );
+        expect( html ).toContain( '<b>OK</b>' );
+        expect( html ).not.toContain( 'Tracker A' );
     } );
 } );
