@@ -12,8 +12,6 @@ jobs:
     name: Release & Deploy to WP.org
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout
@@ -159,7 +157,7 @@ jobs:
 
       - name: Create GitHub release (pre-release)
         if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Spotmap ${{ steps.version.outputs.version }}
@@ -171,7 +169,7 @@ jobs:
 
       - name: Create GitHub release (stable)
         if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Spotmap ${{ steps.version.outputs.version }}
