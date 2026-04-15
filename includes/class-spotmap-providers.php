@@ -55,6 +55,33 @@ class Spotmap_Providers
                     ],
                 ],
 
+                'garmin-inreach' => [
+                    'label'  => 'Garmin inReach MapShare',
+                    'fields' => [
+                        [
+                            'key'         => 'name',
+                            'type'        => 'text',
+                            'label'       => 'Feed Name',
+                            'required'    => true,
+                            'description' => 'A unique name used to identify this feed in the map block.',
+                        ],
+                        [
+                            'key'         => 'mapshare_address',
+                            'type'        => 'text',
+                            'label'       => 'MapShare Address',
+                            'required'    => true,
+                            'description' => 'Your MapShare username (the part after share.garmin.com/Feed/Share/).',
+                        ],
+                        [
+                            'key'         => 'password',
+                            'type'        => 'password',
+                            'label'       => 'MapShare Password',
+                            'required'    => false,
+                            'description' => 'Leave empty if the feed is public.',
+                        ],
+                    ],
+                ],
+
                 'osmand' => [
                     'label'  => 'OsmAnd (Live Tracking)',
                     'fields' => [
@@ -126,12 +153,6 @@ class Spotmap_Providers
                         ],
                     ],
                 ],
-
-                // Future providers — add crawler implementation alongside each entry.
-                // 'garmin' => [
-                //     'label'  => 'Garmin inReach',
-                //     'fields' => [ ... ],
-                // ],
             ];
         }
         return $providers;

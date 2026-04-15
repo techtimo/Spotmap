@@ -281,6 +281,10 @@ function PostsIcon() {
     );
 }
 
+function GarminInReachIcon() {
+    return <>▲ GARMIN</>;
+}
+
 /** Fallback for providers without a dedicated icon. */
 function GenericProviderIcon() {
     return (
@@ -318,6 +322,7 @@ const PROVIDER_ICONS = {
     victron: VictronIcon,
     media: MediaIcon,
     posts: PostsIcon,
+    'garmin-inreach': GarminInReachIcon,
 };
 
 // ---------------------------------------------------------------------------
