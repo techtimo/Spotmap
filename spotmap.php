@@ -4,7 +4,7 @@
  * Plugin Name:       Spotmap
  * Plugin URI:        https://github.com/techtimo/spotmap
  * Description:       Self-hosted GPS tracking for WordPress. Display live positions from SPOT, OsmAnd, and Teltonika devices on interactive Leaflet maps — with a Gutenberg block, time filtering, GPX overlays, and full data ownership.
- * Version:           1.0.0-rc.2
+ * Version:           1.0.0-rc.3
  * Author:            Timo Giese
  * Author URI:        https://github.com/techtimo
  * License:           GPL-2.0-or-later
@@ -19,7 +19,7 @@
 // Block direct access
 defined('ABSPATH') or die();
 
-define('SPOTMAP_VERSION', '1.0.0-rc.2');
+define('SPOTMAP_VERSION', '1.0.0-rc.3');
 define('SPOTMAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 require_once plugin_dir_path(__FILE__) . 'vendor-prefixed/autoload.php';
