@@ -127,9 +127,10 @@ class Spotmap_Admin
     {
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-api-crawler.php';
 
-        $feeds              = Spotmap_Options::get_feeds();
-        $findmespot_crawler = null;
-        $victron_crawler    = null;
+        $feeds                 = Spotmap_Options::get_feeds();
+        $findmespot_crawler    = null;
+        $victron_crawler       = null;
+        $garmin_inreach_crawler = null;
         foreach ($feeds as $feed) {
             if (! empty($feed['paused'])) {
                 continue;
@@ -152,6 +153,15 @@ class Spotmap_Admin
                     $feed['name']            ?? '',
                     $feed['installation_id'] ?? '',
                     $feed['token']           ?? ''
+                );
+            } elseif ($type === 'garmin-inreach') {
+                if ($garmin_inreach_crawler === null) {
+                    $garmin_inreach_crawler = new Spotmap_Api_Crawler('garmin-inreach');
+                }
+                $garmin_inreach_crawler->get_data(
+                    $feed['name']             ?? '',
+                    $feed['mapshare_address'] ?? '',
+                    $feed['password']         ?? ''
                 );
             }
         }

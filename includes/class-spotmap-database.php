@@ -76,6 +76,13 @@ class Spotmap_Database
     {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
+        // Column unit reference:
+        //   altitude      — metres (integer), consistent across all providers.
+        //   bearing       — degrees (float 0–360), consistent across all providers.
+        //   speed         — km/h (float). NOTE: OsmAnd stores raw m/s (pre-existing bug);
+        //                   Victron and Garmin inReach store km/h. Teltonika: unknown unit.
+        //   hdop          — dimensionless HDOP value.
+        //   time          — Unix timestamp (UTC seconds).
         $sql = "CREATE TABLE {$wpdb->prefix}spotmap_points (
 		    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
 		    `type` varchar(25) COLLATE utf8mb4_unicode_ci NOT NULL,

@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Spotmap is a WordPress plugin that displays GPS tracking data from SPOT devices on interactive Leaflet maps. It provides a Gutenberg block and shortcodes for embedding maps in posts/pages.
 
+## wp-env / Docker
+
+**Never run `npm run env:start` or assume the containers are stopped.** The wp-env Docker containers are kept running during development — if a `wp-env run cli` command fails, diagnose the command, not the container state. The DB is MariaDB; use `docker exec` to run queries directly:
+
+```bash
+docker exec <hash>-mysql-1 mariadb -u root -ppassword wordpress -e "SELECT ..."
+```
+
+Find the container name with `docker ps`.
+
 ## Editing conventions
 
 - This project uses **4 spaces** for indentation throughout — never tabs.
