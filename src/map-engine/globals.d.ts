@@ -1,3 +1,4 @@
+import type * as Leaflet from 'leaflet';
 import type { SpotmapGlobal } from './types';
 import type { Spotmap } from './Spotmap';
 
@@ -5,6 +6,7 @@ declare global {
     interface Window {
         Spotmap: typeof Spotmap;
         spotmapjsobj: SpotmapGlobal;
+        L: typeof Leaflet;
     }
 
     const spotmapjsobj: SpotmapGlobal;

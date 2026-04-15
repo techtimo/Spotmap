@@ -55,9 +55,8 @@
         "typescript": "^5.9.3"
     },
     "scripts": {
-        "copy-deps": "node scripts/copy-deps.js",
-        "build": "npm run copy-deps && wp-scripts build --webpack-src-dir=src",
-        "start": "npm run copy-deps && wp-scripts start --webpack-src-dir=src",
+        "build": "wp-scripts build --webpack-src-dir=src",
+        "start": "wp-scripts start --webpack-src-dir=src",
         "wp-env": "wp-env",
         "env:start": "wp-env start --debug",
         "env:setup": "node examples/setup-dev.js",

@@ -2,6 +2,9 @@ const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 
 module.exports = {
     ...defaultConfig,
+    performance: {
+        hints: false,
+    },
     entry: {
         ...defaultConfig.entry(),
         'spotmap-map': './src/map-engine/index.ts',
