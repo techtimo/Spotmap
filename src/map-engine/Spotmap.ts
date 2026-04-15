@@ -226,7 +226,8 @@ export class Spotmap {
             this.layers,
             this.layerManager,
             canvasRenderer,
-            dbg
+            dbg,
+            this.options.feeds.length
         );
         this.lineManager = new LineManager(
             this.layers,
