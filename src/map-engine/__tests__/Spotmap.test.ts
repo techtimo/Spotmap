@@ -15,6 +15,15 @@ import type { SpotmapOptions } from '../types';
 // ---------------------------------------------------------------------------
 jest.mock( 'leaflet-easybutton', () => ( {} ) );
 
+const mockFullScreenAddTo = jest.fn();
+const MockFullScreen = jest.fn().mockImplementation( () => ( {
+    addTo: mockFullScreenAddTo,
+} ) );
+jest.mock( 'leaflet.fullscreen', () => ( {
+    FullScreen: MockFullScreen,
+    default: MockFullScreen,
+} ) );
+
 // ---------------------------------------------------------------------------
 // Minimal Leaflet mock
 // ---------------------------------------------------------------------------
@@ -83,11 +92,7 @@ function buildLeafletMock() {
                 layers: jest.fn().mockReturnValue( mockLayerControl ),
                 scale: jest.fn().mockReturnValue( { addTo: jest.fn() } ),
             },
-            Control: {
-                FullScreen: jest
-                    .fn()
-                    .mockImplementation( () => ( { addTo: jest.fn() } ) ),
-            },
+            Control: {},
             tileLayer: Object.assign(
                 jest
                     .fn()
@@ -190,6 +195,8 @@ beforeEach( () => {
     const { L } = buildLeafletMock();
     ( global as Record< string, unknown > ).L = L;
     ( global as Record< string, unknown > ).spotmapjsobj = buildSpotmapjsobj();
+    MockFullScreen.mockClear();
+    mockFullScreenAddTo.mockClear();
 } );
 
 afterEach( () => {
@@ -251,5 +258,33 @@ describe( 'Spotmap.initMap — error response handling', () => {
             callsBeforeGpxLoad
         );
         expect( fitBoundsSpy ).toHaveBeenCalledWith( 'all' );
+    } );
+} );
+
+describe( 'Spotmap.initMap — fullscreen button', () => {
+    beforeEach( () => {
+        mockFetch( { error: true, title: 'no feed', message: '' } );
+    } );
+
+    it( 'adds the fullscreen control by default', async () => {
+        const { Spotmap } = await import( '../Spotmap' );
+        const s = new Spotmap( makeOptions() );
+        await s.initMap();
+        expect( MockFullScreen ).toHaveBeenCalledTimes( 1 );
+        expect( mockFullScreenAddTo ).toHaveBeenCalledTimes( 1 );
+    } );
+
+    it( 'adds the fullscreen control when fullscreenButton is true', async () => {
+        const { Spotmap } = await import( '../Spotmap' );
+        const s = new Spotmap( makeOptions( { fullscreenButton: true } ) );
+        await s.initMap();
+        expect( MockFullScreen ).toHaveBeenCalledTimes( 1 );
+    } );
+
+    it( 'omits the fullscreen control when fullscreenButton is false', async () => {
+        const { Spotmap } = await import( '../Spotmap' );
+        const s = new Spotmap( makeOptions( { fullscreenButton: false } ) );
+        await s.initMap();
+        expect( MockFullScreen ).not.toHaveBeenCalled();
     } );
 } );
