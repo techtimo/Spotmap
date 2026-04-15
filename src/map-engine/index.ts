@@ -16,6 +16,7 @@ import 'leaflet-tilelayer-swiss';
 // Font Awesome & custom styles
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '../css/custom.css';
+import './popup.css';
 
 import { Spotmap } from './Spotmap';
 

@@ -1,5 +1,7 @@
+import Mustache from 'mustache';
 import type { SpotPoint, SpotmapLayers } from './types';
 import { debug as debugLog } from './utils';
+import { POPUP_TEMPLATE, buildView } from './popup-templates';
 import {
     CIRCLE_DOT_ICON_SIZE,
     CIRCLE_DOT_ICON_ANCHOR,
@@ -28,19 +30,22 @@ export class MarkerManager {
     private readonly iconCache = new Map< string, L.Icon >();
     private readonly abortController = new AbortController();
     private readonly dbg: ( ...args: unknown[] ) => void;
+    private readonly feedCount: number;
 
     constructor(
         map: L.Map,
         layers: SpotmapLayers,
         layerManager: LayerManager,
         canvasRenderer: L.Renderer,
-        debugEnabled = false
+        debugEnabled = false,
+        feedCount = 1
     ) {
         this.canvasRenderer = canvasRenderer;
         this.map = map;
         this.layers = layers;
         this.layerManager = layerManager;
         this.dbg = ( ...args ) => debugLog( debugEnabled, ...args );
+        this.feedCount = feedCount;
 
         const { signal } = this.abortController;
         document.addEventListener(
@@ -88,7 +93,7 @@ export class MarkerManager {
         }
 
         const iconShape = this.getIconShape( point );
-        const popupHtml = MarkerManager.getPopupHtml( point );
+        const popupHtml = MarkerManager.getPopupHtml( point, this.feedCount );
         const popupOptions: L.PopupOptions = {
             autoPan: false,
             maxWidth: 280,
@@ -359,65 +364,7 @@ export class MarkerManager {
         this.markerById.clear();
     }
 
-    /**
-     * Generate the popup HTML for a point.
-     */
-    private static popupImageHtml( src: string ): string {
-        return `<img src="${ src }" style="display:block;width:100%;max-height:180px;object-fit:cover;margin-bottom:4px;" loading="lazy" alt="" /><br>`;
-    }
-
-    static getPopupHtml( entry: SpotPoint ): string {
-        if ( entry.type === 'POST' ) {
-            let html = '';
-            if ( entry.image_url ) {
-                html += MarkerManager.popupImageHtml( entry.image_url );
-            }
-            const title = entry.message ?? 'Post';
-            if ( entry.url ) {
-                html += `<b><a href="${ entry.url }" target="_blank" rel="noopener noreferrer">${ title }</a></b><br>`;
-            } else {
-                html += `<b>${ title }</b><br>`;
-            }
-            if ( entry.excerpt ) {
-                html += `<span style="font-size:0.9em">${ entry.excerpt }</span><br>`;
-            }
-            html += `<span style="font-size:0.85em;color:#888">${ entry.date }</span>`;
-            return html;
-        }
-
-        let html = `<b>${ entry.type }</b><br>`;
-        html += `Time: ${ entry.time }<br>Date: ${ entry.date }<br>`;
-
-        if (
-            entry.local_timezone &&
-            ! (
-                entry.localdate === entry.date && entry.localtime === entry.time
-            )
-        ) {
-            html += `Local Time: ${ entry.localtime }<br>Local Date: ${ entry.localdate }<br>`;
-        }
-
-        if ( entry.message && entry.type === 'MEDIA' ) {
-            html += MarkerManager.popupImageHtml( entry.message );
-        } else if ( entry.message ) {
-            html += `${ entry.message }<br>`;
-        }
-
-        if ( entry.altitude > 0 ) {
-            html += `Altitude: ${ Number( entry.altitude ) }m<br>`;
-        }
-
-        if ( entry.battery_status === 'LOW' ) {
-            html += `Battery status is low!<br>`;
-        }
-
-        if ( entry.hiddenPoints ) {
-            const { count, radius } = entry.hiddenPoints;
-            const radiusNote =
-                radius > 0 ? ` within a radius of ${ radius } meters` : '';
-            html += `There are ${ count } hidden points${ radiusNote }<br>`;
-        }
-
-        return html;
+    static getPopupHtml( entry: SpotPoint, feedCount = 1 ): string {
+        return Mustache.render( POPUP_TEMPLATE, buildView( entry, feedCount ) );
     }
 }

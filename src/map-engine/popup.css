@@ -1,0 +1,16 @@
+.spotmap-popup-image {
+    display: block;
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    margin-bottom: 4px;
+}
+
+.spotmap-popup-excerpt {
+    font-size: 0.9em;
+}
+
+.spotmap-popup-date {
+    font-size: 0.85em;
+    color: #888;
+}
