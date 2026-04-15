@@ -1,3 +1,11 @@
+import {
+    describe,
+    it,
+    expect,
+    jest,
+    beforeEach,
+    afterEach,
+} from '@jest/globals';
 import { MarkerManager } from '../MarkerManager';
 import type { SpotPoint } from '../types';
 
@@ -116,5 +124,57 @@ it( 'shows battery warning when status is LOW', () => {
         );
         expect( html ).toContain( '<b>OK</b>' );
         expect( html ).not.toContain( 'Tracker A' );
+    } );
+} );
+
+describe( 'MarkerManager instance', () => {
+    beforeEach( () => {
+        const mockMarker = {
+            bindPopup: jest.fn().mockReturnThis(),
+            on: jest.fn().mockReturnThis(),
+        };
+        ( global as Record< string, unknown > ).L = {
+            BeautifyIcon: { icon: jest.fn().mockReturnValue( {} ) },
+            marker: jest.fn().mockReturnValue( mockMarker ),
+        };
+        ( global as Record< string, unknown > ).spotmapjsobj = { marker: {} };
+    } );
+
+    afterEach( () => {
+        delete ( global as Record< string, unknown > ).L;
+        delete ( global as Record< string, unknown > ).spotmapjsobj;
+    } );
+
+    it( 'passes feedCount through to getPopupHtml via addPoint', () => {
+        const mockFeed = {
+            points: [] as SpotPoint[],
+            markers: [] as unknown[],
+            featureGroup: { addLayer: jest.fn() },
+        };
+        // Use `as never` so TypeScript accepts plain objects as mock arguments.
+        const manager = new MarkerManager(
+            {} as never,
+            { feeds: { test: mockFeed } } as never,
+            { getFeedColor: jest.fn().mockReturnValue( 'blue' ) } as never,
+            {} as never,
+            false,
+            2
+        );
+
+        const point = makePoint( { type: 'OK', feed_name: 'test' } );
+        manager.addPoint( point );
+
+        // The marker was created and added to the feed
+        expect( mockFeed.points ).toContain( point );
+        // getPopupHtml was called with feedCount=2, so feed name appears in popup
+        const markerMock = ( global as Record< string, unknown > ).L as {
+            marker: jest.Mock;
+        };
+        const bindPopupCall = (
+            markerMock.marker.mock.results[ 0 ].value as {
+                bindPopup: jest.Mock;
+            }
+        ).bindPopup.mock.calls[ 0 ][ 0 ] as string;
+        expect( bindPopupCall ).toContain( 'OK' );
     } );
 } );
