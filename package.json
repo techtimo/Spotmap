@@ -27,7 +27,7 @@
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.3",
         "@types/mustache": "^4.2.6",
-        "@wordpress/dataviews": "^14.0.0",
+        "@wordpress/dataviews": "^14.1.0",
         "beautifymarker": "^1.0.9",
         "leaflet": "^1.9.4",
         "leaflet-easybutton": "^2.4.0",
