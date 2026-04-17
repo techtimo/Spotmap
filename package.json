@@ -25,7 +25,7 @@
         "spotmap.php"
     ],
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.15.3",
+        "@fortawesome/fontawesome-free": "^7.2.0",
         "@types/mustache": "^4.2.6",
         "@wordpress/dataviews": "^14.0.0",
         "beautifymarker": "^1.0.9",
