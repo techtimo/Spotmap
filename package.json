@@ -49,7 +49,7 @@
         "@wordpress/data": "*",
         "@wordpress/env": "^10.39.0",
         "@wordpress/i18n": "^6.15.0",
-        "@wordpress/icons": "^11.8.0",
+        "@wordpress/icons": "^12.2.0",
         "@wordpress/scripts": "^31.8.0",
         "dotenv": "^16.5.0",
         "svg2img": "^1.0.0-beta.2",
