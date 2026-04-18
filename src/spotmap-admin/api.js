@@ -48,6 +48,9 @@ export const getDbFeedStats = ( feedName ) => {
 export const importPhotos = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/import-photos` ), method: 'POST' } );
 
+export const crawlFeed = ( id ) =>
+    apiFetch( { url: url( `feeds/${ id }/crawl` ), method: 'POST' } );
+
 export const pauseFeed = ( id ) =>
     apiFetch( { url: url( `feeds/${ id }/pause` ), method: 'POST' } );
 

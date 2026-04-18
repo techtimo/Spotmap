@@ -16,6 +16,8 @@ import GpxDownloadModal from '../components/GpxDownloadModal';
 import ProviderSelector from '../components/ProviderSelector';
 
 const isMediaFeed = ( type ) => type === 'media';
+const isCrawlableFeed = ( type ) =>
+    [ 'findmespot', 'garmin-inreach', 'victron' ].includes( type );
 const SINGLETON_TYPES = [ 'media', 'posts' ];
 
 const STORAGE_KEY = 'spotmap_feeds_view';
@@ -161,6 +163,29 @@ export default function FeedsTab( {
                               count === 1 ? '' : 's'
                           }.`
                         : 'No new photos found to import.',
+            } );
+        } catch ( err ) {
+            onNoticeChange( { status: 'error', text: err.message } );
+        }
+    };
+
+    const handleCrawlFeed = async ( feed ) => {
+        try {
+            const result = await api.crawlFeed( feed.id );
+            const count = result.inserted ?? 0;
+            setFeeds( ( prev ) =>
+                prev.map( ( f ) =>
+                    f.id === feed.id
+                        ? { ...f, point_count: ( f.point_count ?? 0 ) + count }
+                        : f
+                )
+            );
+            onNoticeChange( {
+                status: 'success',
+                text:
+                    count > 0
+                        ? `Fetched ${ count } new point${ count === 1 ? '' : 's' }.`
+                        : 'No new points found.',
             } );
         } catch ( err ) {
             onNoticeChange( { status: 'error', text: err.message } );
@@ -395,6 +420,13 @@ export default function FeedsTab( {
                 label: 'Resume feed',
                 isEligible: ( item ) => ! item.isOrphaned && item._feed.paused,
                 callback: ( [ item ] ) => handleTogglePause( item._feed ),
+            },
+            {
+                id: 'fetch-points',
+                label: 'Fetch new points',
+                isEligible: ( item ) =>
+                    ! item.isOrphaned && isCrawlableFeed( item._feed?.type ),
+                callback: ( [ item ] ) => handleCrawlFeed( item._feed ),
             },
             {
                 id: 'import-photos',
