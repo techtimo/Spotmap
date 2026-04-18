@@ -90,36 +90,171 @@ class Spotmap_Api_Crawler
     }
 
     /**
-     * Fetches tracking points from a Garmin inReach MapShare KML feed and inserts
-     * new ones via insert_row(). Incremental: only requests points since the
-     * last stored point for this feed (or all points on first run).
+     * Fetches tracking points from a Garmin inReach MapShare KML feed.
      *
-     * @param string $feed_name       Feed name (stored in DB).
-     * @param string $mapshare_address  The MapShare username (share.garmin.com/Feed/Share/{address}).
-     * @param string $password        Optional MapShare password (Basic Auth, empty username).
-     * @return int|false Number of new rows inserted, or false on HTTP/parse error.
+     * Initial import (cursor present in wp_options, or no points in DB):
+     *   Walks backwards in time from now to GARMIN_EPOCH in 7-day windows, up to
+     *   GARMIN_CHUNKS_PER_TICK windows per cron call. Progress is stored in
+     *   wp_options so the import continues across multiple ticks without
+     *   risking a PHP timeout.  When the cursor reaches GARMIN_EPOCH the option
+     *   is deleted and the feed switches to incremental mode automatically.
+     *
+     *   After each tick's backfill chunks (except the very first tick), an
+     *   open-ended incremental fetch also runs to capture live points arriving
+     *   while the historical backfill is still in progress.
+     *
+     * Incremental mode (no cursor, points exist):
+     *   Single request: d1 = last stored point time + 1 second.
+     *
+     * The Garmin MapShare API rejects large date ranges; 7-day windows are
+     * safely within its limits.
+     *
+     * @param string $feed_name         Feed name (stored in DB).
+     * @param string $mapshare_address  MapShare username (share.garmin.com/Feed/Share/{address}).
+     * @param string $password          Optional MapShare password (Basic Auth, empty username).
+     * @return int|false Total rows inserted this tick, or false on unrecoverable HTTP error.
      */
     private function get_data_garmin_inreach(string $feed_name, string $mapshare_address, string $password)
     {
+        // Garmin inReach launched in 2011; no GPS data exists before this date.
+        $garmin_epoch     = mktime(0, 0, 0, 1, 1, 2011);
+        $chunk_secs       = 7 * 86400;   // 7-day API windows stay within Garmin's limits
+        $chunks_per_tick  = 20;           // up to 140 days of history per cron tick
+
+        $cursor_key = 'spotmap_garmin_cursor_' . md5($feed_name);
+        $cursor     = get_option($cursor_key, null);
+
+        // Determine whether we are in initial-import or incremental mode.
+        // A cursor option means an import is in progress.
+        // An empty DB for this feed means we are starting a fresh import.
         global $wpdb;
-
-        $url = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address);
-
-        // Incremental polling: fetch only points after the last stored one.
-        // On first run (no points yet) use a far-past anchor so the API returns
-        // all available history instead of just today's points (which is what
-        // the parameterless request returns).
-        $last_time = $wpdb->get_var(
+        $last_time = (int) $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT MAX(time) FROM {$wpdb->prefix}spotmap_points WHERE feed_name = %s",
                 $feed_name
             )
         );
-        $d1 = ! empty($last_time)
-            ? gmdate('Y-m-d\TH:i\Z', (int) $last_time + 1)
-            : '2000-01-01T00:00Z';
-        $url .= '?d1=' . $d1;
+        $db_is_empty = ($last_time === 0);
 
+        if ($cursor !== null || $db_is_empty) {
+            // ── Initial / resuming chunked import (reverse: now → garmin_epoch) ──
+            //
+            // Cursor is stored as ['at' => unix_timestamp, 'empty_streak' => int].
+            // 'at' marks the upper boundary of the next chunk to fetch; it decrements
+            // each iteration.  When the feed has returned nothing for several
+            // consecutive 7-day windows we switch to 60-day fast-forward chunks to
+            // skip silent years quickly.  As soon as data appears we drop back to
+            // 7-day windows so every point is captured with fine granularity.
+            $fast_forward_secs  = 60 * 86400;  // jump size when feed is silent
+            $empty_streak_limit = 4;            // consecutive empty chunks before fast-forwarding
+
+            $now = time();
+
+            if ($cursor === null) {
+                $cursor = [ 'at' => $now, 'empty_streak' => 0 ];
+                update_option($cursor_key, $cursor, false);
+                $this->garmin_log($feed_name, 'initial_import_start', [
+                    'from'      => gmdate('Y-m-d', $now),
+                    'direction' => 'reverse',
+                ]);
+            }
+
+            $inserted = 0;
+
+            for ($i = 0; $i < $chunks_per_tick && (int) $cursor['at'] > $garmin_epoch; $i++) {
+                $advance     = ($cursor['empty_streak'] >= $empty_streak_limit)
+                               ? $fast_forward_secs
+                               : $chunk_secs;
+                $chunk_start = max((int) $cursor['at'] - $advance, $garmin_epoch);
+                $chunk_end   = (int) $cursor['at'];
+                $url         = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+                             . '?d1=' . gmdate('Y-m-d\TH:i\Z', $chunk_start)
+                             . '&d2=' . gmdate('Y-m-d\TH:i\Z', $chunk_end);
+
+                $this->garmin_log($feed_name, 'chunk_fetch', [
+                    'd1'           => gmdate('Y-m-d', $chunk_start),
+                    'd2'           => gmdate('Y-m-d', $chunk_end),
+                    'chunk'        => $i + 1,
+                    'fast_forward' => $advance === $fast_forward_secs,
+                    'empty_streak' => $cursor['empty_streak'],
+                ]);
+
+                $count = $this->garmin_fetch_and_insert_kml($url, $password, $feed_name, $mapshare_address);
+                if ($count === false) {
+                    // HTTP/parse error — preserve cursor so the next tick retries this window.
+                    $this->garmin_log($feed_name, 'chunk_error', [
+                        'd1'              => gmdate('Y-m-d', $chunk_start),
+                        'inserted_so_far' => $inserted,
+                    ]);
+                    return $inserted > 0 ? $inserted : false;
+                }
+
+                $this->garmin_log($feed_name, 'chunk_done', [
+                    'd1'       => gmdate('Y-m-d', $chunk_start),
+                    'd2'       => gmdate('Y-m-d', $chunk_end),
+                    'inserted' => $count,
+                ]);
+
+                $inserted              += $count;
+                $cursor['at']           = $chunk_start - 1;
+                $cursor['empty_streak'] = ($count === 0)
+                    ? $cursor['empty_streak'] + 1
+                    : 0;
+                update_option($cursor_key, $cursor, false);
+            }
+
+            if ((int) $cursor['at'] <= $garmin_epoch) {
+                delete_option($cursor_key);
+                $this->garmin_log($feed_name, 'initial_import_complete', [
+                    'total_inserted_this_tick' => $inserted,
+                ]);
+            } else {
+                // Also check for live points that arrived since the first chunk seeded the DB.
+                // Skip on the very first tick ($db_is_empty) because last_time is 0.
+                if (! $db_is_empty) {
+                    $inc_url  = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+                              . '?d1=' . gmdate('Y-m-d\TH:i\Z', $last_time + 1);
+                    $this->garmin_log($feed_name, 'incremental_during_backfill', [
+                        'd1' => gmdate('Y-m-d H:i:s', $last_time + 1),
+                    ]);
+                    $live      = $this->garmin_fetch_and_insert_kml($inc_url, $password, $feed_name, $mapshare_address);
+                    $inserted += ($live ?: 0);
+                }
+                $this->garmin_log($feed_name, 'tick_done_resuming_next', [
+                    'cursor'                   => gmdate('Y-m-d', (int) $cursor['at']),
+                    'empty_streak'             => $cursor['empty_streak'],
+                    'total_inserted_this_tick' => $inserted,
+                ]);
+            }
+
+            return $inserted;
+        }
+
+        // ── Incremental mode ────────────────────────────────────────────────
+        $url = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+             . '?d1=' . gmdate('Y-m-d\TH:i\Z', $last_time + 1);
+        $this->garmin_log($feed_name, 'incremental_fetch', [
+            'd1' => gmdate('Y-m-d H:i:s', $last_time + 1),
+        ]);
+        $count = $this->garmin_fetch_and_insert_kml($url, $password, $feed_name, $mapshare_address);
+        $this->garmin_log($feed_name, 'incremental_done', [
+            'inserted' => $count === false ? 'error' : $count,
+        ]);
+        return $count;
+    }
+
+    /**
+     * Fetches one Garmin MapShare KML URL, parses the Placemark elements,
+     * and inserts each valid point via insert_row().
+     *
+     * @param string $url              Full URL including any d1/d2 parameters.
+     * @param string $password         MapShare password (empty = public feed).
+     * @param string $feed_name        Feed name for DB rows.
+     * @param string $mapshare_address MapShare address stored as feed_id.
+     * @return int|false Number of rows inserted (0 = valid empty response), false on error.
+     */
+    private function garmin_fetch_and_insert_kml(string $url, string $password, string $feed_name, string $mapshare_address)
+    {
         $args = [ 'timeout' => 20 ];
         if (! empty($password)) {
             $args['headers'] = [
@@ -129,6 +264,7 @@ class Spotmap_Api_Crawler
 
         $response = wp_remote_get($url, $args);
         if (is_wp_error($response)) {
+            $this->garmin_log($feed_name, 'http_error', [ 'url' => $url, 'error' => $response->get_error_message() ]);
             return false;
         }
 
@@ -138,12 +274,14 @@ class Spotmap_Api_Crawler
                 "Garmin inReach feed '{$feed_name}': HTTP {$http_code} from {$url}",
                 E_USER_WARNING
             );
+            $this->garmin_log($feed_name, 'http_non_200', [ 'url' => $url, 'http_code' => $http_code ]);
             return false;
         }
 
         $body = wp_remote_retrieve_body($response);
         if (empty($body)) {
-            return false;
+            $this->garmin_log($feed_name, 'empty_body', [ 'url' => $url ]);
+            return 0;
         }
 
         $prev_libxml = libxml_use_internal_errors(true);
@@ -152,7 +290,8 @@ class Spotmap_Api_Crawler
         } catch (Exception $e) {
             libxml_clear_errors();
             libxml_use_internal_errors($prev_libxml);
-            trigger_error("Garmin inReach feed '{$feed_name}': failed to parse KML", E_USER_WARNING);
+            trigger_error("Garmin inReach feed '{$feed_name}': failed to parse KML from {$url}", E_USER_WARNING);
+            $this->garmin_log($feed_name, 'kml_parse_error', [ 'url' => $url, 'exception' => $e->getMessage() ]);
             return false;
         }
         libxml_clear_errors();
@@ -161,10 +300,17 @@ class Spotmap_Api_Crawler
 
         $xml->registerXPathNamespace('kml', 'http://www.opengis.net/kml/2.2');
 
-        $inserted = 0;
+        $placemarks = $xml->xpath('//kml:Placemark');
+        $this->garmin_log($feed_name, 'kml_parsed', [
+            'url'        => $url,
+            'placemarks' => count($placemarks),
+        ]);
 
-        foreach ($xml->xpath('//kml:Placemark') as $placemark) {
-            // Skip the LineString summary placemark at the end.
+        $inserted = 0;
+        $skipped  = 0;
+
+        foreach ($placemarks as $placemark) {
+            // Skip the LineString track-summary placemark.
             if (isset($placemark->LineString)) {
                 continue;
             }
@@ -173,63 +319,92 @@ class Spotmap_Api_Crawler
                 ? trim((string) $placemark->TimeStamp->when)
                 : null;
             if (empty($when)) {
+                $this->garmin_log($feed_name, 'skip_no_timestamp', []);
+                $skipped++;
                 continue;
             }
             $unixtime = strtotime($when);
             if ($unixtime === false || $unixtime <= 0) {
+                $this->garmin_log($feed_name, 'skip_bad_timestamp', [ 'when' => $when ]);
+                $skipped++;
                 continue;
             }
 
+            // Build ExtendedData key→value map.
             $ext = [];
             if (isset($placemark->ExtendedData->Data)) {
-                foreach ($placemark->ExtendedData->Data as $data_node) {
-                    $name        = (string) ($data_node['name'] ?? '');
-                    $ext[ $name ] = trim((string) ($data_node->value ?? ''));
+                foreach ($placemark->ExtendedData->Data as $node) {
+                    $ext[ (string) ($node['name'] ?? '') ] = trim((string) ($node->value ?? ''));
                 }
             }
 
             // Skip points without a valid GPS fix.
             if (isset($ext['Valid GPS Fix']) && strtolower($ext['Valid GPS Fix']) !== 'true') {
+                $this->garmin_log($feed_name, 'skip_no_gps_fix', [
+                    'when'  => $when,
+                    'event' => $ext['Event'] ?? '',
+                ]);
+                $skipped++;
                 continue;
             }
 
-            $lat = isset($ext['Latitude']) ? (float) $ext['Latitude'] : null;
-            $lng = isset($ext['Longitude']) ? (float) $ext['Longitude'] : null;
-            if ($lat === null || $lng === null) {
-                continue;
-            }
-
+            // Altitude from ExtendedData (strip " m from MSL" suffix).
             $altitude = null;
             if (! empty($ext['Elevation'])) {
                 $altitude = (int) round((float) $ext['Elevation']);
             }
 
-            // Garmin reports km/h — no conversion needed.
+            // Coordinates: prefer ExtendedData fields; fall back to <Point><coordinates>
+            // (lon,lat[,alt] order) for event types that omit them from ExtendedData.
+            $lat = isset($ext['Latitude']) ? (float) $ext['Latitude'] : null;
+            $lng = isset($ext['Longitude']) ? (float) $ext['Longitude'] : null;
+            if (($lat === null || $lng === null) && isset($placemark->Point->coordinates)) {
+                $coords = array_map('trim', explode(',', (string) $placemark->Point->coordinates));
+                if (count($coords) >= 2) {
+                    $lng = (float) $coords[0];
+                    $lat = (float) $coords[1];
+                    if ($altitude === null && isset($coords[2]) && $coords[2] !== '') {
+                        $altitude = (int) round((float) $coords[2]);
+                    }
+                }
+                $this->garmin_log($feed_name, 'coords_from_point_element', [
+                    'when' => $when,
+                    'lat'  => $lat,
+                    'lng'  => $lng,
+                ]);
+            }
+            if ($lat === null || $lng === null) {
+                $this->garmin_log($feed_name, 'skip_no_coords', [
+                    'when'  => $when,
+                    'event' => $ext['Event'] ?? '',
+                ]);
+                $skipped++;
+                continue;
+            }
+
+            // Speed: Garmin reports km/h — no conversion needed (strip " km/h" suffix).
             $speed = null;
             if (! empty($ext['Velocity'])) {
                 $speed = round((float) $ext['Velocity'], 2);
             }
 
+            // Bearing: strip " ° True" suffix.
             $bearing = null;
             if (! empty($ext['Course'])) {
                 $bearing = round((float) $ext['Course'], 2);
             }
 
-            // Garmin inReach KML Event field reference (Type IDs from MapShare feed):
-            //
-            //   "Tracking message received."         Type 17 — automatic periodic ping at tracking interval → TRACK
-            //   "Location received."                 Type 16 — on-demand ping triggered by an external location request → TRACK
-            //   "Tracking interval received."        Type 30 — tracking settings changed, point has location → TRACK
-            //   "Tracking turned on from device."    Type 38 — user started tracking session → NEWMOVEMENT
-            //   "Tracking turned off from device."   Type 29 — user stopped tracking session → STOP
-            //   "Quick Text to MapShare received"    Type 52 — user sent a preset quick-text to the MapShare page → CUSTOM
-            //   "Msg to shared map received"         Type 45 — user sent a typed message to the MapShare page → CUSTOM
-            //   "Text message received."             Type 13 — user sent a fully typed message to a contact → CUSTOM
-            //
-            // Note: preset quick texts ("Quick Text to MapShare received") look alarming
-            // (e.g. "J'ai besoin d'aide") but are NOT emergencies. A real SOS is always
-            // signalled by In Emergency=True (holding the SOS button + device confirmation),
-            // independent of any message text.
+            // Garmin inReach KML Event field reference:
+            //   "Tracking message received."       Type 17 — periodic tracking ping            → TRACK
+            //   "Location received."               Type 16 — on-demand location request        → TRACK
+            //   "Tracking interval received."      Type 30 — tracking settings changed         → TRACK
+            //   "Tracking turned on from device."  Type 38 — tracking session started          → NEWMOVEMENT
+            //   "Tracking turned off from device." Type 29 — tracking session ended            → STOP
+            //   "Quick Text to MapShare received"  Type 52 — preset quick-text to MapShare     → CUSTOM
+            //   "Msg to shared map received"       Type 45 — typed message to MapShare         → CUSTOM
+            //   "Text message received."           Type 13 — typed message to a contact        → CUSTOM
+            // Note: In Emergency=True is the ONLY reliable SOS indicator; quick texts like
+            // "J'ai besoin d'aide" are NOT emergencies (they are preset convenience messages).
             $in_emergency = strtolower($ext['In Emergency'] ?? '') === 'true';
             $text_message = $ext['Text'] ?? '';
             $event        = $ext['Event'] ?? '';
@@ -254,7 +429,7 @@ class Spotmap_Api_Crawler
                 'longitude'      => $lng,
                 'device_name'    => $ext['Name'] ?? null,
                 'model'          => $ext['Device Type'] ?? null,
-                'message'        => $ext['Event'] ?? null,
+                'message'        => $event !== '' ? $event : null,
                 'custom_message' => $text_message !== '' ? $text_message : null,
             ];
             if ($altitude !== null) {
@@ -270,10 +445,49 @@ class Spotmap_Api_Crawler
             $result = $this->db->insert_row($row);
             if ($result !== false && $result !== 0) {
                 $inserted++;
+                $this->garmin_log($feed_name, 'point_inserted', [
+                    'when' => $when,
+                    'type' => $type,
+                    'lat'  => $lat,
+                    'lng'  => $lng,
+                ]);
             }
         }
 
+        $this->garmin_log($feed_name, 'kml_processed', [
+            'url'      => $url,
+            'inserted' => $inserted,
+            'skipped'  => $skipped,
+        ]);
+
         return $inserted;
+    }
+
+    /**
+     * Emits a structured debug line when WP_DEBUG is enabled.
+     * Output goes to the PHP error log via trigger_error(E_USER_NOTICE),
+     * matching the pattern used by Spotmap_Ingest::log_ingest_event().
+     *
+     * @param string               $feed_name Feed name for context.
+     * @param string               $event     Short event identifier.
+     * @param array<string, mixed> $context   Arbitrary key→value pairs.
+     */
+    private function garmin_log(string $feed_name, string $event, array $context): void
+    {
+        if (! defined('WP_DEBUG') || ! WP_DEBUG) {
+            return;
+        }
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+        trigger_error(
+            sprintf(
+                '[%s] [spotmap garmin] feed=%s event=%s context=%s',
+                gmdate('c'),
+                $feed_name,
+                $event,
+                wp_json_encode($context)
+            ),
+            E_USER_NOTICE
+        );
     }
 
     private function get_data_findmespot($feed_name, $id, $pwd)
@@ -296,26 +510,34 @@ class Spotmap_Api_Crawler
                 //E-0195 means the feed has no points to show
                 $error_code = $json['errors']['error']['code'];
                 if ($error_code === "E-0195") {
-                    return false;
+                    return true;
                 }
                 trigger_error($json['errors']['error']['description'], E_USER_WARNING);
                 return false;
             }
             $messages = $json['feedMessageResponse']['messages']['message'];
 
-
-            // loop through the data, if a msg is in the db all the others are there as well
+            $found_existing = false;
             foreach ((array)$messages as &$point) {
                 if ($this->db->does_point_exist($point['id'])) {
-                    // trigger_error($point['id']. " already exists", E_USER_WARNING);
-                    return;
+                    $found_existing = true;
+                    break;
                 }
                 $point['feedName'] = $feed_name;
                 $point['feedId'] = $id;
                 $this->db->insert_point($point);
             }
-            $i += $json['feedMessageResponse']['count'] + 1;
-            return true;
+
+            if ($found_existing) {
+                return true;
+            }
+
+            $count = (int) $json['feedMessageResponse']['count'];
+            $total = (int) $json['feedMessageResponse']['totalCount'];
+            $i    += $count;
+            if ($i >= $total) {
+                return true;
+            }
         }
 
     }
