@@ -9,7 +9,7 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
-        "phpunit/phpunit": "^9.6",
+        "phpunit/phpunit": "^12.5",
         "wp-phpunit/wp-phpunit": "^6.7",
         "yoast/phpunit-polyfills": "^4.0"
     },
