@@ -66,6 +66,7 @@
         "env:destroy": "wp-env destroy",
         "env:logs": "wp-env run wordpress bash -c \"tail -Fn0 /var/www/html/wp-content/debug.log\"",
         "api-hook": "wp-env run cli wp cron event run spotmap_api_crawler_hook --due-now",
+        "api-hook:garmin": "wp-env run cli wp cron event run spotmap_garmin_crawler_hook --due-now",
         "format": "wp-scripts format",
         "format:php": "wp-env run cli --env-cwd=wp-content/plugins/Spotmap sh -c \"composer run format\"",
         "lint:css": "wp-scripts lint-style",

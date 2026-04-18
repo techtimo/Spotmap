@@ -89,6 +89,7 @@ class Spotmap
         $this->loader->add_action('admin_menu', $this->admin, 'add_options_page');
         $this->loader->add_action('admin_init', $this->admin, 'ensure_cron_scheduled');
         $this->loader->add_action('spotmap_api_crawler_hook', $this->admin, 'get_feed_data');
+        $this->loader->add_action('spotmap_garmin_crawler_hook', $this->admin, 'get_garmin_feed_data');
         $this->loader->add_action('spotmap_import_media_hook', $this->admin, 'import_existing_media');
         $this->loader->add_action('spotmap_get_timezone_hook', $this->admin, 'get_local_timezone');
         $this->loader->add_action('upload_mimes', $this->admin, 'allow_gpx_upload');

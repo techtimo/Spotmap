@@ -113,6 +113,16 @@ class Spotmap_Rest_Api
 
         register_rest_route(
             self::NAMESPACE,
+            '/feeds/(?P<id>[\w.]+)/crawl',
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [ __CLASS__, 'crawl_feed' ],
+                'permission_callback' => [ __CLASS__, 'admin_permission' ],
+            ]
+        );
+
+        register_rest_route(
+            self::NAMESPACE,
             '/feeds/(?P<id>[\w.]+)/stats',
             [
                 'methods'             => WP_REST_Server::READABLE,
@@ -659,6 +669,25 @@ class Spotmap_Rest_Api
         $imported = $admin->import_existing_media();
 
         return rest_ensure_response([ 'imported' => $imported ]);
+    }
+
+    public static function crawl_feed(WP_REST_Request $request)
+    {
+        $id   = $request->get_param('id');
+        $feed = Spotmap_Options::get_feed($id);
+        if (! $feed) {
+            return new WP_Error('not_found', 'Feed not found.', [ 'status' => 404 ]);
+        }
+        $crawlable = [ 'findmespot', 'garmin-inreach', 'victron' ];
+        if (! in_array($feed['type'] ?? '', $crawlable, true)) {
+            return new WP_Error('not_crawlable', 'This feed type does not support manual crawling.', [ 'status' => 422 ]);
+        }
+        require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-spotmap-admin.php';
+        $inserted = (new Spotmap_Admin())->crawl_single_feed($feed);
+        if ($inserted === false) {
+            return new WP_Error('crawl_error', 'Crawl failed — check the PHP error log.', [ 'status' => 502 ]);
+        }
+        return rest_ensure_response([ 'inserted' => (int) $inserted ]);
     }
 
     public static function pause_feed(WP_REST_Request $request)
