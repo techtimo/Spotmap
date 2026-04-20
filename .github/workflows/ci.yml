@@ -89,7 +89,7 @@ jobs:
         run: composer install --optimize-autoloader --ignore-platform-req=ext-redis --ignore-platform-req=php
 
       - name: Start wp-env
-        run: npm run wp-env start
+        run: npm run wp-env -- start --xdebug
 
       - name: Create test database
         run: npm run wp-env -- run cli bash -- -c "mysql -h mysql -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS wordpress_test'"
