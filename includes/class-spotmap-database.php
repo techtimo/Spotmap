@@ -464,7 +464,8 @@ class Spotmap_Database
         }
 
         // Stationary-deduplication: skip points that are too close in space and time.
-        if (! empty($data['feed_name'])) {
+        // Only applies to TRACK type; all event types are always stored.
+        if (! empty($data['feed_name']) && ($data['type'] ?? '') === 'TRACK') {
             $prev = $this->get_last_point_for_feed($data['feed_name']);
             if ($prev !== null) {
                 $distance_m = self::haversine_distance(

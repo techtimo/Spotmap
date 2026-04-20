@@ -29,6 +29,11 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ], $overrides);
     }
 
+    private function make_track_point(array $overrides = []): array
+    {
+        return $this->make_point(array_merge(['messageType' => 'TRACK'], $overrides));
+    }
+
     // --- insert_point ---
 
     public function test_insert_point_returns_success(): void
@@ -398,7 +403,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
      */
     public function test_stationary_dedup_first_point_is_always_stored(): void
     {
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-feed',
             'unixTime' => 1710000000,
             'latitude' => 47.3769,
@@ -414,7 +419,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
      */
     public function test_stationary_dedup_skips_nearby_point_within_10_min(): void
     {
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-near',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
@@ -422,7 +427,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ]));
 
         // ~5 m away, 5 min later — should be skipped but anchor rolled forward.
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-near',
             'unixTime' => 1710000300,
             'latitude' => 47.376940,  // ~4 m north
@@ -444,7 +449,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
      */
     public function test_stationary_dedup_stores_point_after_10_min_gap(): void
     {
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-time',
             'unixTime' => 1710000000,
             'latitude' => 47.3769,
@@ -452,7 +457,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ]));
 
         // Same spot but 11 min later.
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-time',
             'unixTime' => 1710000000 + 660,
             'latitude' => 47.3769,
@@ -467,7 +472,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
      */
     public function test_stationary_dedup_stores_point_that_moved_beyond_25m(): void
     {
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-move',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
@@ -475,7 +480,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ]));
 
         // ~30 m north, 2 min later.
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-move',
             'unixTime' => 1710000120,
             'latitude' => 47.377170,  // ~30 m north
@@ -491,7 +496,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
      */
     public function test_stationary_dedup_does_not_affect_different_feed(): void
     {
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-feed-a',
             'unixTime' => 1710000000,
             'latitude' => 47.3769,
@@ -499,7 +504,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ]));
 
         // Different feed, same location, within 10 min — must be stored.
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-feed-b',
             'unixTime' => 1710000060,
             'latitude' => 47.3769,
@@ -517,21 +522,21 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
     {
         global $wpdb;
 
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-chain',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
             'longitude' => 8.541700,
         ]));
         // 2nd ping: ~4 m, 1 min — within thresholds.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-chain',
             'unixTime' => 1710000060,
             'latitude' => 47.376940,
             'longitude' => 8.541700,
         ]));
         // 3rd ping: ~4 m further, 1 min — still within thresholds of the rolled anchor.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-chain',
             'unixTime' => 1710000120,
             'latitude' => 47.376980,
@@ -559,26 +564,26 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         global $wpdb;
 
         // P1: anchor.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-commit',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
             'longitude' => 8.541700,
         ]));
         // P2–P4: close pings that roll the anchor forward.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-commit',
             'unixTime' => 1710000060,
             'latitude' => 47.376940,
             'longitude' => 8.541700,
         ]));
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-commit',
             'unixTime' => 1710000120,
             'latitude' => 47.376980,
             'longitude' => 8.541700,
         ]));
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-commit',
             'unixTime' => 1710000590,  // 470 s since P3 — still within 600 s threshold.
             'latitude' => 47.377010,
@@ -586,7 +591,7 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         ]));
 
         // P5: arrives 610 s after the current anchor (P4) — exceeds time threshold.
-        $result = self::$db->insert_point($this->make_point([
+        $result = self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-commit',
             'unixTime' => 1710000590 + 610,
             'latitude' => 47.377050,
@@ -611,26 +616,26 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
     {
         global $wpdb;
 
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
             'longitude' => 8.541700,
         ]));
         // 3 suppressed pings within thresholds.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden',
             'unixTime' => 1710000060,
             'latitude' => 47.376920,
             'longitude' => 8.541700,
         ]));
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden',
             'unixTime' => 1710000120,
             'latitude' => 47.376940,
             'longitude' => 8.541700,
         ]));
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden',
             'unixTime' => 1710000180,
             'latitude' => 47.376960,
@@ -649,21 +654,21 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
     {
         global $wpdb;
 
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden-reset',
             'unixTime' => 1710000000,
             'latitude' => 47.376900,
             'longitude' => 8.541700,
         ]));
         // One suppressed ping.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden-reset',
             'unixTime' => 1710000060,
             'latitude' => 47.376920,
             'longitude' => 8.541700,
         ]));
         // New point beyond time threshold — committed as a new row.
-        self::$db->insert_point($this->make_point([
+        self::$db->insert_point($this->make_track_point([
             'feedName' => 'dedup-hidden-reset',
             'unixTime' => 1710000060 + 700,
             'latitude' => 47.376940,
