@@ -136,7 +136,8 @@ export type PointType =
     | 'NEWMOVEMENT'
     | 'STATUS'
     | 'STOP'
-    | 'POST';
+    | 'POST'
+    | 'POWER-OFF';
 
 /** Internal structure for a feed's map layers */
 export interface FeedLayer {

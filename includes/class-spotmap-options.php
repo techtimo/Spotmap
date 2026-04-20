@@ -75,6 +75,10 @@ class Spotmap_Options
                 'iconShape' => 'marker',
                 'icon'      => 'triangle-exclamation',
             ],
+            'POWER-OFF' => [
+                'iconShape' => 'circle',
+                'icon'      => 'power-off',
+            ],
         ];
     }
 
