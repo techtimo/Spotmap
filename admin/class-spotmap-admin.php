@@ -88,6 +88,9 @@ class Spotmap_Admin
         if (! wp_next_scheduled('spotmap_api_crawler_hook')) {
             wp_schedule_event(time(), 'twohalf_min', 'spotmap_api_crawler_hook');
         }
+        if (! wp_next_scheduled('spotmap_garmin_crawler_hook')) {
+            wp_schedule_event(time(), 'twohalf_min', 'spotmap_garmin_crawler_hook');
+        }
         set_transient('spotmap_cron_checked', 1, 5 * MINUTE_IN_SECONDS);
     }
 
@@ -127,10 +130,9 @@ class Spotmap_Admin
     {
         require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-api-crawler.php';
 
-        $feeds                 = Spotmap_Options::get_feeds();
-        $findmespot_crawler    = null;
-        $victron_crawler       = null;
-        $garmin_inreach_crawler = null;
+        $feeds              = Spotmap_Options::get_feeds();
+        $findmespot_crawler = null;
+        $victron_crawler    = null;
         foreach ($feeds as $feed) {
             if (! empty($feed['paused'])) {
                 continue;
@@ -154,17 +156,55 @@ class Spotmap_Admin
                     $feed['installation_id'] ?? '',
                     $feed['token']           ?? ''
                 );
-            } elseif ($type === 'garmin-inreach') {
-                if ($garmin_inreach_crawler === null) {
-                    $garmin_inreach_crawler = new Spotmap_Api_Crawler('garmin-inreach');
-                }
-                $garmin_inreach_crawler->get_data(
-                    $feed['name']             ?? '',
-                    $feed['mapshare_address'] ?? '',
-                    $feed['password']         ?? ''
-                );
             }
         }
+    }
+
+    public function get_garmin_feed_data()
+    {
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-api-crawler.php';
+        $crawler = null;
+        foreach (Spotmap_Options::get_feeds() as $feed) {
+            if (! empty($feed['paused']) || ($feed['type'] ?? '') !== 'garmin-inreach') {
+                continue;
+            }
+            if ($crawler === null) {
+                $crawler = new Spotmap_Api_Crawler('garmin-inreach');
+            }
+            $crawler->get_data(
+                $feed['name']             ?? '',
+                $feed['mapshare_address'] ?? '',
+                $feed['password']         ?? ''
+            );
+        }
+    }
+
+    public function crawl_single_feed(array $feed): int|false
+    {
+        require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-spotmap-api-crawler.php';
+        $type = $feed['type'] ?? '';
+        if ($type === 'findmespot') {
+            return (new Spotmap_Api_Crawler('findmespot'))->get_data(
+                $feed['name']     ?? '',
+                $feed['feed_id']  ?? '',
+                $feed['password'] ?? ''
+            );
+        }
+        if ($type === 'victron') {
+            return (new Spotmap_Api_Crawler('victron'))->get_data(
+                $feed['name']            ?? '',
+                $feed['installation_id'] ?? '',
+                $feed['token']           ?? ''
+            );
+        }
+        if ($type === 'garmin-inreach') {
+            return (new Spotmap_Api_Crawler('garmin-inreach'))->get_data(
+                $feed['name']             ?? '',
+                $feed['mapshare_address'] ?? '',
+                $feed['password']         ?? ''
+            );
+        }
+        return false;
     }
 
     public function get_local_timezone()
