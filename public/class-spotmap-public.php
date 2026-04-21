@@ -92,7 +92,15 @@ class Spotmap_Public{
 			true
 		);
 		$this->localize_js_script( 'spotmap-handler' );
-		$this->enqueue_styles();
+		// Always load the map CSS in the editor — should_enqueue() would skip it
+		// for new posts that don't yet have a Spotmap block, but the post-location
+		// sidebar map picker needs Leaflet CSS on every post.
+		wp_enqueue_style(
+			'spotmap-map',
+			plugin_dir_url( dirname( __FILE__ ) ) . 'build/spotmap-map.css',
+			[],
+			$map_asset['version']
+		);
 		$this->localize_js_script( 'spotmap-spotmap-editor-script' );
 		$this->localize_js_script( 'spotmap-spotmessages-editor-script' );
 

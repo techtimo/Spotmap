@@ -12,6 +12,20 @@ import {
 
 const LS_KEY = 'spotmap_post_location_last_center';
 
+function makePostIcon( color = 'blue' ) {
+    const L = window.L;
+    const cfg = window.spotmapjsobj?.marker?.POST ?? {
+        iconShape: 'marker',
+        icon: 'thumbtack',
+    };
+    return L.BeautifyIcon.icon( {
+        iconShape: cfg.iconShape,
+        icon: cfg.icon,
+        textColor: color,
+        borderColor: color,
+    } );
+}
+
 function getLastCenter() {
     try {
         const stored = localStorage.getItem( LS_KEY );
@@ -69,9 +83,10 @@ const PostLocationMap = forwardRef( function PostLocationMap(
         } ).addTo( map );
 
         if ( lat && lng ) {
-            const marker = L.marker( [ lat, lng ], { draggable: true } ).addTo(
-                map
-            );
+            const marker = L.marker( [ lat, lng ], {
+                draggable: true,
+                icon: makePostIcon(),
+            } ).addTo( map );
             marker.on( 'dragend', () => {
                 const pos = marker.getLatLng();
                 saveLastCenter( pos.lat, pos.lng, map.getZoom() );
@@ -90,6 +105,7 @@ const PostLocationMap = forwardRef( function PostLocationMap(
             } else {
                 const marker = L.marker( [ clickLat, clickLng ], {
                     draggable: true,
+                    icon: makePostIcon(),
                 } ).addTo( map );
                 marker.on( 'dragend', () => {
                     const pos = marker.getLatLng();
@@ -136,9 +152,10 @@ const PostLocationMap = forwardRef( function PostLocationMap(
         } else if ( markerRef.current ) {
             markerRef.current.setLatLng( [ lat, lng ] );
         } else {
-            const marker = L.marker( [ lat, lng ], { draggable: true } ).addTo(
-                map
-            );
+            const marker = L.marker( [ lat, lng ], {
+                draggable: true,
+                icon: makePostIcon(),
+            } ).addTo( map );
             marker.on( 'dragend', () => {
                 const pos = marker.getLatLng();
                 saveLastCenter( pos.lat, pos.lng, map.getZoom() );
@@ -155,6 +172,8 @@ const PostLocationMap = forwardRef( function PostLocationMap(
                 height: '240px',
                 width: '100%',
                 marginBottom: '8px',
+                overflow: 'hidden',
+                position: 'relative',
             } }
         />
     );
