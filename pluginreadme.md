@@ -10,7 +10,7 @@ Requires PHP: 8.2
 Tested up to: 7.0
 Stable tag: 1.0.0
 
-Live GPS tracking for WordPress — display positions from SPOT, OsmAnd, and Teltonika devices on interactive maps. Self-hosted, privacy-friendly. 🗺
+Live GPS tracking for WordPress — display positions from SPOT, Garmin inReach, OsmAnd, Teltonika, and more on interactive maps. Self-hosted, privacy-friendly. 🗺
 
 ## Description
 
@@ -19,6 +19,7 @@ Spotmap turns your WordPress site into a self-hosted GPS tracking platform. Conn
 ### Supported devices (data feeds)
 
 * **SPOT** (FindMeSPOT) — automatic feed polling via XML API
+* **Garmin inReach** — receives positions via Garmin's MapShare feed
 * **OsmAnd** — receives positions via HTTP from the OsmAnd smartphone app
 * **Teltonika** — direct integration for Teltonika GPS routers and trackers
 * **WordPress Media Library** — photos with GPS EXIF data appear as points on the map under the feed name `media`
@@ -67,7 +68,7 @@ Most GPS tracking solutions lock your data into a vendor cloud. SPOT's own platf
 3. Go to **Settings > Spotmap** and add your first feed
 4. In the block editor, type `/spotmap` to insert a map into any post or page
 
-### Connecting devices
+### Connecting data sources (feeds)
 
 **SPOT:** Create an XML Feed in your SPOT account ([instructions](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed)). Enter the Feed ID in Spotmap settings. Positions are polled automatically. Your Feed ID looks like: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
 
@@ -97,10 +98,6 @@ API tokens for tile layer providers (Mapbox, Thunderforest, LINZ, IGN France, OS
 
 To reduce the risk of token abuse, **restrict each token to your domain using the provider's referrer/HTTP origin restrictions** (e.g. `https://yoursite.com/*`).
 
-### SQL injection prevention
-
-All database queries use prepared statements as of version 1.0.
-
 ## Shortcodes
 
 Spotmap ships two shortcodes for themes or page builders that don't use the block editor.
@@ -108,15 +105,11 @@ Spotmap ships two shortcodes for themes or page builders that don't use the bloc
 **`[spotmap]`** — embeds an interactive map
 **`[spotmessages]`** — embeds a table of SPOT messages and check-ins
 
-The shortcodes have **full feature parity with the Gutenberg block**: every option available in the block sidebar — feeds, time filtering, map tiles, GPX overlays, colors, line splitting, navigation buttons, scroll-wheel zoom, panning control, and more — can also be set as a shortcode attribute.
+The shortcodes have **full feature parity with the Gutenberg block**: every option available in the block editor — feeds, time filtering, map tiles, GPX overlays, colors, line splitting, navigation buttons, scroll-wheel zoom, panning control, and more — can also be set as a shortcode attribute.
 
 For the full attribute reference, see **[README-SHORTCODE.md](https://github.com/techtimo/Spotmap/blob/main/README-SHORTCODE.md)** on GitHub.
 
 ## Frequently Asked Questions
-
-### Which GPS devices are supported?
-
-SPOT satellite communicators (via FindMeSPOT XML feed), OsmAnd (via HTTP), and Teltonika GPS routers and trackers (direct integration). You can also display GPS coordinates from geotagged photos in your WordPress media library. Zoleo support is planned.
 
 ### Can I show multiple devices on one map?
 
@@ -200,6 +193,7 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 
 ### 1.0.0
 
+* New: **Garmin inReach** device support — receive positions via MapShare feed
 * New: **OsmAnd** device support — receive positions via HTTP
 * New: **Teltonika** device support — direct integration
 * New: **Post Locations** — assign GPS coordinates to any post or page via the block editor sidebar; posts appear on the map as markers that link to the article
