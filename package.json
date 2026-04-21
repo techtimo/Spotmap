@@ -25,7 +25,7 @@
         "spotmap.php"
     ],
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.15.3",
+        "@fortawesome/fontawesome-free": "^7.2.0",
         "@types/mustache": "^4.2.6",
         "@wordpress/dataviews": "^14.1.0",
         "beautifymarker": "^1.0.9",
@@ -49,9 +49,9 @@
         "@wordpress/data": "*",
         "@wordpress/env": "^10.39.0",
         "@wordpress/i18n": "^6.15.0",
-        "@wordpress/icons": "^11.8.0",
-        "@wordpress/scripts": "^31.8.0",
-        "dotenv": "^16.5.0",
+        "@wordpress/icons": "^12.2.0",
+        "@wordpress/scripts": "^32.0.0",
+        "dotenv": "^17.4.2",
         "svg2img": "^1.0.0-beta.2",
         "ts-loader": "^9.5.7",
         "typescript": "^5.9.3"
