@@ -183,11 +183,12 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 
 1. Three months of tracking data with colored track lines and GPX overlays
 2. Click any position to see details — marker popups with timestamp and message
-3. The Gutenberg block with live map preview
-4. Time filtering with relative ranges
-5. Interactive feed data table
-6. The GPX manager
-7. Multiple devices on a single map with different colors
+3. Tag any post with a location right from the editor sidebar — click the map or use your current location
+4. The Gutenberg block with live map preview
+5. Time filtering with relative ranges
+6. Interactive feed data table
+7. The GPX manager
+8. Multiple devices on a single map with different colors
 
 ## Changelog
 
