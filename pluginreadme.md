@@ -163,7 +163,7 @@ Spotmap fills a unique niche in the WordPress plugin ecosystem:
 
 **vs. Trackserver** — Trackserver is the closest alternative and supports a wide range of phone tracking apps (TrackMe, OruxMaps, µLogger, GPSLogger, and others). If your primary use case is recording tracks from a smartphone app, Trackserver covers more protocols. However, Spotmap offers several things Trackserver does not:
 
-* **Satellite communicator support** — Spotmap works with SPOT devices (and Zoleo is planned), which matters for off-grid adventures where your phone has no signal. Trackserver only supports phone-based tracking apps.
+* **Satellite communicator support** — Spotmap works with SPOT and Garmin inReach devices (and Zoleo is planned), which matters for off-grid adventures where your phone has no signal. Trackserver only supports phone-based tracking apps.
 * **Teltonika device support** — direct integration for GPS routers and vehicle trackers.
 * **Modern editor experience** — Spotmap has a full Gutenberg block with live preview and sidebar settings. Trackserver is shortcode-only with 20+ attributes to configure manually.
 * **Built-in GPX manager** — upload and organize GPX files from the dashboard instead of referencing URLs in shortcodes.
