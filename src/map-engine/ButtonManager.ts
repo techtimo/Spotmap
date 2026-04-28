@@ -55,8 +55,8 @@ export class ButtonManager {
     private buildButtons(
         locateButton: boolean | undefined,
         navigationButtons: NavigationButtonsConfig | undefined
-    ): L.Control[] {
-        const buttons: L.Control[] = [];
+    ): L.Control.EasyButton[] {
+        const buttons: L.Control.EasyButton[] = [];
 
         if ( navigationButtons?.enabled ) {
             const button = this.createNavigationButton( navigationButtons );
@@ -74,7 +74,7 @@ export class ButtonManager {
 
     private createNavigationButton(
         navOpts: NavigationButtonsConfig
-    ): L.Control | null {
+    ): L.Control.EasyButton | null {
         const hasGpx = !! ( this.options.gpx && this.options.gpx.length > 0 );
 
         const STATE_DEFS: Array< {
@@ -133,7 +133,7 @@ export class ButtonManager {
         return L.easyButton( { states } );
     }
 
-    private createLocateButton(): L.Control {
+    private createLocateButton(): L.Control.EasyButton {
         return L.easyButton( {
             states: [
                 {
