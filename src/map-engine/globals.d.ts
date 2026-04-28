@@ -45,28 +45,7 @@ declare global {
             polyline_options?: L.PolylineOptions;
         }
 
-        function easyButton( options: EasyButtonOptions ): L.Control;
-
-        interface EasyButtonState {
-            stateName: string;
-            icon: string;
-            title: string;
-            onClick: ( control: EasyButtonControl ) => void;
-        }
-
-        interface EasyButtonOptions {
-            states?: EasyButtonState[];
-        }
-
-        interface EasyButtonControl {
-            state: ( name: string ) => void;
-        }
-
-        function easyBar( buttons: L.Control[] ): L.Control;
-
     }
 }
-
-declare module '*.css' {}
 
 export {};
