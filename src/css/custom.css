@@ -4,6 +4,15 @@
     font-size: 12px;
 }
 
+/* Prevent themes that set svg { max-width: 100%; height: auto; } from
+   collapsing Leaflet renderer SVGs to 0×0. The pane <div> is position:absolute
+   with no explicit width, so 100% resolves to 0, wiping out the SVG dimensions
+   that Leaflet sets via attributes. */
+.leaflet-pane > svg {
+    max-width: none !important;
+    height: auto !important;
+}
+
 /* map toggle work with twenty twenty template */
 
 /* .leaflet-control-layers-list {

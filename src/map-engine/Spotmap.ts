@@ -221,7 +221,12 @@ export class Spotmap {
             this.layers,
             dbg
         );
-        const canvasRenderer = L.svg( { pane: 'markerPane' } );
+        // Use a dedicated pane (z-index 450, above overlayPane 400) so that
+        // circle-dot markers render above polylines. Avoids theme CSS targeting
+        // .leaflet-marker-pane which can set the SVG to 0×0.
+        this.map.createPane( 'spotmapCirclePane' );
+        ( this.map.getPane( 'spotmapCirclePane' ) as HTMLElement ).style.zIndex = '450';
+        const canvasRenderer = L.svg( { pane: 'spotmapCirclePane' } );
         this.markerManager = new MarkerManager(
             this.map,
             this.layers,

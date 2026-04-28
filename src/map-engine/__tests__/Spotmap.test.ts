@@ -57,6 +57,10 @@ let capturedGpxEmitter: ReturnType< typeof createEventEmitter > | null;
 function buildLeafletMock() {
     capturedGpxEmitter = null;
 
+    const mockPane = Object.assign( document.createElement( 'div' ), {
+        style: { zIndex: '' },
+    } );
+
     const mockMap = {
         scrollWheelZoom: { enable: jest.fn(), disable: jest.fn() },
         once: jest.fn(),
@@ -69,6 +73,8 @@ function buildLeafletMock() {
         invalidateSize: jest.fn(),
         removeLayer: jest.fn(),
         attributionControl: { setPrefix: jest.fn() },
+        createPane: jest.fn(),
+        getPane: jest.fn().mockReturnValue( mockPane ),
     };
 
     const mockLayerControl = {
