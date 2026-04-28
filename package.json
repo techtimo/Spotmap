@@ -54,7 +54,7 @@
         "dotenv": "^17.4.2",
         "svg2img": "^1.0.0-beta.2",
         "ts-loader": "^9.5.7",
-        "typescript": "^5.9.3"
+        "typescript": "^6.0.3"
     },
     "scripts": {
         "build": "wp-scripts build --webpack-src-dir=src",
