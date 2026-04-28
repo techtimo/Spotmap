@@ -1,7 +1,7 @@
 {
     "name": "techtimo/spotmap",
     "description": "Spotmap WordPress plugin",
-    "version": "1.0.0-rc.4",
+    "version": "1.0.0-rc.5",
     "type": "wordpress-plugin",
     "require": {
         "symfony/yaml": "^7.0",
