@@ -55,7 +55,7 @@ declare global {
         }
 
         interface EasyButtonOptions {
-            states: EasyButtonState[];
+            states?: EasyButtonState[];
         }
 
         interface EasyButtonControl {
@@ -66,5 +66,7 @@ declare global {
 
     }
 }
+
+declare module '*.css' {}
 
 export {};
