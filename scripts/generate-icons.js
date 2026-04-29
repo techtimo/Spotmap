@@ -1,6 +1,6 @@
 /**
  * Generates PNG icons for the WordPress plugin directory from icon.svg.
- * Requires: npm install --save-dev svg2img
+ * Requires: npm install --save-dev svg2img  (not in package.json — one-time utility)
  * Usage:    node scripts/generate-icons.js
  */
 
