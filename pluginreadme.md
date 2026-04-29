@@ -195,22 +195,23 @@ Head over to the [support forum](https://wordpress.org/support/plugin/spotmap/) 
 ### 1.0.0
 
 * New: **Garmin inReach** device support — receive positions via MapShare feed
-* New: **OsmAnd** device support — receive positions via HTTP
-* New: **Teltonika** device support — direct integration
+* New: **OsmAnd** device support — receive positions via HTTPS
+* New: **Teltonika** device support — receive positions via HTTPS
 * New: **Post Locations** — assign GPS coordinates to any post or page via the block editor sidebar; posts appear on the map as markers that link to the article
 * New: **Photo EXIF GPS** — images with GPS data from the media library can appear on the map if configured
 * New: Built-in **GPX manager** — upload and manage GPX files
 * New: Rich **time filtering** with relative ranges (last X hours/days) and absolute date ranges
 * New: Interactive **data table** linked to map — click a row to zoom to that position
 * New: **GPX export** — convert tracked positions to GPX files
-* Improved: Full **Gutenberg block** with live preview and block sidebar settings
+* Improved: Full **Gutenberg block** with live preview and block settings
 * Improved: In unlikely cases WP simply deleted the cron job to fetch new points, this will not happen anymore
 * Improved: Map engine rewritten to support **faster map rendering** with large numbers of points
 * Improved: last-point marker is now customizable via additional CSS
 * Fix: `id` column gains `AUTO_INCREMENT` (was missing in 0.11.2); migration runs automatically on update
+* And many more fixes ...
 
 ## Upgrade Notice
 
 ### 1.0.0
 
-Major update with multi-device support (OsmAnd, Teltonika), GPX manager, time filtering, data table, photo EXIF display, and significant performance improvements. The database is migrated automatically — no manual SQL required. Your existing GPS data is preserved.
+Major update with multi-device support (OsmAnd, Garmin InReach), GPX manager, time filtering, data table, photo EXIF display, and significant performance improvements. The database is migrated automatically — no manual SQL required. Your existing GPS data is preserved.
