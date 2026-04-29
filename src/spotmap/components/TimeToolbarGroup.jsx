@@ -403,7 +403,7 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                 label={ __( 'Time filter' ) }
                 icon={ calendar }
                 onClick={ () => setIsOpen( true ) }
-                isPressed={ hasFilter }
+                isPressed={ isOpen }
             >
                 { getButtonLabel( dateRange ) }
             </ToolbarButton>

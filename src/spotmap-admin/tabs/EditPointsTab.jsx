@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
 import {
     Button,
-    CheckboxControl,
-    Dropdown,
-    Flex,
-    FlexItem,
     Notice,
     Toolbar,
-    ToolbarButton,
-    ToolbarGroup,
 } from '@wordpress/components';
 import { undo } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import MapsToolbarGroup from '../../spotmap/components/MapsToolbarGroup';
 import TimeToolbarGroup from '../../spotmap/components/TimeToolbarGroup';
+import FeedsToolbarGroup from '../components/FeedsToolbarGroup';
 import * as api from '../api';
+import { getDefaultMaps } from '../mapDefaults';
 
 const ALL_FEEDS = ( window.spotmapAdminData.feeds ?? [] ).filter( Boolean );
 
@@ -25,17 +21,6 @@ const DEFAULT_FEED_STYLE = {
     lineOpacity: 1.0,
     visible: true,
 };
-
-function getDefaultMaps() {
-    const dv = window.spotmapjsobj?.defaultValues?.maps;
-    if ( dv ) {
-        return dv
-            .split( ',' )
-            .map( ( m ) => m.trim() )
-            .filter( Boolean );
-    }
-    return Object.keys( window.spotmapjsobj?.maps ?? {} ).slice( 0, 1 );
-}
 
 export default function EditPointsTab( { onNoticeChange } ) {
     const [ feeds, setFeeds ] = useState( ALL_FEEDS.slice( 0, 1 ) );
@@ -361,69 +346,12 @@ export default function EditPointsTab( { onNoticeChange } ) {
                 } }
             >
                 <Toolbar label={ __( 'Edit points controls' ) }>
-                    { /* Feeds */ }
-                    <ToolbarGroup>
-                        <Dropdown
-                            popoverProps={ { placement: 'bottom-start' } }
-                            renderToggle={ ( { isOpen, onToggle } ) => (
-                                <ToolbarButton
-                                    icon="rss"
-                                    label={ __( 'Feeds' ) }
-                                    onClick={ onToggle }
-                                    isPressed={ isOpen }
-                                >
-                                    { __( 'Feeds' ) }
-                                </ToolbarButton>
-                            ) }
-                            renderContent={ () => (
-                                <div
-                                    style={ {
-                                        padding: '8px',
-                                        minWidth: '200px',
-                                    } }
-                                >
-                                    { ALL_FEEDS.map( ( feed ) => (
-                                        <Flex
-                                            key={ feed }
-                                            gap={ 2 }
-                                            align="center"
-                                            style={ { marginBottom: '4px' } }
-                                        >
-                                            <FlexItem isBlock>
-                                                <CheckboxControl
-                                                    __nextHasNoMarginBottom
-                                                    label={ feed }
-                                                    checked={ feeds.includes(
-                                                        feed
-                                                    ) }
-                                                    onChange={ ( checked ) =>
-                                                        toggleFeed(
-                                                            feed,
-                                                            checked
-                                                        )
-                                                    }
-                                                />
-                                            </FlexItem>
-                                            <span
-                                                style={ {
-                                                    display: 'block',
-                                                    width: '16px',
-                                                    height: '16px',
-                                                    borderRadius: '50%',
-                                                    background:
-                                                        styles?.[ feed ]
-                                                            ?.color || 'blue',
-                                                    flexShrink: 0,
-                                                } }
-                                            />
-                                        </Flex>
-                                    ) ) }
-                                </div>
-                            ) }
-                        />
-                    </ToolbarGroup>
-
-                    { /* Maps + overlays */ }
+                    <FeedsToolbarGroup
+                        feeds={ feeds }
+                        allFeeds={ ALL_FEEDS }
+                        styles={ styles }
+                        onToggle={ toggleFeed }
+                    />
                     <MapsToolbarGroup
                         maps={ maps }
                         mapOverlays={ mapOverlays }

@@ -69,6 +69,14 @@ class Spotmap_Admin
             $map_asset['version'],
             true
         );
+        if (file_exists(plugin_dir_path(__DIR__) . 'build/spotmap-map.css')) {
+            wp_enqueue_style(
+                'spotmap-map-admin-css',
+                plugin_dir_url(__DIR__) . 'build/spotmap-map.css',
+                [ 'spotmap-leaflet' ],
+                $map_asset['version']
+            );
+        }
         wp_localize_script('spotmap-map-admin', 'spotmapjsobj', [
             'ajaxUrl'       => admin_url('admin-ajax.php'),
             'maps'          => $this->get_maps(),

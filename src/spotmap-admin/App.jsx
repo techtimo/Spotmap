@@ -6,6 +6,7 @@ import MarkersTab from './tabs/MarkersTab';
 import TokensTab from './tabs/TokensTab';
 import DefaultsTab from './tabs/DefaultsTab';
 import EditPointsTab from './tabs/EditPointsTab';
+import ShortcodeTab from './tabs/ShortcodeTab';
 
 const TABS = [
     { name: 'feeds', title: 'Feeds' },
@@ -13,6 +14,7 @@ const TABS = [
     { name: 'tokens', title: 'API Tokens' },
     { name: 'defaults', title: 'Defaults' },
     { name: 'edit-points', title: 'Edit Points' },
+    { name: 'shortcode', title: 'Shortcode Generator' },
 ];
 
 const TAB_NAMES = TABS.map( ( t ) => t.name );
@@ -125,6 +127,7 @@ export default function App() {
                                 onNoticeChange={ handleNoticeChange }
                             />
                         ),
+                        shortcode: <ShortcodeTab />,
                     } )[ tab.name ]
                 }
             </TabPanel>
