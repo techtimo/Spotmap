@@ -24,6 +24,7 @@ import { LineManager } from './LineManager';
 import { BoundsManager } from './BoundsManager';
 import { ButtonManager } from './ButtonManager';
 import { TableRenderer } from './TableRenderer';
+import { LodManager } from './LodManager';
 
 /**
  * Main Spotmap orchestrator.
@@ -49,6 +50,7 @@ export class Spotmap {
     private latestUnixtimeByFeed: Map< string, number > = new Map();
     private onVisibilityChange: ( () => void ) | null = null;
     private reloadBody: AjaxRequestBody | null = null;
+    private lodManager: LodManager | null = null;
 
     constructor( options: SpotmapOptions ) {
         this.options = options;
@@ -293,6 +295,24 @@ export class Spotmap {
             this.layerManager.addFeedsToMap();
             this.addLastPointMarkers();
 
+            this.lodManager = new LodManager(
+                this.map,
+                this.layers,
+                this.markerManager,
+                dbg
+            );
+            this.lineManager.applyArrows();
+            this.layerManager.addOverlays();
+            // Register before fitBounds so moveend is caught whether the
+            // animation is synchronous or asynchronous.  By the time the
+            // handler fires, fitBounds's own zoomend has already passed, so
+            // the registered zoomend listener only catches user-initiated zooms.
+            this.map.once( 'moveend', () => {
+                if ( ! this._destroyed ) {
+                    this.lodManager?.start();
+                }
+            } );
+
             if (
                 ( response.empty || response.error ) &&
                 ( ! this.options.gpx || this.options.gpx.length === 0 )
@@ -301,9 +321,6 @@ export class Spotmap {
             } else {
                 this.boundsManager.fitBounds( this.options.mapcenter );
             }
-
-            this.lineManager.applyArrows();
-            this.layerManager.addOverlays();
 
             if ( this.options.autoReload && ! response.empty ) {
                 for ( const [ feedName, feed ] of Object.entries(
@@ -383,6 +400,8 @@ export class Spotmap {
         this.tableRenderer?.destroy();
         this.markerManager?.destroy();
         this.dataFetcher?.abort();
+        this.lodManager?.destroy();
+        this.lodManager = null;
 
         if ( this.map ) {
             // Clear textpath text before removal: map.remove() internally calls
@@ -624,6 +643,7 @@ export class Spotmap {
                                 );
                                 this.markerManager.addPoint( entry );
                                 this.lineManager.addPointToLine( entry );
+                                this.lodManager?.onPointAppended( entry );
                                 if (
                                     this.options.styles?.[ feedName ]?.lastPoint
                                 ) {

@@ -4,6 +4,7 @@ import {
     LINE_ARROW_CHAR,
     LINE_ARROW_FONT_SIZE,
     LINE_ARROW_OFFSET,
+    LINE_SMOOTH_FACTOR,
 } from './constants';
 import type { LayerManager } from './LayerManager';
 
@@ -47,11 +48,13 @@ export class LineManager {
     clearArrows(): void {
         for ( const feed of Object.values( this.layers.feeds ) ) {
             for ( const line of feed.lines ) {
-                ( line as unknown as { setText: ( t: null ) => void } ).setText(
-                    null
-                );
+                this.clearLineTextPath( line );
             }
         }
+    }
+
+    private clearLineTextPath( line: L.Polyline ): void {
+        ( line as unknown as { setText: ( t: null ) => void } ).setText( null );
     }
 
     private applyTextPath( line: L.Polyline ): void {
@@ -128,14 +131,20 @@ export class LineManager {
     }
 
     /**
-     * Create an empty polyline styled for the given feed.
-     * Includes directional arrow text along the path.
+     * Create a polyline styled for the given feed.
+     * Pass coords to pre-populate to avoid per-point redraws during initial load.
+     * Omit coords for an empty line (used by addPointToLine for splits).
      */
-    createLine( feedName: string ): L.Polyline {
+    createLine( feedName: string, coords: L.LatLngTuple[] = [] ): L.Polyline {
         const color = this.layerManager.getFeedColor( feedName );
         const weight = this.layerManager.getFeedLineWidth( feedName );
         const opacity = this.layerManager.getFeedLineOpacity( feedName );
-        const line = L.polyline( [], { color, weight, opacity } );
+        const line = L.polyline( coords, {
+            color,
+            weight,
+            opacity,
+            smoothFactor: LINE_SMOOTH_FACTOR,
+        } );
 
         // During initial load, arrows are deferred until applyArrows() is called
         // after fitBounds(). Lines created after that (e.g. auto-reload splits)
