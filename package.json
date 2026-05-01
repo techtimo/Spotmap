@@ -48,7 +48,7 @@
         "@wordpress/components": "^32.4.0",
         "@wordpress/data": "*",
         "@wordpress/env": "^10.39.0",
-        "@wordpress/i18n": "^6.15.0",
+        "@wordpress/i18n": "^6.18.0",
         "@wordpress/icons": "^12.2.0",
         "@wordpress/scripts": "^32.0.0",
         "dotenv": "^17.4.2",
