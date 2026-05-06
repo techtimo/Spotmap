@@ -70,7 +70,7 @@ class Spotmap_Providers
                             'type'        => 'text',
                             'label'       => 'MapShare Address',
                             'required'    => true,
-                            'description' => 'Your MapShare username (the part after share.garmin.com/Feed/Share/).',
+                            'description' => 'Your MapShare username — the last part of your MapShare URL (e.g. "JohnDoe").',
                         ],
                         [
                             'key'         => 'password',

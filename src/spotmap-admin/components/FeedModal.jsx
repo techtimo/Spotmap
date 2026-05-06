@@ -10,6 +10,7 @@ import {
     FlexItem,
     Notice,
 } from '@wordpress/components';
+import { Fragment } from '@wordpress/element';
 import { arrowLeft, chevronDown, chevronUp } from '@wordpress/icons';
 import { REDACTED, getVictronInstallations } from '../api';
 
@@ -401,36 +402,51 @@ export default function FeedModal( {
 
                     const isClearing =
                         isPasswordField && passwordClearing.has( field.key );
+                    const fieldValue = fields[ field.key ] ?? '';
+                    const looksLikeUrl =
+                        type === 'garmin-inreach' &&
+                        field.key === 'mapshare_address' &&
+                        ( fieldValue.includes( '://' ) ||
+                            fieldValue.startsWith( 'www.' ) );
                     return (
-                        <TextControl
-                            key={ field.key }
-                            label={ field.label }
-                            help={ help }
-                            type={ isPasswordField ? 'password' : 'text' }
-                            value={
-                                isPasswordField &&
-                                fields[ field.key ] === REDACTED
-                                    ? ''
-                                    : fields[ field.key ] ?? ''
-                            }
-                            autoComplete="off"
-                            onChange={ ( val ) => {
-                                if ( isPasswordField ) {
-                                    if ( isClearing ) {
-                                        setField( field.key, val );
-                                    } else {
-                                        setField(
-                                            field.key,
-                                            val === '' ? REDACTED : val
-                                        );
-                                    }
-                                } else {
-                                    setField( field.key, val );
+                        <Fragment key={ field.key }>
+                            <TextControl
+                                label={ field.label }
+                                help={ help }
+                                type={ isPasswordField ? 'password' : 'text' }
+                                value={
+                                    isPasswordField && fieldValue === REDACTED
+                                        ? ''
+                                        : fieldValue
                                 }
-                            } }
-                            __nextHasNoMarginBottom
-                            __next40pxDefaultSize
-                        />
+                                autoComplete="off"
+                                onChange={ ( val ) => {
+                                    if ( isPasswordField ) {
+                                        if ( isClearing ) {
+                                            setField( field.key, val );
+                                        } else {
+                                            setField(
+                                                field.key,
+                                                val === '' ? REDACTED : val
+                                            );
+                                        }
+                                    } else {
+                                        setField( field.key, val );
+                                    }
+                                } }
+                                __nextHasNoMarginBottom
+                                __next40pxDefaultSize
+                            />
+                            { looksLikeUrl && (
+                                <Notice status="warning" isDismissible={ false }>
+                                    Enter only the last part of the URL — e.g.{' '}
+                                    <strong>
+                                        { fieldValue.split( '/' ).filter( Boolean ).pop() ?? 'Username' }
+                                    </strong>{' '}
+                                    — not the full address.
+                                </Notice>
+                            ) }
+                        </Fragment>
                     );
                 } ) }
 
