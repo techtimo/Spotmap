@@ -7,7 +7,7 @@ class Spotmap_Database
      * Prevents runaway memory use / PHP timeout on large datasets.
      * Callers can pass a lower $filter['limit'] to request fewer rows.
      */
-    public const MAX_POINTS_PER_QUERY = 50000;
+    public const MAX_POINTS_PER_QUERY = 150000;
 
     private const ALLOWED_COLUMNS = [
             'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
