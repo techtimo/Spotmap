@@ -264,7 +264,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
             // If the DB already holds more than 10 000 points, default to no feeds
             // so the editor doesn't immediately try to render a huge dataset.
-            const enabledNames = totalPoints > 10000 ? [] : feedNames;
+            const enabledNames = totalPoints > 50000 ? [] : feedNames;
             const defaultFeedObjects = enabledNames.map( ( name, i ) => ( {
                 name,
                 ...DEFAULT_FEED_STYLE,
@@ -312,7 +312,7 @@ export default function Edit( { attributes, setAttributes } ) {
         }
 
         // Skip map init while point count is still loading, or if selected feeds exceed the editor threshold.
-        if ( selectedPoints === null || selectedPoints > 10000 ) {
+        if ( selectedPoints === null || selectedPoints > 50000 ) {
             return;
         }
 
@@ -852,7 +852,7 @@ export default function Edit( { attributes, setAttributes } ) {
                     },
                 } ) }
             >
-                { selectedPoints !== null && selectedPoints > 10000 ? (
+                { selectedPoints !== null && selectedPoints > 50000 ? (
                     <div
                         style={ {
                             height: '100%',
@@ -873,7 +873,7 @@ export default function Edit( { attributes, setAttributes } ) {
                                 'Map preview disabled — selected feeds contain'
                             ) }{ ' ' }
                             { selectedPoints.toLocaleString() }{ ' ' }
-                            { __( 'points (limit: 10,000).' ) }
+                            { __( 'points (limit: 50,000).' ) }
                         </strong>
                         <span>
                             { __(

@@ -368,6 +368,10 @@ export class MarkerManager {
         return icon;
     }
 
+    getMarkerForPoint( id: number ): L.Marker | L.CircleMarker | undefined {
+        return this.markerById.get( id );
+    }
+
     /**
      * Remove all document event listeners registered by this instance.
      */

@@ -34,3 +34,12 @@ export const Z_INDEX_LAST_POINT = 1900;
 export const LINE_ARROW_CHAR = '  \u25BA  ';
 export const LINE_ARROW_FONT_SIZE = 7;
 export const LINE_ARROW_OFFSET = 2;
+
+/** Polyline smooth factor — higher = fewer SVG vertices at low zoom, faster textpath */
+export const LINE_SMOOTH_FACTOR = 5;
+
+/** Debounce for zoom-driven updates */
+export const LOD_DEBOUNCE_MS = 150;
+
+/** Minimum TRACK point count before LOD simplification is applied */
+export const LOD_MIN_TRACK_POINTS = 10_000;
