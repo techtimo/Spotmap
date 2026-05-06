@@ -22,8 +22,6 @@ defined('ABSPATH') or die();
 define('SPOTMAP_VERSION', '1.0.0-rc.5');
 define('SPOTMAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
-require_once plugin_dir_path(__FILE__) . 'vendor-prefixed/autoload.php';
-
 register_activation_hook(__FILE__, 'activate_spotmap');
 function activate_spotmap()
 {
