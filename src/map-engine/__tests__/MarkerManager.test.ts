@@ -54,7 +54,7 @@ describe( 'MarkerManager.getPopupHtml', () => {
         expect( html ).not.toContain( '<img' );
     } );
 
-it( 'shows battery warning when status is LOW', () => {
+    it( 'shows battery warning when status is LOW', () => {
         const html = MarkerManager.getPopupHtml(
             makePoint( { battery_status: 'LOW' } )
         );
@@ -174,7 +174,7 @@ describe( 'MarkerManager instance', () => {
             markerMock.marker.mock.results[ 0 ].value as {
                 bindPopup: jest.Mock;
             }
-        ).bindPopup.mock.calls[ 0 ][ 0 ] as string;
+         ).bindPopup.mock.calls[ 0 ][ 0 ] as string;
         expect( bindPopupCall ).toContain( 'OK' );
     } );
 } );
