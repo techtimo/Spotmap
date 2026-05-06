@@ -3,34 +3,14 @@
     "description": "Spotmap WordPress plugin",
     "version": "1.0.0-rc.5",
     "type": "wordpress-plugin",
-    "require": {
-        "symfony/yaml": "^7.0",
-        "brianhenryie/strauss": "^0.27"
-    },
+    "require": {},
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.0",
         "phpunit/phpunit": "^9.6",
         "wp-phpunit/wp-phpunit": "^6.7",
         "yoast/phpunit-polyfills": "^4.0"
     },
-    "extra": {
-        "strauss": {
-            "target_directory": "vendor-prefixed",
-            "namespace_prefix": "Spotmap\\",
-            "classmap_prefix": "Spotmap_",
-            "create_autoloader": true,
-            "packages": [
-                "symfony/yaml"
-            ]
-        }
-    },
     "scripts": {
-        "post-install-cmd": [
-            "vendor/bin/strauss"
-        ],
-        "post-update-cmd": [
-            "vendor/bin/strauss"
-        ],
         "test": "phpunit",
         "test:coverage": "XDEBUG_MODE=coverage phpunit --coverage-text",
         "format": "vendor/bin/php-cs-fixer fix",

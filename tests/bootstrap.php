@@ -6,7 +6,6 @@ define('WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname(__DIR__) . '/vendor/yoast/phpu
 
 require_once dirname(__DIR__) . '/vendor/wp-phpunit/wp-phpunit/includes/bootstrap.php';
 
-require_once dirname(__DIR__) . '/vendor-prefixed/autoload.php';
 require_once dirname(__DIR__) . '/includes/class-spotmap-options.php';
 require_once dirname(__DIR__) . '/includes/class-spotmap-providers.php';
 require_once dirname(__DIR__) . '/includes/class-spotmap-migrator.php';

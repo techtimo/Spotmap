@@ -247,11 +247,7 @@ class Spotmap_Admin
     {
         static $config = null;
         if ($config === null) {
-            $maps_file = plugin_dir_path(dirname(__FILE__)) . 'config/maps.yaml';
-            if (! file_exists($maps_file)) {
-                return null;
-            }
-            $config = \Spotmap\Symfony\Component\Yaml\Yaml::parseFile($maps_file);
+            $config = require plugin_dir_path(dirname(__FILE__)) . 'config/maps.php';
         }
         return $config[ $section ] ?? null;
     }
