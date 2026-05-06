@@ -13,7 +13,15 @@ import { __ } from '@wordpress/i18n';
  * A single row in the base-layer list. Shows a permanent "● active" badge for the
  * primary map, and a hover-only "set active" link for other checked layers.
  */
-function MapRowItem( { mapKey, label, isChecked, isActive, isDisabled, onToggle, onSetActive } ) {
+function MapRowItem( {
+    mapKey,
+    label,
+    isChecked,
+    isActive,
+    isDisabled,
+    onToggle,
+    onSetActive,
+} ) {
     const [ hovered, setHovered ] = useState( false );
     return (
         <div

@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from '@wordpress/element';
-import {
-    Button,
-    Notice,
-    Toolbar,
-} from '@wordpress/components';
+import { Button, Notice, Toolbar } from '@wordpress/components';
 import { undo } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import MapsToolbarGroup from '../../spotmap/components/MapsToolbarGroup';
@@ -96,7 +92,8 @@ export default function EditPointsTab( { onNoticeChange } ) {
             return;
         }
         if ( typeof window.Spotmap === 'undefined' ) {
-            const missing = typeof window.L === 'undefined' ? 'Leaflet (L)' : 'Spotmap';
+            const missing =
+                typeof window.L === 'undefined' ? 'Leaflet (L)' : 'Spotmap';
             onNoticeChange( {
                 status: 'error',
                 text: `Map engine not loaded (${ missing } is undefined). Check the browser console for script errors — a JavaScript conflict or ad-blocker may be preventing one of the map scripts from loading.`,

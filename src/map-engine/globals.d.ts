@@ -44,7 +44,6 @@ declare global {
             };
             polyline_options?: L.PolylineOptions;
         }
-
     }
 }
 

@@ -329,7 +329,12 @@ const PROVIDER_ICONS = {
 // Tile grid
 // ---------------------------------------------------------------------------
 
-export default function ProviderSelector( { providers, value, onChange, disabledTypes = [] } ) {
+export default function ProviderSelector( {
+    providers,
+    value,
+    onChange,
+    disabledTypes = [],
+} ) {
     const entries = Object.entries( providers );
 
     return (

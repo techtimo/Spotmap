@@ -72,9 +72,7 @@ export default function FeedsToolbarGroup( {
                                     { onStyle && (
                                         <Button
                                             icon={ brush }
-                                            label={
-                                                __( 'Style' ) + ' ' + feed
-                                            }
+                                            label={ __( 'Style' ) + ' ' + feed }
                                             size="small"
                                             variant="tertiary"
                                             style={ {

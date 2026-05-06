@@ -184,7 +184,9 @@ export default function FeedsTab( {
                 status: 'success',
                 text:
                     count > 0
-                        ? `Fetched ${ count } new point${ count === 1 ? '' : 's' }.`
+                        ? `Fetched ${ count } new point${
+                              count === 1 ? '' : 's'
+                          }.`
                         : 'No new points found.',
             } );
         } catch ( err ) {
