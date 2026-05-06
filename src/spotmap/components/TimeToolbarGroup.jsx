@@ -5,9 +5,10 @@ import {
     DateTimePicker,
     Modal,
     Notice,
-    RadioControl,
     ToolbarButton,
     ToolbarGroup,
+    __experimentalToggleGroupControl as ToggleGroupControl,
+    __experimentalToggleGroupControlOption as ToggleGroupControlOption,
     __experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 import { calendar } from '@wordpress/icons';
@@ -165,48 +166,44 @@ const UNIT_CONTROL_STYLES = `
     width: 40px !important;
     min-width: 40px !important;
 }
+.spotmap-time-filter input[type="radio"] {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    margin: 0 !important;
+    flex-shrink: 0;
+}
 `;
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function EndpointSection( { label, state, onChange } ) {
+/**
+ * One endpoint (from/to) inside the date-range section.
+ *
+ * When advancedRelative is true the "relative" option is hidden behind an
+ * "Advanced" disclosure (used for the "to" endpoint, which is a rare case).
+ *
+ * @param {Object}   props
+ * @param {string}   props.label            Section heading.
+ * @param {Object}   props.state            Endpoint state.
+ * @param {Function} props.onChange         Called with updated state.
+ * @param {boolean}  [props.advancedRelative=false]
+ */
+function EndpointSection( {
+    label,
+    state,
+    onChange,
+    advancedRelative = false,
+} ) {
+    const [ showAdvanced, setShowAdvanced ] = useState(
+        () => advancedRelative && state.type === 'relative'
+    );
     const idPrefix = label.toLowerCase().replace( /\s+/g, '-' );
     const set = ( type ) => onChange( { ...state, type } );
-    return (
-        <fieldset style={ { border: 'none', margin: 0, padding: 0 } }>
-            <legend
-                style={ {
-                    fontWeight: 600,
-                    fontSize: '11px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    marginBottom: '8px',
-                } }
-            >
-                { label }
-            </legend>
+    const clear = () => onChange( { ...state, type: 'none' } );
 
-            { /* No filter */ }
-            <label
-                htmlFor={ `${ idPrefix }-none` }
-                style={ {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '6px',
-                    cursor: 'pointer',
-                } }
-            >
-                <input
-                    id={ `${ idPrefix }-none` }
-                    type="radio"
-                    checked={ state.type === 'none' }
-                    onChange={ () => set( 'none' ) }
-                />
-                { __( 'No filter' ) }
-            </label>
-
-            { /* Relative */ }
+    const relativeOption = (
+        <>
             <label
                 htmlFor={ `${ idPrefix }-relative` }
                 style={ {
@@ -223,7 +220,9 @@ function EndpointSection( { label, state, onChange } ) {
                     checked={ state.type === 'relative' }
                     onChange={ () => set( 'relative' ) }
                 />
-                { __( 'Relative (last N…)' ) }
+                { advancedRelative
+                    ? __( 'Relative to now — exclude the last N…' )
+                    : __( 'Relative (last N…)' ) }
             </label>
             { state.type === 'relative' && (
                 <div
@@ -248,8 +247,38 @@ function EndpointSection( { label, state, onChange } ) {
                     />
                 </div>
             ) }
+        </>
+    );
 
-            { /* Specific */ }
+    return (
+        <div>
+            <div
+                style={ {
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    marginBottom: '8px',
+                } }
+            >
+                <span
+                    style={ {
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                    } }
+                >
+                    { label }
+                </span>
+                { state.type !== 'none' && (
+                    <Button isSmall variant="tertiary" onClick={ clear }>
+                        { __( 'Reset' ) }
+                    </Button>
+                ) }
+            </div>
+
+            { ! advancedRelative && relativeOption }
+
             <label
                 htmlFor={ `${ idPrefix }-specific` }
                 style={ {
@@ -280,7 +309,26 @@ function EndpointSection( { label, state, onChange } ) {
                     />
                 </div>
             ) }
-        </fieldset>
+
+            { advancedRelative && (
+                <div style={ { marginTop: '8px' } }>
+                    <Button
+                        variant="link"
+                        onClick={ () => setShowAdvanced( ! showAdvanced ) }
+                        style={ { fontSize: '12px' } }
+                    >
+                        { showAdvanced
+                            ? __( '▾ Advanced' )
+                            : __( '▸ Advanced' ) }
+                    </Button>
+                    { showAdvanced && (
+                        <div style={ { marginTop: '8px' } }>
+                            { relativeOption }
+                        </div>
+                    ) }
+                </div>
+            ) }
+        </div>
     );
 }
 
@@ -395,8 +443,6 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
         setIsOpen( false );
     };
 
-    const hasFilter = !! ( from || to );
-
     return (
         <ToolbarGroup>
             <ToolbarButton
@@ -416,32 +462,34 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                 >
                     <style>{ UNIT_CONTROL_STYLES }</style>
                     <div
+                        className="spotmap-time-filter"
                         style={ {
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '20px',
                         } }
                     >
-                        <RadioControl
+                        { /* Mode toggle */ }
+                        <ToggleGroupControl
+                            __nextHasNoMarginBottom
+                            hideLabelFromVision
+                            isBlock
                             label={ __( 'Filter mode' ) }
-                            selected={ localMode }
-                            options={ [
-                                {
-                                    label: __(
-                                        'Date range (start and end separately)'
-                                    ),
-                                    value: 'range',
-                                },
-                                {
-                                    label: __( 'Single day' ),
-                                    value: 'single-day',
-                                },
-                            ] }
+                            value={ localMode }
                             onChange={ ( mode ) => {
                                 setLocalMode( mode );
                                 setShowErrors( false );
                             } }
-                        />
+                        >
+                            <ToggleGroupControlOption
+                                value="single-day"
+                                label={ __( 'Single Day' ) }
+                            />
+                            <ToggleGroupControlOption
+                                value="range"
+                                label={ __( 'Date Range' ) }
+                            />
+                        </ToggleGroupControl>
 
                         { localMode === 'single-day' && (
                             <div>
@@ -490,6 +538,7 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                         setToState( s );
                                         setShowErrors( false );
                                     } }
+                                    advancedRelative
                                 />
                             </>
                         ) }
