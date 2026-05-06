@@ -346,7 +346,7 @@ class Spotmap_Rest_Api
 
         // Push feeds authenticate via a per-feed pre-shared key in the URL.
         // Use the client-generated key when provided; fall back to server generation.
-        $push_types = [ 'osmand', 'teltonika' ];
+        $push_types = [ 'osmand', 'teltonika', 'ogn' ];
         if (in_array($data['type'] ?? '', $push_types, true) && empty($data['key'])) {
             $data['key'] = bin2hex(random_bytes(16));
         }
@@ -1004,7 +1004,7 @@ class Spotmap_Rest_Api
 
         // For push-type feeds the pre-shared key is generated client-side and must
         // be round-tripped so the URL shown before save matches what is stored.
-        $push_types = [ 'osmand', 'teltonika' ];
+        $push_types = [ 'osmand', 'teltonika', 'ogn' ];
         if (in_array($type, $push_types, true) && ! empty($body['key'])) {
             $data['key'] = sanitize_text_field($body['key']);
         }

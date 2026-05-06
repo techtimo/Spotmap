@@ -108,6 +108,26 @@ class Spotmap_Providers
                     ],
                 ],
 
+                'ogn' => [
+                    'label'  => 'OGN / FLARM (Push via proxy)',
+                    'fields' => [
+                        [
+                            'key'         => 'name',
+                            'type'        => 'text',
+                            'label'       => 'Feed Name',
+                            'required'    => true,
+                            'description' => 'A unique name used to identify this feed in the map block.',
+                        ],
+                        [
+                            'key'         => 'flarm_id',
+                            'type'        => 'text',
+                            'label'       => 'FLARM ID',
+                            'required'    => true,
+                            'description' => 'The 6-character FLARM hex ID (e.g. "4B51BF"). The local proxy filters the OGN APRS stream for this device.',
+                        ],
+                    ],
+                ],
+
                 'media' => [
                     'label'  => 'Photos',
                     'fields' => [

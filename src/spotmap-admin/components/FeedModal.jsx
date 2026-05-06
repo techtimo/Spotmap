@@ -138,7 +138,7 @@ export default function FeedModal( {
         } );
         // Generate the ingest key upfront for new push-type feeds so the URL
         // is visible before the user hits Save.
-        if ( ! isEdit && ( type === 'osmand' || type === 'teltonika' ) ) {
+        if ( ! isEdit && ( type === 'osmand' || type === 'teltonika' || type === 'ogn' ) ) {
             initial.key = generateFeedKey();
         }
         // Victron: installation picker fields not in provider.fields schema.
@@ -250,6 +250,10 @@ export default function FeedModal( {
     const teltonikaTrackingUrl =
         type === 'teltonika' && ingestKey
             ? normalizeTrackingUrl( buildTeltonikaUrl( ingestKey ) )
+            : null;
+    const ognProxyCommand =
+        type === 'ogn' && ingestKey
+            ? `node tools/ogn-proxy.js --key ${ ingestKey } --flarm-id ${ fields.flarm_id || 'XXXXXX' }`
             : null;
 
     const handleSave = async () => {
@@ -605,6 +609,13 @@ export default function FeedModal( {
                         title="Teltonika Push URL"
                         description="Configure this as the HTTP POST destination in your Teltonika device (Codec 8 / JSON over HTTP). The device should POST JSON with a single object key containing latitude, longitude, altitude, speed, angle, and timestamp fields."
                         url={ teltonikaTrackingUrl }
+                    />
+                ) }
+                { ognProxyCommand && (
+                    <TrackingUrlBox
+                        title="OGN Proxy Command"
+                        description="Run this command locally to connect to the OGN APRS stream and forward positions to Spotmap. The glider must be airborne and within range of an OGN receiver."
+                        url={ ognProxyCommand }
                     />
                 ) }
 

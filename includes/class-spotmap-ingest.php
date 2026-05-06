@@ -45,6 +45,15 @@ class Spotmap_Ingest
                 'permission_callback' => '__return_true',
             ]
         );
+        register_rest_route(
+            Spotmap_Rest_Api::NAMESPACE,
+            '/ingest/ogn',
+            [
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => [ __CLASS__, 'handle_ogn' ],
+                'permission_callback' => '__return_true',
+            ]
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -295,6 +304,95 @@ class Spotmap_Ingest
 
         self::log_ingest_event('teltonika', 'point_stored', $point_context);
 
+        return new WP_REST_Response([ 'ok' => true ], 200);
+    }
+
+    // -------------------------------------------------------------------------
+    // OGN / FLARM handler
+    // -------------------------------------------------------------------------
+
+    /**
+     * Receives a position point forwarded by the local OGN APRS proxy.
+     *
+     * POST /wp-json/spotmap/v1/ingest/ogn?key=<key>
+     * {
+     *   "lat":       47.8375,
+     *   "lon":       12.756,
+     *   "timestamp": 1746524400,   // Unix seconds UTC
+     *   "altitude":  1500,          // metres (optional)
+     *   "speed":     92,            // km/h (optional)
+     *   "course":    180,           // degrees (optional)
+     *   "flarm_id":  "4B51BF"       // informational, not used for auth
+     * }
+     */
+    public static function handle_ogn(WP_REST_Request $request): WP_REST_Response
+    {
+        self::log_ingest_event('ogn', 'request_received', [ 'has_key' => $request->get_param('key') !== null ]);
+
+        $key  = sanitize_text_field($request->get_param('key') ?? '');
+        $feed = self::find_feed_by_key('ogn', $key);
+        if ($feed === null) {
+            self::log_ingest_event('ogn', 'invalid_key');
+            return new WP_REST_Response([ 'error' => 'Invalid key.' ], 401);
+        }
+
+        if (! empty($feed['paused'])) {
+            self::log_ingest_event('ogn', 'feed_paused', self::feed_context($feed));
+            return new WP_REST_Response([ 'error' => 'Feed is paused.' ], 400);
+        }
+
+        $body = $request->get_json_params();
+        if (! is_array($body)) {
+            self::log_ingest_event('ogn', 'invalid_body', self::feed_context($feed));
+            return new WP_REST_Response([ 'error' => 'JSON body required.' ], 400);
+        }
+
+        if (! isset($body['lat'], $body['lon'], $body['timestamp'])) {
+            self::log_ingest_event('ogn', 'missing_required_fields', self::feed_context($feed));
+            return new WP_REST_Response([ 'error' => 'lat, lon, and timestamp are required.' ], 400);
+        }
+
+        $lat     = (float) $body['lat'];
+        $lon     = (float) $body['lon'];
+        $unix_ts = (int) $body['timestamp'];
+
+        $data = [
+            'feed_name' => $feed['name'],
+            'feed_id'   => $feed['id'],
+            'type'      => 'TRACK',
+            'time'      => $unix_ts,
+            'latitude'  => $lat,
+            'longitude' => $lon,
+        ];
+
+        if (isset($body['altitude'])) {
+            $data['altitude'] = (int) round((float) $body['altitude']);
+        }
+        if (isset($body['speed'])) {
+            $data['speed'] = round((float) $body['speed'], 2);
+        }
+        if (isset($body['course'])) {
+            $data['bearing'] = round((float) $body['course'], 2);
+        }
+        if (! empty($body['flarm_id'])) {
+            $data['device_name'] = sanitize_text_field($body['flarm_id']);
+        }
+
+        $db     = new Spotmap_Database();
+        $result = $db->insert_row($data);
+
+        $ctx = self::feed_context($feed) + [
+            'timestamp' => $unix_ts,
+            'latitude'  => $lat,
+            'longitude' => $lon,
+        ];
+
+        if ($result === false) {
+            self::log_ingest_event('ogn', 'db_insert_failed', $ctx);
+            return new WP_REST_Response([ 'error' => 'Failed to store point.' ], 500);
+        }
+
+        self::log_ingest_event('ogn', 'point_stored', $ctx);
         return new WP_REST_Response([ 'ok' => true ], 200);
     }
 
