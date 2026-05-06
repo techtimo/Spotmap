@@ -167,7 +167,7 @@ class Spotmap_Api_Crawler
                                : $chunk_secs;
                 $chunk_start = max((int) $cursor['at'] - $advance, $garmin_epoch);
                 $chunk_end   = (int) $cursor['at'];
-                $url         = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+                $url         = $this->garmin_feed_share_base($mapshare_address)
                              . '?d1=' . gmdate('Y-m-d\TH:i\Z', $chunk_start)
                              . '&d2=' . gmdate('Y-m-d\TH:i\Z', $chunk_end);
 
@@ -212,7 +212,7 @@ class Spotmap_Api_Crawler
                 // Also check for live points that arrived since the first chunk seeded the DB.
                 // Skip on the very first tick ($db_is_empty) because last_time is 0.
                 if (! $db_is_empty) {
-                    $inc_url  = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+                    $inc_url  = $this->garmin_feed_share_base($mapshare_address)
                               . '?d1=' . gmdate('Y-m-d\TH:i\Z', $last_time + 1);
                     $this->garmin_log($feed_name, 'incremental_during_backfill', [
                         'd1' => gmdate('Y-m-d H:i:s', $last_time + 1),
@@ -231,7 +231,7 @@ class Spotmap_Api_Crawler
         }
 
         // ── Incremental mode ────────────────────────────────────────────────
-        $url = 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address)
+        $url = $this->garmin_feed_share_base($mapshare_address)
              . '?d1=' . gmdate('Y-m-d\TH:i\Z', $last_time + 1);
         $this->garmin_log($feed_name, 'incremental_fetch', [
             'd1' => gmdate('Y-m-d H:i:s', $last_time + 1),
@@ -461,6 +461,18 @@ class Spotmap_Api_Crawler
         ]);
 
         return $inserted;
+    }
+
+    private function garmin_feed_share_base(string $mapshare_address): string
+    {
+        $parsed = parse_url($mapshare_address);
+        if (isset($parsed['host'])) {
+            $scheme   = $parsed['scheme'] ?? 'https';
+            $host     = $parsed['host'];
+            $username = ltrim($parsed['path'] ?? '', '/');
+            return $scheme . '://' . $host . '/Feed/Share/' . rawurlencode($username);
+        }
+        return 'https://share.garmin.com/Feed/Share/' . rawurlencode($mapshare_address);
     }
 
     /**
