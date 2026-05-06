@@ -150,7 +150,11 @@ export class MarkerManager {
                 const content = container.querySelector(
                     '.leaflet-popup-content'
                 );
-                if ( ! content || content.querySelector( '.spotmap-popup-nav' ) ) return;
+                if (
+                    ! content ||
+                    content.querySelector( '.spotmap-popup-nav' )
+                )
+                    return;
                 const nav = document.createElement( 'div' );
                 nav.className = 'spotmap-popup-nav';
                 nav.style.cssText =
@@ -210,9 +214,9 @@ export class MarkerManager {
                 }
             };
 
-            const imgs = Array.from( container.querySelectorAll( 'img' ) ).filter(
-                ( img ) => ! img.complete
-            );
+            const imgs = Array.from(
+                container.querySelectorAll( 'img' )
+            ).filter( ( img ) => ! img.complete );
             if ( imgs.length === 0 ) {
                 injectNav();
                 requestAnimationFrame( doPan );
@@ -226,20 +230,28 @@ export class MarkerManager {
                             if ( loaded === imgs.length ) {
                                 // Reposition the tip without replacing content
                                 // (popup.update() would wipe our injected nav).
-                                ( popup as unknown as { _updatePosition?: () => void } )._updatePosition?.();
+                                (
+                                    popup as unknown as {
+                                        _updatePosition?: () => void;
+                                    }
+                                 )._updatePosition?.();
                                 injectNav();
                                 requestAnimationFrame( doPan );
                             }
                         },
                         { once: true }
                     );
-                    img.addEventListener( 'error', () => {
-                        loaded++;
-                        if ( loaded === imgs.length ) {
-                            injectNav();
-                            requestAnimationFrame( doPan );
-                        }
-                    }, { once: true } );
+                    img.addEventListener(
+                        'error',
+                        () => {
+                            loaded++;
+                            if ( loaded === imgs.length ) {
+                                injectNav();
+                                requestAnimationFrame( doPan );
+                            }
+                        },
+                        { once: true }
+                    );
                 } );
             }
         } );

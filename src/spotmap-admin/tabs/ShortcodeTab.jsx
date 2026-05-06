@@ -175,7 +175,9 @@ function buildShortcode( {
         parts.push( `gpx-name="${ gpx.map( ( t ) => t.name ).join( ',' ) }"` );
         parts.push( `gpx-url="${ gpx.map( ( t ) => t.url ).join( ',' ) }"` );
         parts.push(
-            `gpx-color="${ gpx.map( ( t ) => t.color || '#FFD700' ).join( ',' ) }"`
+            `gpx-color="${ gpx
+                .map( ( t ) => t.color || '#FFD700' )
+                .join( ',' ) }"`
         );
     }
     if ( debug ) {
@@ -310,7 +312,10 @@ export default function ShortcodeTab() {
     const updateStyle = ( feed, key, value ) => {
         setStyles( ( prev ) => ( {
             ...prev,
-            [ feed ]: { ...( prev[ feed ] ?? DEFAULT_FEED_STYLE ), [ key ]: value },
+            [ feed ]: {
+                ...( prev[ feed ] ?? DEFAULT_FEED_STYLE ),
+                [ key ]: value,
+            },
         } ) );
     };
 

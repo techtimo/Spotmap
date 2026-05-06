@@ -64,9 +64,9 @@ export function buildView( entry: SpotPoint, feedCount = 1 ): PopupView {
     if ( entry.type === 'POST' ) {
         return {
             imageUrl: entry.image_url,
-            linkedTitle: entry.url ? ( entry.message ?? 'Post' ) : undefined,
+            linkedTitle: entry.url ? entry.message ?? 'Post' : undefined,
             url: entry.url,
-            plainTitle: entry.url ? undefined : ( entry.message ?? 'Post' ),
+            plainTitle: entry.url ? undefined : entry.message ?? 'Post',
             excerpt: entry.excerpt,
             date: entry.date,
         };

@@ -56,10 +56,7 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
             button: { text: __( 'Select' ) },
         } );
         frame.on( 'select', () => {
-            const selection = frame
-                .state()
-                .get( 'selection' )
-                .toJSON();
+            const selection = frame.state().get( 'selection' ).toJSON();
             mergeTracks(
                 selection.map( ( t ) => ( {
                     id: t.id,
@@ -90,11 +87,7 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
                     valid.map( ( t ) => ( {
                         id: t.id,
                         url: t.url,
-                        name:
-                            t.title ||
-                            t.filename ||
-                            t.slug ||
-                            String( t.id ),
+                        name: t.title || t.filename || t.slug || String( t.id ),
                         color: gpx[ 0 ]?.color || '#FFD700',
                         visible: true,
                         download: false,
@@ -182,9 +175,7 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
                         <ColorPalette
                             colors={ COLORS }
                             value={ styleTrack?.color || '#FFD700' }
-                            onChange={ ( v ) =>
-                                v && updateProp( 'color', v )
-                            }
+                            onChange={ ( v ) => v && updateProp( 'color', v ) }
                             disableCustomColors={ false }
                             clearable={ false }
                         />
@@ -265,7 +256,10 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
                         >
                             { __( 'Upload' ) }
                         </Button>
-                        <Button variant="secondary" onClick={ openMediaLibrary }>
+                        <Button
+                            variant="secondary"
+                            onClick={ openMediaLibrary }
+                        >
                             { __( 'Media Library' ) }
                         </Button>
                         <input
@@ -306,8 +300,7 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
                             >
                                 <tbody>
                                     { pageTracks.map( ( track, localIdx ) => {
-                                        const globalIdx =
-                                            pageStart + localIdx;
+                                        const globalIdx = pageStart + localIdx;
                                         return (
                                             <tr
                                                 key={
@@ -435,9 +428,7 @@ export default function GpxManagerModal( { gpx, onChange, onClose } ) {
                                     </span>
                                     <Button
                                         variant="secondary"
-                                        disabled={
-                                            safePage >= totalPages - 1
-                                        }
+                                        disabled={ safePage >= totalPages - 1 }
                                         onClick={ () =>
                                             setPage( safePage + 1 )
                                         }

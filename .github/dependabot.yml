@@ -12,8 +12,8 @@ updates:
           - version-update:semver-minor
           - version-update:semver-major
       # @wordpress/scripts@31.x requires @wordpress/env@^10.0.0; unblock when scripts supports v11
-      - dependency-name: "@wordpress/env"
-        versions: [">=11"]
+      - dependency-name: '@wordpress/env'
+        versions: ['>=11']
 
   - package-ecosystem: composer
     directory: /
