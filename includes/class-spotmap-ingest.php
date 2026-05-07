@@ -180,12 +180,23 @@ class Spotmap_Ingest
      */
     public static function handle_teltonika(WP_REST_Request $request): WP_REST_Response
     {
+        // Log everything we have before any validation so we can see what Teltonika actually sends.
+        $raw_body   = $request->get_body();
+        $key_raw    = $request->get_param('key') ?? '';
+        $key_masked = strlen($key_raw) > 4 ? substr($key_raw, 0, 4) . str_repeat('*', strlen($key_raw) - 4) : '(empty)';
+        $ct         = $request->get_content_type();
+
         self::log_ingest_event(
             'teltonika',
             'request_received',
             [
-                'method'  => $request->get_method(),
-                'has_key' => $request->get_param('key') !== null,
+                'method'       => $request->get_method(),
+                'content_type' => is_array($ct) ? ($ct['value'] ?? '') : (string) $ct,
+                'key_masked'   => $key_masked,
+                'query_params' => array_diff_key($request->get_query_params(), [ 'key' => '' ]),
+                'body_length'  => strlen($raw_body),
+                'body_raw'     => substr($raw_body, 0, 2000),
+                'json_parsed'  => $request->get_json_params(),
             ]
         );
 
@@ -211,9 +222,24 @@ class Spotmap_Ingest
         // 2. Build payload from wrapped JSON body.
         $payload = self::build_teltonika_payload($request);
         if ($payload === null) {
-            self::log_ingest_event('teltonika', 'invalid_payload', self::feed_context($feed));
+            $body_raw = $request->get_body();
+            self::log_ingest_event(
+                'teltonika',
+                'invalid_payload',
+                self::feed_context($feed) + [
+                    'body_length' => strlen($body_raw),
+                    'body_raw'    => substr($body_raw, 0, 500),
+                    'json_params' => $request->get_json_params(),
+                ]
+            );
             return new WP_REST_Response([ 'error' => 'Invalid payload. Expected wrapped JSON body: {"<key>": {"latitude":…, "longitude":…, "timestamp":…}}.' ], 400);
         }
+
+        self::log_ingest_event(
+            'teltonika',
+            'payload_parsed',
+            self::feed_context($feed) + [ 'payload_keys' => array_keys($payload), 'payload' => $payload ]
+        );
 
         // 3. Validate required fields.
         if (! isset($payload['latitude'], $payload['longitude'], $payload['timestamp'])) {
@@ -392,7 +418,14 @@ class Spotmap_Ingest
      */
     private static function build_teltonika_payload(WP_REST_Request $request): ?array
     {
+        // get_json_params() only works when Content-Type is application/json.
+        // Teltonika sends application/x-www-form-urlencoded despite the body being JSON,
+        // so fall back to decoding the raw body directly.
         $body = $request->get_json_params();
+        if (! is_array($body) || empty($body)) {
+            $raw  = $request->get_body();
+            $body = $raw !== '' ? json_decode($raw, true) : null;
+        }
         if (! is_array($body) || empty($body)) {
             return null;
         }
@@ -424,20 +457,18 @@ class Spotmap_Ingest
      */
     private static function log_ingest_event(string $provider, string $event, array $context = []): void
     {
-        if (! defined('WP_DEBUG') || ! WP_DEBUG) {
+        if (! defined('WP_DEBUG_LOG') || ! WP_DEBUG_LOG) {
             return;
         }
 
-        $timestamp = gmdate('c');
         $line = sprintf(
-            '[%s] [spotmap ingest] provider=%s event=%s context=%s',
-            $timestamp,
+            '[spotmap] provider=%s event=%s context=%s',
             $provider,
             $event,
             wp_json_encode($context)
         );
 
-        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
-        trigger_error($line, E_USER_NOTICE);
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+        error_log($line);
     }
 }
