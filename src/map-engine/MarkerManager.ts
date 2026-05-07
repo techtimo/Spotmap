@@ -328,6 +328,8 @@ export class MarkerManager {
                 iconOptions.iconAnchor = CIRCLE_DOT_ICON_ANCHOR;
                 iconOptions.iconSize = CIRCLE_DOT_ICON_SIZE;
                 iconOptions.borderWith = CIRCLE_DOT_BORDER_WIDTH;
+            } else if ( iconOptions.iconShape === 'circle' ) {
+                iconOptions.popupAnchor = [ 0, -8 ];
             }
         } else if ( pointType === 'TRACK' ) {
             const trackMarker = spotmapjsobj.marker.TRACK;

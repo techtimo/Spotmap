@@ -25,6 +25,7 @@ declare global {
             iconAnchor?: [ number, number ];
             iconSize?: [ number, number ];
             borderWith?: number; // note: typo in upstream lib ("borderWith" not "borderWidth")
+            popupAnchor?: [ number, number ];
             className?: string;
             customClasses?: string;
         }
