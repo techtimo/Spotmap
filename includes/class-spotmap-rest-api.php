@@ -352,6 +352,7 @@ class Spotmap_Rest_Api
         }
 
         $feed = Spotmap_Options::add_feed($data);
+        self::proxy_register_route($feed);
 
         // When a media feed is created, run the EXIF import immediately so existing
         // media library photos are picked up without waiting for cron.
@@ -406,6 +407,7 @@ class Spotmap_Rest_Api
         if (! Spotmap_Options::update_feed($id, $data)) {
             return new WP_Error('not_found', 'Feed not found.', [ 'status' => 404 ]);
         }
+        self::proxy_register_route($data);
 
         // Rename DB rows so existing points follow the feed to its new name.
         $new_name = $data['name'] ?? '';
@@ -433,8 +435,47 @@ class Spotmap_Rest_Api
         }
 
         Spotmap_Options::delete_feed($id);
+        self::proxy_deregister_route($feed);
 
         return new WP_REST_Response(null, 204);
+    }
+
+    // ── Proxy registration ────────────────────────────────────────────────────
+
+    private static function proxy_register_route(array $feed): void
+    {
+        $type = $feed['type'] ?? '';
+        if ($type === 'ogn') {
+            $flarm_id = strtoupper($feed['flarm_id'] ?? '');
+            if ($flarm_id === '') return;
+            wp_remote_post(SPOTMAP_PROXY_URL . '/admin/routes/ogn', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . SPOTMAP_PROXY_ADMIN_KEY,
+                    'Content-Type'  => 'application/json',
+                ],
+                'body'    => wp_json_encode([
+                    'flarm_id'      => $flarm_id,
+                    'wordpress_url' => rest_url(self::NAMESPACE . '/ingest/ogn'),
+                    'ingest_key'    => $feed['key'] ?? '',
+                    'label'         => $feed['name'] ?? '',
+                ]),
+                'timeout' => 10,
+            ]);
+        }
+    }
+
+    private static function proxy_deregister_route(array $feed): void
+    {
+        $type = $feed['type'] ?? '';
+        if ($type === 'ogn') {
+            $flarm_id = strtoupper($feed['flarm_id'] ?? '');
+            if ($flarm_id === '') return;
+            wp_remote_request(SPOTMAP_PROXY_URL . '/admin/routes/ogn/' . rawurlencode($flarm_id), [
+                'method'  => 'DELETE',
+                'headers' => [ 'Authorization' => 'Bearer ' . SPOTMAP_PROXY_ADMIN_KEY ],
+                'timeout' => 10,
+            ]);
+        }
     }
 
     public static function get_db_feeds(WP_REST_Request $request)

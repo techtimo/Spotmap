@@ -21,6 +21,8 @@ defined('ABSPATH') or die();
 
 define('SPOTMAP_VERSION', '1.0.0-rc.5');
 define('SPOTMAP_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('SPOTMAP_PROXY_URL',       'https://spotmap-proxy.fly.dev');
+define('SPOTMAP_PROXY_ADMIN_KEY', 'f4a6d0f46aee212cd87ddec865bbbe63');
 
 register_activation_hook(__FILE__, 'activate_spotmap');
 function activate_spotmap()
