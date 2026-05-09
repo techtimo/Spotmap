@@ -482,6 +482,12 @@ class Spotmap_Database
                     // the anchor moves forward with each suppressed ping.
                     $mutable = [ 'time', 'latitude', 'longitude', 'altitude', 'speed', 'bearing', 'hdop', 'battery_status' ];
                     $update                  = array_intersect_key($data, array_flip($mutable));
+                    // Only advance the timestamp — never roll it backward. This matters
+                    // for SPOT feeds where the API returns messages newest-first, so
+                    // suppressed pings would otherwise overwrite the anchor with an older time.
+                    if (isset($update['time']) && (int) $update['time'] < (int) $prev->time) {
+                        unset($update['time']);
+                    }
                     $update['hidden_points'] = (int) ($prev->hidden_points ?? 0) + 1;
                     $wpdb->update(
                         $wpdb->prefix . 'spotmap_points',
