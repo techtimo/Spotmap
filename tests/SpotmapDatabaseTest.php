@@ -680,4 +680,44 @@ class SpotmapDatabaseTest extends WP_UnitTestCase
         $this->assertSame(1, (int) $rows[0]->hidden_points, 'First row should have hidden_points = 1.');
         $this->assertSame(0, (int) $rows[1]->hidden_points, 'Second row should start with hidden_points = 0.');
     }
+
+    /**
+     * A TRACK ping arriving shortly after a CUSTOM event at the same location must
+     * be inserted as a new row, not rolled into the CUSTOM row.
+     *
+     * Before the fix, get_last_point_for_feed() returned the last row of any type.
+     * A TRACK ping within thresholds would then UPDATE the CUSTOM row, corrupting it
+     * (type stays CUSTOM but lat/lon/time are overwritten, hidden_points grows).
+     */
+    public function test_stationary_dedup_does_not_update_non_track_row(): void
+    {
+        global $wpdb;
+
+        // CUSTOM event stored first (e.g. user sends a message).
+        self::$db->insert_point($this->make_point([
+            'messageType' => 'CUSTOM',
+            'feedName'    => 'dedup-cross-type',
+            'unixTime'    => 1710000000,
+            'latitude'    => 47.376900,
+            'longitude'   => 8.541700,
+        ]));
+
+        // TRACK ping 5 min later at the same spot — must NOT update the CUSTOM row.
+        $result = self::$db->insert_point($this->make_track_point([
+            'feedName'  => 'dedup-cross-type',
+            'unixTime'  => 1710000300,
+            'latitude'  => 47.376900,
+            'longitude' => 8.541700,
+        ]));
+
+        $this->assertSame(1, $result, 'TRACK ping after CUSTOM event must be inserted as a new row.');
+
+        $rows = $wpdb->get_results(
+            "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = 'dedup-cross-type' ORDER BY id ASC"
+        );
+        $this->assertCount(2, $rows, 'Both CUSTOM and TRACK rows must exist.');
+        $this->assertSame('CUSTOM', $rows[0]->type, 'First row must remain CUSTOM.');
+        $this->assertSame(0, (int) $rows[0]->hidden_points, 'CUSTOM row must not accumulate hidden_points from TRACK pings.');
+        $this->assertSame('TRACK', $rows[1]->type, 'Second row must be the new TRACK row.');
+    }
 }
