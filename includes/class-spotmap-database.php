@@ -417,9 +417,18 @@ class Spotmap_Database
     /**
      * Returns the most-recently inserted point for a given feed_name, or null.
      */
-    private function get_last_point_for_feed(string $feed_name): ?object
+    private function get_last_point_for_feed(string $feed_name, string $type = ''): ?object
     {
         global $wpdb;
+        if ($type !== '') {
+            return $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = %s AND type = %s ORDER BY id DESC LIMIT 1",
+                    $feed_name,
+                    $type
+                )
+            ) ?: null;
+        }
         return $wpdb->get_row(
             $wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}spotmap_points WHERE feed_name = %s ORDER BY id DESC LIMIT 1",
@@ -438,7 +447,7 @@ class Spotmap_Database
      * coordinates for the same feed_id are used as a fallback.
      *
      * Rolling-anchor deduplication: if the new point is within the configured
-     * import-min-distance of the last stored point for the same feed AND within
+     * import-min-distance of the last stored TRACK point for the same feed AND within
      * import-min-time seconds, all mutable fields (latitude, longitude, time,
      * altitude, speed, bearing, hdop, battery_status) of the existing row are
      * updated with the new values and 0 is returned.  The anchor rolls forward
@@ -446,6 +455,8 @@ class Spotmap_Database
      * most recent reported position.  A point is permanently committed only
      * when the next ping exceeds either threshold.
      * The first arrival point is always kept because no prior point exists yet.
+     * Deduplication only compares against previous TRACK rows — non-TRACK events
+     * (CUSTOM, STOP, HELP, SOS, …) are never used as the rolling anchor.
      *
      * @param array<string, mixed> $data           Column → value pairs (DB column names).
      * @param bool                 $schedule_tz     Whether to schedule the timezone lookup event.
@@ -466,7 +477,7 @@ class Spotmap_Database
         // Stationary-deduplication: skip points that are too close in space and time.
         // Only applies to TRACK type; all event types are always stored.
         if (! empty($data['feed_name']) && ($data['type'] ?? '') === 'TRACK') {
-            $prev = $this->get_last_point_for_feed($data['feed_name']);
+            $prev = $this->get_last_point_for_feed($data['feed_name'], 'TRACK');
             if ($prev !== null) {
                 $distance_m = self::haversine_distance(
                     (float) $prev->latitude,
@@ -482,6 +493,12 @@ class Spotmap_Database
                     // the anchor moves forward with each suppressed ping.
                     $mutable = [ 'time', 'latitude', 'longitude', 'altitude', 'speed', 'bearing', 'hdop', 'battery_status' ];
                     $update                  = array_intersect_key($data, array_flip($mutable));
+                    // Only advance the timestamp — never roll it backward. This matters
+                    // for SPOT feeds where the API returns messages newest-first, so
+                    // suppressed pings would otherwise overwrite the anchor with an older time.
+                    if (isset($update['time']) && (int) $update['time'] < (int) $prev->time) {
+                        unset($update['time']);
+                    }
                     $update['hidden_points'] = (int) ($prev->hidden_points ?? 0) + 1;
                     $wpdb->update(
                         $wpdb->prefix . 'spotmap_points',

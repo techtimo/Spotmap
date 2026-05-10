@@ -537,7 +537,13 @@ class Spotmap_Api_Crawler
                 }
                 $point['feedName'] = $feed_name;
                 $point['feedId'] = $id;
-                $this->db->insert_point($point);
+                $result = $this->db->insert_point($point);
+                // Rolling anchor absorbed this point without storing its SPOT ID.
+                // The point is accounted for in the anchor row — stop paging.
+                if ($result === 0) {
+                    $found_existing = true;
+                    break;
+                }
             }
 
             if ($found_existing) {
