@@ -1,6 +1,6 @@
 {
     "name": "spotmap",
-    "version": "1.0.0-rc.5",
+    "version": "1.0.0-rc.6",
     "description": "[![WordPress Plugin: Version](https://img.shields.io/wordpress/plugin/v/spotmap?color=green&logo=wordpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/spotmap?color=green&logo=wordpress)](https://wordpress.org/plugins/spotmap/)",
     "author": "Timo Giese",
     "license": "GPL-2.0-or-later",
@@ -92,4 +92,3 @@
         "babel-plugin-istanbul": "^8.0.0"
     }
 }
-
