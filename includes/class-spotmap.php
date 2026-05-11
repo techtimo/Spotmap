@@ -84,6 +84,7 @@ class Spotmap
     {
         $this->admin = new Spotmap_Admin();
         $this->loader->add_action('admin_enqueue_scripts', $this->admin, 'enqueue_scripts');
+        $this->loader->add_action('admin_enqueue_scripts', $this->admin, 'enqueue_plugins_page_script');
         $this->loader->add_filter('cron_schedules', $this->admin, 'add_cron_schedule');
         $this->loader->add_filter('plugin_action_links_' . SPOTMAP_PLUGIN_BASENAME, $this->admin, 'add_link_plugin_overview');
         $this->loader->add_action('admin_menu', $this->admin, 'add_options_page');
