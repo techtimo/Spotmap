@@ -47,6 +47,7 @@ jobs:
 
       - name: Claim git tag (lock against concurrent runs)
         if: steps.tag_check.outputs.exists == 'false'
+        id: claim_tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -54,13 +55,37 @@ jobs:
           git push origin "${{ steps.version.outputs.version }}"
           # If a concurrent run already pushed this tag, the push above fails
           # and the job exits here — before wasting time on the build.
+          echo "claimed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve build artifact run
+        if: steps.tag_check.outputs.exists == 'false'
+        id: artifact_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "run_id=${{ github.event.workflow_run.id }}" >> "$GITHUB_OUTPUT"
+          else
+            RUN_ID=$(gh run list \
+              --workflow=ci.yml \
+              --branch=${{ github.ref_name }} \
+              --status=success \
+              --limit=1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty')
+            if [ -z "$RUN_ID" ]; then
+              echo "::error::No successful CI run found for branch '${{ github.ref_name }}'. Run the CI workflow first, then retry the deploy."
+              exit 1
+            fi
+            echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download build artifact
-        if: steps.tag_check.outputs.exists == 'false' && github.event_name == 'workflow_run'
+        if: steps.tag_check.outputs.exists == 'false'
         uses: actions/download-artifact@v8
         with:
           name: js-build
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ steps.artifact_run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node
@@ -77,14 +102,6 @@ jobs:
       - name: Install PHP dependencies
         if: steps.tag_check.outputs.exists == 'false'
         run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
-
-      - name: Start wp-env
-        if: steps.tag_check.outputs.exists == 'false'
-        run: npm run wp-env start
-
-      - name: Build
-        if: steps.tag_check.outputs.exists == 'false' && github.event_name == 'workflow_dispatch'
-        run: npm run build
 
       - name: Extract release notes
         if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
@@ -178,3 +195,9 @@ jobs:
           files: spotmap-${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete tag on failure
+        if: failure() && steps.claim_tag.outputs.claimed == 'true'
+        run: |
+          git push origin --delete "${{ steps.version.outputs.version }}"
+          echo "::warning::Deployment failed — deleted tag ${{ steps.version.outputs.version }} so the next run can retry."
