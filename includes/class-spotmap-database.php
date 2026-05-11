@@ -121,6 +121,63 @@ class Spotmap_Database
     }
 
     /**
+     * Returns summary stats for the admin dashboard widget.
+     *
+     * @return array{total_points: int, today_points: int, feeds: list<array{name: string, count: int, last_point: int}>}
+     */
+    public function get_dashboard_stats(): array
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'spotmap_points';
+
+        $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+
+        $tz          = wp_timezone();
+        $today_start = (new DateTime('today midnight', $tz))->getTimestamp();
+        $today_end   = (new DateTime('tomorrow midnight', $tz))->getTimestamp() - 1;
+        $today       = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE time BETWEEN %d AND %d",
+                $today_start,
+                $today_end
+            )
+        );
+
+        $rows = $wpdb->get_results(
+            "SELECT feed_name, COUNT(*) AS cnt, MAX(time) AS last_point
+             FROM {$table}
+             WHERE feed_name IS NOT NULL
+             GROUP BY feed_name
+             ORDER BY last_point DESC",
+            ARRAY_A
+        );
+
+        $feeds = [];
+        foreach ($rows as $row) {
+            $feeds[] = [
+                'name'       => $row['feed_name'],
+                'count'      => (int) $row['cnt'],
+                'last_point' => (int) $row['last_point'],
+            ];
+        }
+        $type_rows = $wpdb->get_results(
+            "SELECT type, COUNT(*) AS cnt FROM {$table} WHERE type IN ('POST', 'MEDIA') GROUP BY type",
+            ARRAY_A
+        );
+        $type_counts = [];
+        foreach ($type_rows as $row) {
+            $type_counts[ $row['type'] ] = (int) $row['cnt'];
+        }
+
+        return [
+            'total_points' => $total,
+            'today_points' => $today,
+            'feeds'        => $feeds,
+            'type_counts'  => $type_counts,
+        ];
+    }
+
+    /**
      * Returns a map of feed_name => point count for all feeds in the DB,
      * optionally restricted to a date range.
      *

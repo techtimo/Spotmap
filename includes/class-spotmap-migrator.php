@@ -88,7 +88,7 @@ class Spotmap_Migrator
         // Clear stale full-size URLs from MEDIA rows — the URL is now resolved at
         // query time from the attachment ID stored in `model`.
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $wpdb->query( "UPDATE `{$table}` SET `message` = NULL WHERE `type` = 'MEDIA'" );
+        $wpdb->query("UPDATE `{$table}` SET `message` = NULL WHERE `type` = 'MEDIA'");
 
         // Normalize EXTREME-TRACK and UNLIMITED-TRACK → TRACK (0.11.x rows).
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
