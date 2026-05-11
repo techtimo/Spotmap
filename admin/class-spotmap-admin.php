@@ -394,6 +394,21 @@ class Spotmap_Admin
         return $maps;
     }
 
+    public function enqueue_plugins_page_script($hook)
+    {
+        if ($hook !== 'plugins.php') {
+            return;
+        }
+        wp_enqueue_style('wp-jquery-ui-dialog');
+        wp_enqueue_script(
+            'spotmap-deactivate',
+            plugin_dir_url(__DIR__) . 'admin/js/spotmap-deactivate.js',
+            [ 'jquery', 'jquery-ui-dialog' ],
+            SPOTMAP_VERSION,
+            true
+        );
+    }
+
     public function allow_gpx_upload($mime_types)
     {
         $mime_types['gpx'] = 'text/xml';
