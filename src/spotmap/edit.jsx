@@ -266,7 +266,8 @@ export default function Edit( { attributes, setAttributes } ) {
 
             // If the DB already holds more than 150 000 points, default to no feeds
             // so the editor doesn't immediately try to render a huge dataset.
-            const enabledNames = totalPoints > EDITOR_POINT_LIMIT ? [] : feedNames;
+            const enabledNames =
+                totalPoints > EDITOR_POINT_LIMIT ? [] : feedNames;
             const defaultFeedObjects = enabledNames.map( ( name, i ) => ( {
                 name,
                 ...DEFAULT_FEED_STYLE,
@@ -854,7 +855,8 @@ export default function Edit( { attributes, setAttributes } ) {
                     },
                 } ) }
             >
-                { selectedPoints !== null && selectedPoints > EDITOR_POINT_LIMIT ? (
+                { selectedPoints !== null &&
+                selectedPoints > EDITOR_POINT_LIMIT ? (
                     <div
                         style={ {
                             height: '100%',

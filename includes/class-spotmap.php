@@ -97,6 +97,8 @@ class Spotmap
         // guard themselves and no-op when no media feed is configured.
         $this->loader->add_action('add_attachment', $this->admin, 'add_images_to_map');
         $this->loader->add_action('delete_attachment', $this->admin, 'delete_images_from_map');
+        $this->loader->add_action('wp_dashboard_setup', $this->admin, 'add_dashboard_widget');
+        $this->loader->add_action('admin_enqueue_scripts', $this->admin, 'enqueue_dashboard_scripts');
     }
 
     /**

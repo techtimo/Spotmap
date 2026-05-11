@@ -26,17 +26,28 @@ const DEFAULT_VIEW = {
     perPage: 25,
     page: 1,
     sort: { field: 'name', direction: 'asc' },
-    fields: [ 'name', 'typeLabel', 'pointCount', 'status' ],
+    fields: [ 'name', 'typeLabel', 'pointCount', 'status', 'lastPoint' ],
     filters: [],
     search: '',
     layout: {},
 };
 
-const STATUS_ELEMENTS = [
-    { value: 'active', label: 'Active' },
-    { value: 'paused', label: 'Paused' },
-    { value: 'orphaned', label: 'DB only' },
-];
+const STATUS_CONFIG = {
+    active: { label: 'Active', bg: '#00a32a' },
+    paused: { label: 'Paused', bg: '#dba617' },
+    orphaned: { label: 'DB only', bg: '#8c8f94' },
+};
+const STATUS_ELEMENTS = Object.entries( STATUS_CONFIG ).map(
+    ( [ value, { label } ] ) => ( { value, label } )
+);
+const STATUS_BADGE_STYLE = {
+    color: '#fff',
+    padding: '2px 7px',
+    borderRadius: '3px',
+    fontSize: '11px',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+};
 
 const formatTimestamp = ( ts ) =>
     ts
@@ -362,13 +373,15 @@ export default function FeedsTab( {
                 elements: STATUS_ELEMENTS,
                 filterBy: { operators: [ 'is' ] },
                 render: ( { item } ) => {
-                    if ( item.status === 'paused' ) {
-                        return 'Paused';
-                    }
-                    if ( item.status === 'orphaned' ) {
-                        return 'DB only';
-                    }
-                    return 'Active';
+                    const { label, bg } =
+                        STATUS_CONFIG[ item.status ] ?? STATUS_CONFIG.active;
+                    return (
+                        <span
+                            style={ { ...STATUS_BADGE_STYLE, background: bg } }
+                        >
+                            { label }
+                        </span>
+                    );
                 },
             },
             {

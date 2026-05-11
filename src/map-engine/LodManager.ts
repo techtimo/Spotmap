@@ -1,6 +1,10 @@
 import type { SpotmapLayers, SpotPoint } from './types';
 import type { MarkerManager } from './MarkerManager';
-import { LOD_DEBOUNCE_MS, LINE_SMOOTH_FACTOR, LOD_MIN_TRACK_POINTS } from './constants';
+import {
+    LOD_DEBOUNCE_MS,
+    LINE_SMOOTH_FACTOR,
+    LOD_MIN_TRACK_POINTS,
+} from './constants';
 import { debug as debugLog } from './utils';
 
 interface FeedLodState {
@@ -60,7 +64,10 @@ export class LodManager {
         let totalTrack = 0;
         outer: for ( const feed of Object.values( this.layers.feeds ) ) {
             for ( const p of feed.points ) {
-                if ( p.type === 'TRACK' && ++totalTrack >= LOD_MIN_TRACK_POINTS ) {
+                if (
+                    p.type === 'TRACK' &&
+                    ++totalTrack >= LOD_MIN_TRACK_POINTS
+                ) {
                     break outer;
                 }
             }
@@ -127,7 +134,10 @@ export class LodManager {
             }
 
             const runStart = i;
-            while ( i < feed.points.length && feed.points[ i ].type === 'TRACK' ) {
+            while (
+                i < feed.points.length &&
+                feed.points[ i ].type === 'TRACK'
+            ) {
                 i++;
             }
             const run = feed.points.slice( runStart, i );
