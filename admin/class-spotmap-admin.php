@@ -141,7 +141,6 @@ class Spotmap_Admin
             $stats['feeds'],
             fn ($f) => ! empty($f['last_point']) && $f['last_point'] >= $since
         ));
-        $settings_url = admin_url('options-general.php?page=spotmap#feeds');
         $photo_count  = $stats['type_counts']['MEDIA'] ?? 0;
         $post_count   = $stats['type_counts']['POST']  ?? 0;
         ?>
@@ -156,36 +155,10 @@ class Spotmap_Admin
                     <span class="spotmap-stat-label"><?php esc_html_e('Points today'); ?></span>
                 </div>
                 <div class="spotmap-stat">
-                    <?php if ($has_photos) : ?>
-                        <span class="spotmap-stat-value"><?php echo number_format($photo_count); ?></span>
-                        <span class="spotmap-stat-label"><?php esc_html_e('Geotagged photos'); ?></span>
-                    <?php else : ?>
-                        <span class="spotmap-stat-value spotmap-stat-disabled">—</span>
-                        <span class="spotmap-stat-label">
-                            <?php esc_html_e('Photos'); ?> &mdash;
-                            <button type="button" class="button-link spotmap-enable-btn"
-                                data-spotmap-enable="media"
-                                data-spotmap-name="<?php esc_attr_e('Photos'); ?>">
-                                <?php esc_html_e('enable'); ?>
-                            </button>
-                        </span>
-                    <?php endif; ?>
+                    <?php $this->render_optional_stat($has_photos, $photo_count, __('Geotagged photos'), __('Photos'), 'media'); ?>
                 </div>
                 <div class="spotmap-stat">
-                    <?php if ($has_posts) : ?>
-                        <span class="spotmap-stat-value"><?php echo number_format($post_count); ?></span>
-                        <span class="spotmap-stat-label"><?php esc_html_e('Geotagged posts'); ?></span>
-                    <?php else : ?>
-                        <span class="spotmap-stat-value spotmap-stat-disabled">—</span>
-                        <span class="spotmap-stat-label">
-                            <?php esc_html_e('Blog posts'); ?> &mdash;
-                            <button type="button" class="button-link spotmap-enable-btn"
-                                data-spotmap-enable="posts"
-                                data-spotmap-name="<?php esc_attr_e('Blog Posts'); ?>">
-                                <?php esc_html_e('enable'); ?>
-                            </button>
-                        </span>
-                    <?php endif; ?>
+                    <?php $this->render_optional_stat($has_posts, $post_count, __('Geotagged posts'), __('Blog posts'), 'posts', __('Blog Posts')); ?>
                 </div>
             </div>
 
@@ -228,19 +201,36 @@ class Spotmap_Admin
             'spotmap-dashboard-widget',
             plugin_dir_url(__DIR__) . 'admin/css/dashboard-widget.css',
             [],
-            '1.0.0'
+            SPOTMAP_VERSION
         );
         wp_enqueue_script(
             'spotmap-dashboard-widget',
             plugin_dir_url(__DIR__) . 'admin/js/dashboard-widget.js',
             [ 'moment' ],
-            '1.0.0',
+            SPOTMAP_VERSION,
             true
         );
         wp_localize_script('spotmap-dashboard-widget', 'spotmapDashboard', [
             'restUrl' => rest_url('spotmap/v1/'),
             'nonce'   => wp_create_nonce('wp_rest'),
         ]);
+    }
+
+    private function render_optional_stat(bool $enabled, int $count, string $active_label, string $inactive_label, string $enable_type, ?string $enable_name = null): void
+    {
+        if ($enabled) {
+            echo '<span class="spotmap-stat-value">' . number_format($count) . '</span>';
+            echo '<span class="spotmap-stat-label">' . esc_html($active_label) . '</span>';
+            return;
+        }
+        $name = $enable_name ?? $inactive_label;
+        echo '<span class="spotmap-stat-value spotmap-stat-disabled">—</span>';
+        echo '<span class="spotmap-stat-label">' . esc_html($inactive_label) . ' &mdash; '
+            . '<button type="button" class="button-link spotmap-enable-btn"'
+            . ' data-spotmap-enable="' . esc_attr($enable_type) . '"'
+            . ' data-spotmap-name="' . esc_attr($name) . '">'
+            . esc_html__('enable')
+            . '</button></span>';
     }
 
     public function add_link_plugin_overview($links)

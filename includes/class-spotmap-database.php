@@ -160,7 +160,6 @@ class Spotmap_Database
                 'last_point' => (int) $row['last_point'],
             ];
         }
-
         $type_rows = $wpdb->get_results(
             "SELECT type, COUNT(*) AS cnt FROM {$table} WHERE type IN ('POST', 'MEDIA') GROUP BY type",
             ARRAY_A

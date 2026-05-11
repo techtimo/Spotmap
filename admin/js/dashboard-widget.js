@@ -22,6 +22,7 @@
                 btn.addEventListener( 'click', function () {
                     const type = btn.dataset.spotmapEnable;
                     const name = btn.dataset.spotmapName;
+                    const originalText = btn.textContent;
                     btn.disabled = true;
                     btn.textContent = 'Enabling…';
 
@@ -45,7 +46,7 @@
                         } )
                         .catch( function ( err ) {
                             btn.disabled = false;
-                            btn.textContent = 'enable';
+                            btn.textContent = originalText;
                             const errEl = document.createElement( 'span' );
                             errEl.style.color = '#d63638';
                             errEl.style.marginLeft = '4px';

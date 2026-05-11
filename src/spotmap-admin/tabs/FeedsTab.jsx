@@ -32,11 +32,22 @@ const DEFAULT_VIEW = {
     layout: {},
 };
 
-const STATUS_ELEMENTS = [
-    { value: 'active', label: 'Active' },
-    { value: 'paused', label: 'Paused' },
-    { value: 'orphaned', label: 'DB only' },
-];
+const STATUS_CONFIG = {
+    active: { label: 'Active', bg: '#00a32a' },
+    paused: { label: 'Paused', bg: '#dba617' },
+    orphaned: { label: 'DB only', bg: '#8c8f94' },
+};
+const STATUS_ELEMENTS = Object.entries( STATUS_CONFIG ).map(
+    ( [ value, { label } ] ) => ( { value, label } )
+);
+const STATUS_BADGE_STYLE = {
+    color: '#fff',
+    padding: '2px 7px',
+    borderRadius: '3px',
+    fontSize: '11px',
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+};
 
 const formatTimestamp = ( ts ) =>
     ts
@@ -362,25 +373,13 @@ export default function FeedsTab( {
                 elements: STATUS_ELEMENTS,
                 filterBy: { operators: [ 'is' ] },
                 render: ( { item } ) => {
-                    const statusMap = {
-                        paused: { bg: '#dba617', label: 'Paused' },
-                        orphaned: { bg: '#8c8f94', label: 'DB only' },
-                        active: { bg: '#00a32a', label: 'Active' },
-                    };
-                    const s = statusMap[ item.status ] ?? statusMap.active;
+                    const { label, bg } =
+                        STATUS_CONFIG[ item.status ] ?? STATUS_CONFIG.active;
                     return (
                         <span
-                            style={ {
-                                background: s.bg,
-                                color: '#fff',
-                                padding: '2px 7px',
-                                borderRadius: '3px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                whiteSpace: 'nowrap',
-                            } }
+                            style={ { ...STATUS_BADGE_STYLE, background: bg } }
                         >
-                            { s.label }
+                            { label }
                         </span>
                     );
                 },
