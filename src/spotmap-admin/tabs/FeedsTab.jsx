@@ -26,7 +26,7 @@ const DEFAULT_VIEW = {
     perPage: 25,
     page: 1,
     sort: { field: 'name', direction: 'asc' },
-    fields: [ 'name', 'typeLabel', 'pointCount', 'status' ],
+    fields: [ 'name', 'typeLabel', 'pointCount', 'status', 'lastPoint' ],
     filters: [],
     search: '',
     layout: {},
@@ -362,13 +362,27 @@ export default function FeedsTab( {
                 elements: STATUS_ELEMENTS,
                 filterBy: { operators: [ 'is' ] },
                 render: ( { item } ) => {
-                    if ( item.status === 'paused' ) {
-                        return 'Paused';
-                    }
-                    if ( item.status === 'orphaned' ) {
-                        return 'DB only';
-                    }
-                    return 'Active';
+                    const statusMap = {
+                        paused: { bg: '#dba617', label: 'Paused' },
+                        orphaned: { bg: '#8c8f94', label: 'DB only' },
+                        active: { bg: '#00a32a', label: 'Active' },
+                    };
+                    const s = statusMap[ item.status ] ?? statusMap.active;
+                    return (
+                        <span
+                            style={ {
+                                background: s.bg,
+                                color: '#fff',
+                                padding: '2px 7px',
+                                borderRadius: '3px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                            } }
+                        >
+                            { s.label }
+                        </span>
+                    );
                 },
             },
             {

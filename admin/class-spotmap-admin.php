@@ -121,6 +121,128 @@ class Spotmap_Admin
         echo '<div id="spotmap-admin-root" class="wrap"></div>';
     }
 
+    public function add_dashboard_widget()
+    {
+        wp_add_dashboard_widget(
+            'spotmap_dashboard_stats',
+            __('Spotmap Statistics'),
+            [ $this, 'render_dashboard_widget' ]
+        );
+    }
+
+    public function render_dashboard_widget()
+    {
+        $stats            = $this->db->get_dashboard_stats();
+        $configured_feeds = Spotmap_Options::get_feeds();
+        $has_photos       = ! empty(array_filter($configured_feeds, fn ($f) => ($f['type'] ?? '') === 'media'));
+        $has_posts        = ! empty(array_filter($configured_feeds, fn ($f) => ($f['type'] ?? '') === 'posts'));
+        $since            = time() - 24 * HOUR_IN_SECONDS;
+        $active_feeds     = array_values(array_filter(
+            $stats['feeds'],
+            fn ($f) => ! empty($f['last_point']) && $f['last_point'] >= $since
+        ));
+        $settings_url = admin_url('options-general.php?page=spotmap#feeds');
+        $photo_count  = $stats['type_counts']['MEDIA'] ?? 0;
+        $post_count   = $stats['type_counts']['POST']  ?? 0;
+        ?>
+        <div class="spotmap-dashboard-widget">
+            <div class="spotmap-stats-summary">
+                <div class="spotmap-stat">
+                    <span class="spotmap-stat-value"><?php echo number_format($stats['total_points']); ?></span>
+                    <span class="spotmap-stat-label"><?php esc_html_e('Total points'); ?></span>
+                </div>
+                <div class="spotmap-stat">
+                    <span class="spotmap-stat-value"><?php echo number_format($stats['today_points']); ?></span>
+                    <span class="spotmap-stat-label"><?php esc_html_e('Points today'); ?></span>
+                </div>
+                <div class="spotmap-stat">
+                    <?php if ($has_photos) : ?>
+                        <span class="spotmap-stat-value"><?php echo number_format($photo_count); ?></span>
+                        <span class="spotmap-stat-label"><?php esc_html_e('Geotagged photos'); ?></span>
+                    <?php else : ?>
+                        <span class="spotmap-stat-value spotmap-stat-disabled">—</span>
+                        <span class="spotmap-stat-label">
+                            <?php esc_html_e('Photos'); ?> &mdash;
+                            <button type="button" class="button-link spotmap-enable-btn"
+                                data-spotmap-enable="media"
+                                data-spotmap-name="<?php esc_attr_e('Photos'); ?>">
+                                <?php esc_html_e('enable'); ?>
+                            </button>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="spotmap-stat">
+                    <?php if ($has_posts) : ?>
+                        <span class="spotmap-stat-value"><?php echo number_format($post_count); ?></span>
+                        <span class="spotmap-stat-label"><?php esc_html_e('Geotagged posts'); ?></span>
+                    <?php else : ?>
+                        <span class="spotmap-stat-value spotmap-stat-disabled">—</span>
+                        <span class="spotmap-stat-label">
+                            <?php esc_html_e('Blog posts'); ?> &mdash;
+                            <button type="button" class="button-link spotmap-enable-btn"
+                                data-spotmap-enable="posts"
+                                data-spotmap-name="<?php esc_attr_e('Blog Posts'); ?>">
+                                <?php esc_html_e('enable'); ?>
+                            </button>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <p class="spotmap-section-heading"><?php esc_html_e('Activity in the last 24 hours'); ?></p>
+            <?php if (! empty($active_feeds)) : ?>
+            <table class="spotmap-feeds-table widefat striped">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Feed'); ?></th>
+                        <th><?php esc_html_e('Points'); ?></th>
+                        <th><?php esc_html_e('Last seen'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($active_feeds as $feed) :
+                        $last_seen = wp_date(get_option('date_format') . ' ' . get_option('time_format'), $feed['last_point']);
+                        ?>
+                    <tr>
+                        <td><?php echo esc_html($feed['name']); ?></td>
+                        <td><?php echo number_format($feed['count']); ?></td>
+                        <td data-spotmap-ts="<?php echo (int) $feed['last_point']; ?>"><?php echo esc_html($last_seen); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else : ?>
+            <p class="spotmap-no-activity"><?php esc_html_e('No feed activity.'); ?></p>
+            <?php endif; ?>
+
+        </div>
+        <?php
+    }
+
+    public function enqueue_dashboard_scripts($hook)
+    {
+        if ($hook !== 'index.php') {
+            return;
+        }
+        wp_enqueue_style(
+            'spotmap-dashboard-widget',
+            plugin_dir_url(__DIR__) . 'admin/css/dashboard-widget.css',
+            [],
+            '1.0.0'
+        );
+        wp_enqueue_script(
+            'spotmap-dashboard-widget',
+            plugin_dir_url(__DIR__) . 'admin/js/dashboard-widget.js',
+            [ 'moment' ],
+            '1.0.0',
+            true
+        );
+        wp_localize_script('spotmap-dashboard-widget', 'spotmapDashboard', [
+            'restUrl' => rest_url('spotmap/v1/'),
+            'nonce'   => wp_create_nonce('wp_rest'),
+        ]);
+    }
+
     public function add_link_plugin_overview($links)
     {
         $mylinks = [

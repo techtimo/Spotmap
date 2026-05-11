@@ -438,11 +438,17 @@ export default function FeedModal( {
                                 __next40pxDefaultSize
                             />
                             { looksLikeUrl && (
-                                <Notice status="warning" isDismissible={ false }>
-                                    Enter only the last part of the URL — e.g.{' '}
+                                <Notice
+                                    status="warning"
+                                    isDismissible={ false }
+                                >
+                                    Enter only the last part of the URL — e.g.{ ' ' }
                                     <strong>
-                                        { fieldValue.split( '/' ).filter( Boolean ).pop() ?? 'Username' }
-                                    </strong>{' '}
+                                        { fieldValue
+                                            .split( '/' )
+                                            .filter( Boolean )
+                                            .pop() ?? 'Username' }
+                                    </strong>{ ' ' }
                                     — not the full address.
                                 </Notice>
                             ) }
