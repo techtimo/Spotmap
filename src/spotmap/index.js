@@ -1,10 +1,10 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import Edit from './edit';
-import SpotmapIcon from './icon.svg';
+import { BLOCK_ICON } from './icons';
 
 registerBlockType( metadata.name, {
-    icon: SpotmapIcon,
+    icon: BLOCK_ICON,
     edit: Edit,
     save: () => null,
 } );
