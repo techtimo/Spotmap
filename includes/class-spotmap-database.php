@@ -215,7 +215,7 @@ class Spotmap_Database
             }
         }
         $rows = $wpdb->get_results(
-            "SELECT feed_name, COUNT(*) AS cnt, MIN(time) AS first_point, MAX(time) AS last_point FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL {$where}GROUP BY feed_name ORDER BY feed_name COLLATE utf8mb4_unicode_ci",
+            "SELECT feed_name, COUNT(*) AS cnt, MIN(time) AS first_point, MAX(time) AS last_point FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL {$where}GROUP BY feed_name ORDER BY feed_name",
             ARRAY_A
         );
         $counts = [];
