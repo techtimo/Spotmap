@@ -84,7 +84,8 @@ export function buildView( entry: SpotPoint, feedCount = 1 ): PopupView {
         showLocalTime,
         localtime: entry.localtime,
         localdate: entry.localdate,
-        message: entry.message,
+        imageUrl: entry.type === 'MEDIA' ? entry.message : undefined,
+        message: entry.type === 'MEDIA' ? undefined : entry.message,
         altitude: entry.altitude > 0 ? entry.altitude : undefined,
         showBattery: entry.battery_status === 'LOW',
         hiddenPoints: entry.hiddenPoints
