@@ -147,7 +147,7 @@ class Spotmap_Public{
 			'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
 			'maps'           => $this->admin->get_maps(),
 			'overlays'       => $this->admin->get_overlays(),
-			'url'            => plugin_dir_url( __FILE__ ),
+			'mapCssUrl'      => plugin_dir_url( __DIR__ ) . 'build/spotmap-map.css',
 			'feeds'          => $this->db->get_all_feednames(),
 			'defaultValues'  => $default_values,
 			'marker'         => Spotmap_Options::get_marker_options(),

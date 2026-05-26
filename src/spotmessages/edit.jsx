@@ -61,9 +61,8 @@ export default function Edit( { attributes, setAttributes } ) {
             return;
         }
         const doc = el.ownerDocument;
-        const baseUrl = window.spotmapjsobj?.url || '';
-        const href = baseUrl + 'css/custom.css';
-        if ( doc.querySelector( `link[href="${ href }"]` ) ) {
+        const href = window.spotmapjsobj?.mapCssUrl;
+        if ( ! href || doc.querySelector( `link[href="${ href }"]` ) ) {
             return;
         }
         const link = doc.createElement( 'link' );

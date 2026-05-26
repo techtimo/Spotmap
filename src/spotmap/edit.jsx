@@ -213,35 +213,25 @@ export default function Edit( { attributes, setAttributes } ) {
                   0
               );
 
-    // Inject Leaflet CSS into the editor document (handles iframe rendering)
+    // Inject map CSS into the editor document (handles iframe rendering)
     useEffect( () => {
         const el = mapRef.current;
         if ( ! el ) {
             return;
         }
+        const href = window.spotmapjsobj?.mapCssUrl;
+        if ( ! href ) {
+            return;
+        }
         const doc = el.ownerDocument;
-        const baseUrl = window.spotmapjsobj?.url || '';
-        const cssFiles = [
-            'leaflet/leaflet.css',
-            'leafletfullscreen/leaflet.fullscreen.css',
-            'leaflet-easy-button/easy-button.css',
-            'leaflet-beautify-marker/leaflet-beautify-marker-icon.css',
-            'css/custom.css',
-            '../includes/css/font-awesome-all.min.css',
-        ];
-        const links = cssFiles
-            .filter(
-                ( file ) =>
-                    ! doc.querySelector( `link[href="${ baseUrl + file }"]` )
-            )
-            .map( ( file ) => {
-                const link = doc.createElement( 'link' );
-                link.rel = 'stylesheet';
-                link.href = baseUrl + file;
-                doc.head.appendChild( link );
-                return link;
-            } );
-        return () => links.forEach( ( l ) => l.remove() );
+        if ( doc.querySelector( `link[href="${ href }"]` ) ) {
+            return;
+        }
+        const link = doc.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.href = href;
+        doc.head.appendChild( link );
+        return () => link.remove();
     }, [] );
 
     // On first insert (when maps is empty, meaning never initialized), populate from admin-configured defaults.
