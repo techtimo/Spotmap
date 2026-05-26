@@ -7,6 +7,7 @@ import {
     Notice,
     ToolbarButton,
     ToolbarGroup,
+    SelectControl,
     __experimentalToggleGroupControl as ToggleGroupControl,
     __experimentalToggleGroupControlOption as ToggleGroupControlOption,
     __experimentalUnitControl as UnitControl,
@@ -20,6 +21,18 @@ const TIME_UNITS = [
     { value: 'weeks', label: __( 'weeks', 'spotmap' ) },
     { value: 'months', label: __( 'months', 'spotmap' ) },
     { value: 'years', label: __( 'years', 'spotmap' ) },
+];
+
+const PRESETS = [
+    { value: 'today', label: __( 'Today', 'spotmap' ) },
+    { value: 'last-12-hours', label: __( 'Last 12 hours', 'spotmap' ) },
+    { value: 'last-3-days', label: __( 'Last 3 days', 'spotmap' ) },
+    { value: 'this-week', label: __( 'This week', 'spotmap' ) },
+    { value: 'last-2-weeks', label: __( 'Last 2 weeks', 'spotmap' ) },
+    { value: 'this-month', label: __( 'This month', 'spotmap' ) },
+    { value: 'last-month', label: __( 'Last month', 'spotmap' ) },
+    { value: 'this-year', label:    __( 'This year', 'spotmap' ) },
+    { value: 'configurable', label: __( 'Configurable time span', 'spotmap' ) },
 ];
 
 // Normalize legacy singular/non-plural unit strings from old presets.
@@ -194,13 +207,24 @@ function EndpointSection( {
     state,
     onChange,
     advancedRelative = false,
+    onPresetSelect,
 } ) {
     const [ showAdvanced, setShowAdvanced ] = useState(
         () => advancedRelative && state.type === 'relative'
     );
+    const [ showPresetSelect, setShowPresetSelect ] = useState( false );
     const idPrefix = label.toLowerCase().replace( /\s+/g, '-' );
     const set = ( type ) => onChange( { ...state, type } );
-    const clear = () => onChange( { ...state, type: 'none' } );
+    const clear = () => {
+        setShowPresetSelect( false );
+        onChange( { type: 'none', relAmount: '1', relUnit: 'hours', specific: '' } );
+    };
+
+    // When user clicks the relative radio we first show the presets dropdown.
+    const onRelativeClicked = () => {
+        set( 'relative' );
+        setShowPresetSelect( true );
+    };
 
     const relativeOption = (
         <>
@@ -218,13 +242,33 @@ function EndpointSection( {
                     id={ `${ idPrefix }-relative` }
                     type="radio"
                     checked={ state.type === 'relative' }
-                    onChange={ () => set( 'relative' ) }
+                    onChange={ onRelativeClicked }
                 />
                 { advancedRelative
                     ? __( 'Relative to now — exclude the last N…' )
                     : __( 'Relative (last N…)' ) }
             </label>
-            { state.type === 'relative' && (
+
+            { /* Show presets dropdown immediately after choosing Relative. Once a preset
+                 is applied we switch to the UnitControl for fine-tuning. */ }
+            { state.type === 'relative' && showPresetSelect && (
+                <div style={ { marginLeft: '24px', marginBottom: '6px' } }>
+                    <SelectControl
+                        label={ __( 'Quick presets' ) }
+                        value=""
+                        options={ PRESETS }
+                        onChange={ ( v ) => {
+                            if ( ! v ) return;
+                            if ( typeof onPresetSelect === 'function' ) {
+                                onPresetSelect( v );
+                            }
+                            setShowPresetSelect( false );
+                        } }
+                    />
+                </div>
+            ) }
+
+            { state.type === 'relative' && ! showPresetSelect && (
                 <div
                     className="spotmap-unit-control"
                     style={ { marginBottom: '6px', marginLeft: '24px' } }
@@ -299,14 +343,27 @@ function EndpointSection( {
             </label>
             { state.type === 'specific' && (
                 <div style={ { marginLeft: '24px' } }>
-                    <DateTimePicker
-                        currentDate={
-                            state.specific || (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); })()
-                        }
-                        onChange={ ( date ) =>
-                            onChange( { ...state, specific: date } )
-                        }
-                    />
+                    { state.specific && isNaN( new Date( state.specific ) ) ? (
+                        <div style={ { display: 'flex', alignItems: 'center', gap: '8px' } }>
+                            <div style={ { fontSize: '13px' } }>
+                                { __( 'Saved keyword:' ) } <strong>{ state.specific }</strong>
+                            </div>
+                    
+                        </div>
+                    ) : (
+                        <DateTimePicker
+                            currentDate={
+                                state.specific || (() => {
+                                    const d = new Date();
+                                    d.setHours( 0, 0, 0, 0 );
+                                    return d.toISOString();
+                                } )()
+                            }
+                            onChange={ ( date ) =>
+                                onChange( { ...state, specific: date } )
+                            }
+                        />
+                    ) }
                 </div>
             ) }
 
@@ -354,6 +411,32 @@ const resolveMs = ( state ) => {
     return ms && state.relAmount
         ? Date.now() - parseInt( state.relAmount ) * ms
         : null;
+};
+
+// Helpers to produce storage-format datetimes: "YYYY-MM-DD HH:MM:SS"
+const pad = ( n ) => String( n ).padStart( 2, '0' );
+const formatForStorage = ( d ) => {
+    if ( ! ( d instanceof Date ) ) return '';
+    return (
+        d.getFullYear() + '-' +
+        pad( d.getMonth() + 1 ) + '-' +
+        pad( d.getDate() ) + ' ' +
+        pad( d.getHours() ) + ':' +
+        pad( d.getMinutes() ) + ':' +
+        pad( d.getSeconds() )
+    );
+};
+
+const startOfDay = ( d ) => {
+    const x = new Date( d );
+    x.setHours( 0, 0, 0, 0 );
+    return x;
+};
+
+const endOfDay = ( d ) => {
+    const x = new Date( d );
+    x.setHours( 23, 59, 59, 0 );
+    return x;
 };
 
 /**
@@ -443,6 +526,86 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
         setIsOpen( false );
     };
 
+    
+    // Apply a preset to a specific endpoint ('from' or 'to').
+    const applyPresetFor = ( which, val ) => {
+        if ( ! val ) return;
+        const now = new Date();
+        const setState = which === 'from' ? setFromState : setToState;
+
+        if ( val === 'configurable' ) {
+            setLocalMode( 'range' );
+            setState( { type: 'relative', relAmount: '1', relUnit: 'hours', specific: '' } );
+            return;
+        }
+        if ( val === 'today' ) {
+            setLocalMode( 'range' );
+            setState( { type: 'specific', specific: 'today', relAmount: '1', relUnit: 'hours' } );
+            return;
+        }
+        if ( val === 'this-week' ) {
+            setLocalMode( 'range' );
+            setState( { type: 'specific', specific: 'this-week', relAmount: '1', relUnit: 'hours' } );
+            return;
+        }
+
+        if ( val === 'this-month' ) {
+            const start = startOfDay( new Date( now.getFullYear(), now.getMonth(), 1 ) );
+            setLocalMode( 'range' );
+            if ( which === 'from' ) {
+                setState( { type: 'specific', specific: formatForStorage( start ), relAmount: '1', relUnit: 'hours' } );
+            } else {
+                setState( { type: 'specific', specific: formatForStorage( now ), relAmount: '1', relUnit: 'hours' } );
+            }
+            return;
+        }
+
+        if ( val === 'last-month' ) {
+            const start = startOfDay( new Date( now.getFullYear(), now.getMonth() - 1, 1 ) );
+            const end = endOfDay( new Date( now.getFullYear(), now.getMonth(), 0 ) );
+            setLocalMode( 'range' );
+            if ( which === 'from' ) {
+                setState( { type: 'specific', specific: formatForStorage( start ), relAmount: '1', relUnit: 'hours' } );
+            } else {
+                setState( { type: 'specific', specific: formatForStorage( end ), relAmount: '1', relUnit: 'hours' } );
+            }
+            return;
+        }
+
+        if ( val === 'this-year' ) {
+            const start = startOfDay( new Date( now.getFullYear(), 0, 1 ) );
+            setLocalMode( 'range' );
+            if ( which === 'from' ) {
+                setState( { type: 'specific', specific: formatForStorage( start ), relAmount: '1', relUnit: 'hours' } );
+            } else {
+                setState( { type: 'specific', specific: formatForStorage( now ), relAmount: '1', relUnit: 'hours' } );
+            }
+            return;
+        }
+
+        if ( val === 'last-year' ) {
+            const start = startOfDay( new Date( now.getFullYear() - 1, 0, 1 ) );
+            const end = endOfDay( new Date( now.getFullYear() - 1, 11, 31 ) );
+            setLocalMode( 'range' );
+            if ( which === 'from' ) {
+                setState( { type: 'specific', specific: formatForStorage( start ), relAmount: '1', relUnit: 'hours' } );
+            } else {
+                setState( { type: 'specific', specific: formatForStorage( end ), relAmount: '1', relUnit: 'hours' } );
+            }
+            return;
+        }
+
+        // Relative last-N presets
+        const relMatch = val.match( /^last-(\d+)-([a-z-]+)$/ );
+        if ( relMatch ) {
+            const amt = relMatch[ 1 ];
+            const unit = normalizeUnit( relMatch[ 2 ] );
+            setLocalMode( 'range' );
+            setState( { type: 'relative', relAmount: String( amt ), relUnit: unit, specific: '' } );
+            return;
+        }
+    };
+
     return (
         <ToolbarGroup>
             <ToolbarButton
@@ -524,6 +687,7 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                         setFromState( s );
                                         setShowErrors( false );
                                     } }
+                                    onPresetSelect={ ( v ) => applyPresetFor( 'from', v ) }
                                 />
                                 <hr
                                     style={ {
@@ -538,6 +702,7 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                         setToState( s );
                                         setShowErrors( false );
                                     } }
+                                    onPresetSelect={ ( v ) => applyPresetFor( 'to', v ) }
                                     advancedRelative
                                 />
                             </>
