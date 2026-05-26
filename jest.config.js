@@ -11,4 +11,7 @@ module.exports = {
         ...( defaultConfig.testPathIgnorePatterns ?? [] ),
         '/__tests__/fixtures\\.js$',
     ],
+    // uuid ships as ESM in newer resolutions; allow it through Babel transform
+    // even when nested under @wordpress/components/node_modules/uuid
+    transformIgnorePatterns: [ '/node_modules/(?!(.*\\/)?uuid/)' ],
 };
