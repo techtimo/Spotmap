@@ -17,8 +17,6 @@ class Spotmap_Admin
             return;
         }
 
-        wp_enqueue_style('font-awesome', plugin_dir_url(__DIR__) . 'includes/css/font-awesome-all.min.css');
-
         $asset_file = plugin_dir_path(__DIR__) . 'build/spotmap-admin.asset.php';
         $asset      = file_exists($asset_file)
             ? require $asset_file
@@ -48,16 +46,6 @@ class Spotmap_Admin
             );
         }
 
-        // Enqueue the Spotmap map engine for the Edit Points tab.
-        $public_url = plugin_dir_url(__DIR__) . 'public/';
-        wp_enqueue_style('spotmap-leaflet', $public_url . 'leaflet/leaflet.css');
-        wp_enqueue_style('spotmap-beautify-marker', $public_url . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.css');
-        wp_enqueue_style('spotmap-custom', $public_url . 'css/custom.css');
-
-        wp_enqueue_script('spotmap-leaflet', $public_url . 'leaflet/leaflet.js', [], false, true);
-        wp_enqueue_script('spotmap-beautify-marker', $public_url . 'leaflet-beautify-marker/leaflet-beautify-marker-icon.js', [ 'spotmap-leaflet' ], false, true);
-        wp_enqueue_script('spotmap-text-path', $public_url . 'leaflet-textpath/leaflet.textpath.js', [ 'spotmap-leaflet' ], false, true);
-
         $map_asset_file = plugin_dir_path(__DIR__) . 'build/spotmap-map.asset.php';
         $map_asset      = file_exists($map_asset_file)
             ? require $map_asset_file
@@ -65,7 +53,7 @@ class Spotmap_Admin
         wp_enqueue_script(
             'spotmap-map-admin',
             plugin_dir_url(__DIR__) . 'build/spotmap-map.js',
-            array_merge($map_asset['dependencies'], [ 'spotmap-leaflet', 'spotmap-beautify-marker', 'spotmap-text-path' ]),
+            $map_asset['dependencies'],
             $map_asset['version'],
             true
         );
@@ -73,7 +61,7 @@ class Spotmap_Admin
             wp_enqueue_style(
                 'spotmap-map-admin-css',
                 plugin_dir_url(__DIR__) . 'build/spotmap-map.css',
-                [ 'spotmap-leaflet' ],
+                [],
                 $map_asset['version']
             );
         }
@@ -81,7 +69,6 @@ class Spotmap_Admin
             'ajaxUrl'       => admin_url('admin-ajax.php'),
             'maps'          => $this->get_maps(),
             'overlays'      => $this->get_overlays(),
-            'url'           => $public_url,
             'feeds'         => $this->db->get_all_feednames(),
             'defaultValues' => Spotmap_Options::get_settings(),
             'marker'        => Spotmap_Options::get_marker_options(),
