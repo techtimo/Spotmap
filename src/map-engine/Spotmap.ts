@@ -51,6 +51,7 @@ export class Spotmap {
     private onVisibilityChange: ( () => void ) | null = null;
     private reloadBody: AjaxRequestBody | null = null;
     private lodManager: LodManager | null = null;
+    private emptyStatePopup: L.Popup | null = null;
 
     constructor( options: SpotmapOptions ) {
         this.options = options;
@@ -164,11 +165,6 @@ export class Spotmap {
         (
             el as HTMLElement & { _spotmapOptions?: SpotmapOptions }
          )._spotmapOptions = this.options;
-
-        // Remove any empty-state overlay left over from a previous render
-        el.querySelectorAll( '.spotmap-empty-state' ).forEach( ( n ) =>
-            n.remove()
-        );
 
         if ( ( el as HTMLElement & { _leaflet_id?: number } )._leaflet_id ) {
             if (
@@ -411,6 +407,10 @@ export class Spotmap {
             // during teardown and crashes. Setting text to null first makes
             // _textRedraw a no-op for that final render pass.
             this.lineManager?.clearArrows();
+            if ( this.emptyStatePopup ) {
+                this.map.closePopup( this.emptyStatePopup );
+                this.emptyStatePopup = null;
+            }
             this.map.remove();
         }
     }
@@ -547,65 +547,50 @@ export class Spotmap {
     }
 
     private showEmptyState(): void {
-        const container = this.map.getContainer();
-
-        // Build a human-readable summary of active filters
-        const parts: string[] = [];
-
-        let feeds: string[];
-        if ( Array.isArray( this.options.feeds ) ) {
-            feeds = this.options.feeds;
-        } else if ( this.options.feeds ) {
-            feeds = String( this.options.feeds )
-                .split( ',' )
-                .map( ( f ) => f.trim() )
-                .filter( Boolean );
-        } else {
-            feeds = [];
+        if ( this.emptyStatePopup ) {
+            return;
         }
 
-        if ( feeds.length > 0 ) {
-            parts.push( `Feeds: ${ feeds.join( ', ' ) }` );
-        }
+        this.map.setView( [ 0, 0 ], 12, { animate: false } );
 
-        const { from, to } = this.options.dateRange ?? {};
-        if ( from || to ) {
-            const range = [ from, to ].filter( Boolean ).join( ' – ' );
-            parts.push( `Date range: ${ range }` );
-        }
+        let detail = '';
+        if ( spotmapjsobj.isLoggedIn ) {
+            const parts: string[] = [];
+            const feeds = this.options.feeds;
 
-        const overlay = document.createElement( 'div' );
-        overlay.className = 'spotmap-empty-state';
-        overlay.style.cssText = [
-            'position:absolute',
-            'inset:0',
-            'z-index:1000',
-            'display:flex',
-            'flex-direction:column',
-            'align-items:center',
-            'justify-content:center',
-            'background:#f0f0f0',
-            'color:#666',
-            'gap:8px',
-            'text-align:center',
-            'padding:16px',
-            'font-size:14px',
-            'line-height:1.4',
-        ].join( ';' );
+            if ( feeds.length > 0 ) {
+                parts.push( `Feeds: ${ feeds.join( ', ' ) }` );
+            }
 
-        const title = document.createElement( 'strong' );
-        title.textContent = 'No points to display';
-        overlay.appendChild( title );
+            const { from, to } = this.options.dateRange ?? {};
+            if ( from || to ) {
+                parts.push( `Date range: ${ [ from, to ].filter( Boolean ).join( ' – ' ) }` );
+            }
 
-        const detail = document.createElement( 'span' );
-        detail.textContent =
-            parts.length > 0
+            detail = parts.length > 0
                 ? `No tracking data was found for ${ parts.join( ', ' ) }.`
                 : 'No tracking data has been stored yet.';
-        overlay.appendChild( detail );
+        }
 
-        // Leaflet already sets position:relative on the container
-        container.appendChild( overlay );
+        const content = `<strong>No points to display</strong>${
+            detail ? `<br><span style="font-size:0.9em;color:#666">${ detail }</span>` : ''
+        }`;
+
+        this.emptyStatePopup = L.popup( {
+            closeButton: false,
+            closeOnClick: false,
+            autoClose: false,
+        } )
+            .setLatLng( [ 0, 0 ] )
+            .setContent( content )
+            .openOn( this.map );
+
+        const tip = this.emptyStatePopup
+            .getElement()
+            ?.querySelector< HTMLElement >( '.leaflet-popup-tip-container' );
+        if ( tip ) {
+            tip.style.display = 'none';
+        }
     }
 
     private startAutoReload( body: AjaxRequestBody ): void {

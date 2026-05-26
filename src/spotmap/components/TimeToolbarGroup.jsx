@@ -301,7 +301,7 @@ function EndpointSection( {
                 <div style={ { marginLeft: '24px' } }>
                     <DateTimePicker
                         currentDate={
-                            state.specific || new Date().toISOString()
+                            state.specific || (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); })()
                         }
                         onChange={ ( date ) =>
                             onChange( { ...state, specific: date } )
@@ -499,11 +499,11 @@ export default function TimeToolbarGroup( { dateRange, onChangeDateRange } ) {
                                 { /* min-height reserves space for a 6-row month so
                                      the buttons below never shift when cycling months */ }
                                 <div style={ { minHeight: '272px' } }>
-                                    <DatePicker
+                                    <DateTimePicker
                                         currentDate={
                                             singleDay
-                                                ? `${ singleDay }T12:00:00`
-                                                : new Date().toISOString()
+                                                ? `${ singleDay }T00:00:00`
+                                                : (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); })()
                                         }
                                         onChange={ ( date ) =>
                                             setSingleDay(

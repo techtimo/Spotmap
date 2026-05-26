@@ -152,6 +152,7 @@ class Spotmap_Public{
 			'defaultValues'  => $default_values,
 			'marker'         => Spotmap_Options::get_marker_options(),
 			'postsFeedNames' => array_values( array_column( $posts_type_feeds, 'name' ) ),
+			'isLoggedIn'     => is_user_logged_in(),
 		]);
 	}
 

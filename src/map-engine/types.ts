@@ -7,6 +7,7 @@ export interface SpotmapGlobal {
     feeds: string[];
     defaultValues: Record< string, unknown >;
     marker: Record< string, MarkerTypeConfig >;
+    isLoggedIn: boolean;
 }
 
 export interface TileLayerConfig {

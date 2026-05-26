@@ -72,6 +72,7 @@ class Spotmap_Admin
             'feeds'         => $this->db->get_all_feednames(),
             'defaultValues' => Spotmap_Options::get_settings(),
             'marker'        => Spotmap_Options::get_marker_options(),
+            'isLoggedIn'    => true,
         ]);
     }
 

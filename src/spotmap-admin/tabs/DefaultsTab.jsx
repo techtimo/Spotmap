@@ -1,12 +1,12 @@
 import { useState, useEffect } from '@wordpress/element';
 import {
-    Button,
     TextControl,
     // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
     __experimentalNumberControl as NumberControl,
     Spinner,
 } from '@wordpress/components';
 import * as api from '../api';
+import MapsSortableControl from '../../shared/components/MapsSortableControl';
 
 const FIELDS = [
     {
@@ -17,9 +17,7 @@ const FIELDS = [
     },
     {
         key: 'maps',
-        label: 'Default Maps',
-        help: 'Comma-separated list of map layer keys, e.g. openstreetmap,opentopomap.',
-        type: 'text',
+        type: 'maps-sortable',
     },
     {
         key: 'mapcenter',
@@ -47,8 +45,8 @@ const FIELDS = [
     },
     {
         key: 'filter-points',
-        label: 'Filter Points (minutes)',
-        help: 'Hide points recorded within this many minutes of each other.',
+        label: 'Hide Nearby Points (m)',
+        help: 'Hide points within this many meters of each other when rendering the map.',
         type: 'number',
     },
     {
@@ -118,6 +116,17 @@ export default function DefaultsTab( { onNoticeChange } ) {
             >
                 { FIELDS.map( ( field ) => {
                     const value = defaults[ field.key ] ?? '';
+                    if ( field.type === 'maps-sortable' ) {
+                        return (
+                            <MapsSortableControl
+                                key={ field.key }
+                                value={ value === '' ? null : value }
+                                onChange={ ( val ) => set( field.key, val ) }
+                                label="Default Maps"
+                                help="Select and order the tile layers enabled by default. The first item is the initially shown layer."
+                            />
+                        );
+                    }
                     if ( field.type === 'number' ) {
                         return (
                             <NumberControl
