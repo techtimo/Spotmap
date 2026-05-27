@@ -5,11 +5,12 @@ on:
     branches: [main]
     paths:
       - '.wordpress-org/**'
+      - 'pluginreadme.md'
   workflow_dispatch:
 
 jobs:
   deploy-assets:
-    name: Sync .wordpress-org/ to SVN assets/
+    name: Sync assets and readme to WP.org SVN
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +20,7 @@ jobs:
       - name: Install SVN
         run: sudo apt-get install -y subversion
 
-      - name: Deploy assets to WordPress.org SVN
+      - name: Deploy to WordPress.org SVN
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
@@ -27,21 +28,27 @@ jobs:
           svn checkout --depth immediates \
               "https://plugins.svn.wordpress.org/spotmap" /tmp/svn
 
+          # Sync assets (banner, icon, screenshots)
           svn update --set-depth infinity /tmp/svn/assets
           rsync -rc --delete "$GITHUB_WORKSPACE/.wordpress-org/" /tmp/svn/assets/
 
+          # Sync readme.txt in trunk (tags/short description/changelog)
+          svn update --set-depth files /tmp/svn/trunk
+          cp "$GITHUB_WORKSPACE/pluginreadme.md" /tmp/svn/trunk/readme.txt
+
+          # Stage all changes
           cd /tmp/svn
-          svn add --force assets/ 2>/dev/null || true
+          svn add --force assets/ trunk/readme.txt 2>/dev/null || true
           svn status assets/ | grep '^!' | awk '{print $2}' | xargs -r svn delete --force
 
-          if svn status assets/ | grep -qE '^[AMDR]'; then
+          if svn status | grep -qE '^[AMDR]'; then
             svn commit \
                 --username "$SVN_USERNAME" \
                 --password "$SVN_PASSWORD" \
                 --no-auth-cache \
                 --non-interactive \
-                -m "Update WP.org assets (banner, icon, screenshots)"
-            echo "Assets committed to SVN."
+                -m "Update WP.org assets and readme"
+            echo "Changes committed to SVN."
           else
-            echo "No asset changes — nothing to commit."
+            echo "No changes — nothing to commit."
           fi
