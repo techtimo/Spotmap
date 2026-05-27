@@ -403,14 +403,12 @@ class Spotmap_Public{
 
 
 	public function get_positions(){
-		// error_log(print_r($_POST,true));
 		if ( empty( $_POST['feeds'] ) ) {
 			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No feeds defined', 'message' => '' ] );
 			return;
 		}
 
 		$requested_feeds = (array) $_POST['feeds'];
-		$results         = [];
 
 		// Virtual feeds (type='posts') are backed by post meta, not the GPS
 		// points table. Identify them by their configured type, not their name,
@@ -428,42 +426,86 @@ class Spotmap_Public{
 			}
 		}
 
+		$posts_results = [];
 		if ( ! empty( $posts_feed_names ) ) {
-			$results = array_merge( $results, $this->get_post_feed_points( $_POST, $posts_feed_names ) );
+			$posts_results = $this->get_post_feed_points( $_POST, $posts_feed_names );
 		}
 
-		$requested_feeds = $db_feed_names;
-
-		if ( ! empty( $requested_feeds ) ) {
-			$filter          = $_POST;
-			$filter['feeds'] = $requested_feeds;
-			$db_points       = $this->db->get_points( $filter );
-			if ( is_array( $db_points ) && ! isset( $db_points['error'] ) ) {
-				$media_ids = array_map(
-					fn( $p ) => (int) $p->model,
-					array_filter( $db_points, fn( $p ) => $p->type === 'MEDIA' && ! empty( $p->model ) )
-				);
-				if ( ! empty( $media_ids ) ) {
-					update_postmeta_cache( $media_ids );
-				}
-				foreach ( $db_points as $point ) {
-					if ( $point->type === 'MEDIA' && ! empty( $point->model ) ) {
-						$point->message = wp_get_attachment_image_url( (int) $point->model, 'medium' ) ?: null;
-					}
-				}
-				$results = array_merge( $results, $db_points );
-			} elseif ( empty( $results ) ) {
-				wp_send_json( $db_points );
-				return;
+		if ( empty( $db_feed_names ) ) {
+			// No DB feeds — return posts-feed results (or empty response).
+			if ( empty( $posts_results ) ) {
+				wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No points to show (yet)', 'message' => '' ] );
+			} else {
+				wp_send_json( $posts_results );
 			}
-		}
-
-		if ( empty( $results ) ) {
-			wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No points to show (yet)', 'message' => '' ] );
 			return;
 		}
 
-		wp_send_json( $results );
+		$filter          = $_POST;
+		$filter['feeds'] = $db_feed_names;
+
+		// Resolve MEDIA attachment URLs before streaming: $wpdb->dbh is held open by
+		// MYSQLI_USE_RESULT and cannot run concurrent queries, so all WP attachment
+		// lookups must happen before stream_points() is called.
+		$media_ids  = $this->db->get_media_ids( $filter );
+		$media_urls = [];
+		if ( ! empty( $media_ids ) ) {
+			update_postmeta_cache( $media_ids );
+			foreach ( $media_ids as $id ) {
+				$url = wp_get_attachment_image_url( $id, 'medium' );
+				if ( $url ) {
+					$media_urls[ $id ] = $url;
+				}
+			}
+		}
+
+		// Stream DB points directly to the HTTP response using an unbuffered MySQL
+		// query. Output is deferred until the first row arrives so that wp_send_json()
+		// can still handle error / empty-set responses when stream_points() returns
+		// before invoking any callback.
+		$first = true;
+
+		$stream_error = $this->db->stream_points(
+			$filter,
+			function ( $point ) use ( &$first, $posts_results, $media_urls ) {
+				if ( $first ) {
+					// First DB row: open the JSON array.
+					header( 'Content-Type: application/json; charset=utf-8' );
+					echo '[';
+					foreach ( $posts_results as $pt ) {
+						if ( ! $first ) {
+							echo ',';
+						}
+						echo wp_json_encode( $pt );
+						$first = false;
+					}
+				}
+
+				if ( ! empty( $point->model ) && isset( $media_urls[ (int) $point->model ] ) ) {
+					$point->message = $media_urls[ (int) $point->model ];
+				}
+				if ( ! $first ) {
+					echo ',';
+				}
+				echo wp_json_encode( $point );
+				$first = false;
+			}
+		);
+
+		if ( $first ) {
+			// stream_points() returned without any callbacks: validation error or zero rows.
+			if ( $stream_error !== null && empty( $posts_results ) ) {
+				wp_send_json( $stream_error );
+			} elseif ( empty( $posts_results ) ) {
+				wp_send_json( [ 'error' => false, 'empty' => true, 'title' => 'No points to show (yet)', 'message' => '' ] );
+			} else {
+				wp_send_json( $posts_results );
+			}
+			return;
+		}
+
+		echo ']';
+		wp_die();
 	}
 
 	private function get_post_feed_points( array $filter, array $feed_names ): array {
