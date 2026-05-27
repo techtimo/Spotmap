@@ -9,6 +9,9 @@ class Spotmap_Database
      */
     public const MAX_POINTS_PER_QUERY = 150000;
 
+    /** Per-request cache for get_all_feednames() — populated on first call. */
+    private ?array $feednames_cache = null;
+
     private const ALLOWED_COLUMNS = [
             'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
             'battery_status', 'message', 'custom_message', 'feed_name',
@@ -113,11 +116,15 @@ class Spotmap_Database
 
     public function get_all_feednames()
     {
+        if ($this->feednames_cache !== null) {
+            return $this->feednames_cache;
+        }
         global $wpdb;
-        $from_db = $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL");
-        $configured = Spotmap_Options::get_feeds();
-        $from_options = array_column($configured, 'name');
-        return array_values(array_unique(array_merge($from_options, $from_db)));
+        $from_db            = $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL");
+        $configured         = Spotmap_Options::get_feeds();
+        $from_options       = array_column($configured, 'name');
+        $this->feednames_cache = array_values(array_unique(array_merge($from_options, $from_db)));
+        return $this->feednames_cache;
     }
 
     /**
@@ -353,38 +360,45 @@ class Spotmap_Database
     }
 
 
-    public function get_points($filter)
+    /**
+     * Validates $filter and builds the SQL clause fragments used by get_points() and
+     * stream_points().
+     *
+     * @return array{error:true,title:string,message:string}|array{0:string,1:string,2:string,3:string}
+     *   An error associative array on validation failure, or [select, where, order, limit] on success.
+     */
+    private function build_query_parts(array $filter): array
     {
-        // error_log(print_r($filter,true));
-
         $select   = self::sanitize_select($filter['select'] ?? '*');
         $group_by = empty($filter['groupBy']) ? null : self::sanitize_group_by($filter['groupBy']);
         $order    = empty($filter['orderBy']) ? '' : self::sanitize_order($filter['orderBy']);
         $limit    = 'LIMIT ' . (empty($filter['limit']) ? self::MAX_POINTS_PER_QUERY : absint($filter['limit']));
         global $wpdb;
         $where = '';
+
         if (!empty($filter['feeds'])) {
             $feeds_on_db = $this->get_all_feednames();
             foreach ($filter['feeds'] as $value) {
                 if (!in_array($value, $feeds_on_db)) {
-                    return ['error' => true,'title' => $value.' not found in DB','message' => "Change the 'devices' attribute of your Shortcode"];
+                    return ['error' => true, 'title' => $value . ' not found in DB', 'message' => "Change the 'devices' attribute of your Shortcode"];
                 }
             }
             $placeholders = implode(', ', array_fill(0, count($filter['feeds']), '%s'));
             // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
             $where .= $wpdb->prepare("AND feed_name IN ($placeholders) ", ...$filter['feeds']);
         }
+
         if (!empty($filter['type'])) {
-            $track_aliases = ['UNLIMITED-TRACK', 'EXTREME-TRACK'];
+            $track_aliases  = ['UNLIMITED-TRACK', 'EXTREME-TRACK'];
             $filter['type'] = array_values(array_unique(array_map(
                 fn ($t) => in_array($t, $track_aliases, true) ? 'TRACK' : $t,
                 $filter['type']
             )));
-            $types_on_db = $this->get_all_types();
+            $types_on_db   = $this->get_all_types();
             $allowed_types = array_merge($types_on_db, array_keys(Spotmap_Options::get_marker_defaults()));
             foreach ($filter['type'] as $value) {
                 if (!in_array($value, $allowed_types)) {
-                    return ['error' => true,'title' => $value.' not found in DB','message' => "Change the 'devices' attribute of your Shortcode"];
+                    return ['error' => true, 'title' => $value . ' not found in DB', 'message' => "Change the 'devices' attribute of your Shortcode"];
                 }
             }
             $placeholders = implode(', ', array_fill(0, count($filter['type']), '%s'));
@@ -393,68 +407,149 @@ class Spotmap_Database
         }
 
         // either have a day or a range
-        $date;
         if (!empty($filter['date'])) {
             $date = date_create($filter['date']);
-            if ($date != null) {
-                $date = date_format($date, "Y-m-d");
-                $where .= "AND FROM_UNIXTIME(time) between '" . $date . " 00:00:00' and  '" . $date . " 23:59:59' ";
+            if ($date !== null) {
+                $d      = date_format($date, 'Y-m-d');
+                $where .= "AND FROM_UNIXTIME(time) between '" . $d . " 00:00:00' and  '" . $d . " 23:59:59' ";
             }
         } elseif (!empty($filter['date-range'])) {
             if (!empty($filter['date-range']['to'])) {
-
                 $date = date_create($filter['date-range']['to']);
                 if (substr($filter['date-range']['to'], 0, 5) == 'last-') {
                     $rel_string = substr($filter['date-range']['to'], 5);
-                    $rel_string = str_replace("-", " ", $rel_string);
-                    $date = date_create("@".strtotime('-'.$rel_string));
+                    $rel_string = str_replace('-', ' ', $rel_string);
+                    $date       = date_create('@' . strtotime('-' . $rel_string));
                 }
-
-                if ($date != null) {
-                    $where .= "AND FROM_UNIXTIME(time) <= '" . date_format($date, "Y-m-d H:i:s") . "' ";
+                if ($date !== null) {
+                    $where .= "AND FROM_UNIXTIME(time) <= '" . date_format($date, 'Y-m-d H:i:s') . "' ";
                 }
             }
             if (!empty($filter['date-range']['from'])) {
                 $date = date_create($filter['date-range']['from']);
                 if (substr($filter['date-range']['from'], 0, 5) == 'last-') {
                     $rel_string = substr($filter['date-range']['from'], 5);
-                    $rel_string = str_replace("-", " ", $rel_string);
-                    $date = date_create("@".strtotime('-'.$rel_string));
+                    $rel_string = str_replace('-', ' ', $rel_string);
+                    $date       = date_create('@' . strtotime('-' . $rel_string));
                 }
-                if ($date != null) {
-                    $where .= "AND FROM_UNIXTIME(time) >= '" . date_format($date, "Y-m-d H:i:s") . "' ";
+                if ($date !== null) {
+                    $where .= "AND FROM_UNIXTIME(time) >= '" . date_format($date, 'Y-m-d H:i:s') . "' ";
                 }
             }
-        }
-        if (! empty($group_by)) {
-            $type_sub = '';
-            if (! empty($filter['type'])) {
-                $sub_placeholders = implode(', ', array_fill(0, count($filter['type']), '%s'));
-                // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-                $type_sub = $wpdb->prepare(" WHERE type IN ($sub_placeholders)", ...$filter['type']);
-            }
-            $where .= " AND id IN (SELECT max(id) FROM " . $wpdb->prefix . "spotmap_points" . $type_sub . " GROUP BY " . $group_by . " )";
         }
 
-        $query = "SELECT ".$select.", custom_message FROM " . $wpdb->prefix . "spotmap_points WHERE 1 ".$where." ".$order. " " .$limit;
-        // error_log("Query: " .$query);
-        $points = $wpdb->get_results($query);
-        foreach ($points as &$point) {
-            $point->unixtime = $point->time;
-            // $point->date = date_i18n( get_option('date_format'), $date );
-            $point->date = wp_date(get_option('date_format'), $point->unixtime);
-            $point->time = wp_date(get_option('time_format'), $point->unixtime);
-            if (!empty($point->local_timezone)) {
-                $timezone = new DateTimeZone($point->local_timezone);
-                $point->localdate = wp_date(get_option('date_format'), $point->unixtime, $timezone);
-                $point->localtime = wp_date(get_option('time_format'), $point->unixtime, $timezone);
+        if (!empty($group_by)) {
+            $type_sub = '';
+            if (!empty($filter['type'])) {
+                $sub_placeholders = implode(', ', array_fill(0, count($filter['type']), '%s'));
+                // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+                $type_sub = $wpdb->prepare(' WHERE type IN (' . $sub_placeholders . ')', ...$filter['type']);
             }
-            if (! empty($point->custom_message)) {
-                $point->message = $point->custom_message;
-            }
-            unset($point->custom_message);
+            $where .= ' AND id IN (SELECT max(id) FROM ' . $wpdb->prefix . 'spotmap_points' . $type_sub . ' GROUP BY ' . $group_by . ' )';
+        }
+
+        return [$select, $where, $order, $limit];
+    }
+
+    /**
+     * Applies display fields (unixtime, date, time, localdate, localtime) to a raw DB row
+     * and promotes custom_message over message when set. Mutates $point in place.
+     */
+    private static function transform_point(object $point, string $date_fmt, string $time_fmt): void
+    {
+        $point->unixtime = $point->time;
+        $point->date     = wp_date($date_fmt, $point->unixtime);
+        $point->time     = wp_date($time_fmt, $point->unixtime);
+        if (!empty($point->local_timezone)) {
+            $tz               = new DateTimeZone($point->local_timezone);
+            $point->localdate = wp_date($date_fmt, $point->unixtime, $tz);
+            $point->localtime = wp_date($time_fmt, $point->unixtime, $tz);
+        }
+        if (!empty($point->custom_message)) {
+            $point->message = $point->custom_message;
+        }
+        unset($point->custom_message);
+    }
+
+    public function get_points($filter)
+    {
+        $parts = $this->build_query_parts($filter);
+        if (isset($parts['error'])) {
+            return $parts;
+        }
+        [$select, $where, $order, $limit] = $parts;
+
+        global $wpdb;
+        $query    = "SELECT {$select}, custom_message FROM {$wpdb->prefix}spotmap_points WHERE 1 {$where} {$order} {$limit}";
+        $points   = $wpdb->get_results($query);
+        $date_fmt = get_option('date_format');
+        $time_fmt = get_option('time_format');
+        foreach ($points as $point) {
+            self::transform_point($point, $date_fmt, $time_fmt);
         }
         return $points;
+    }
+
+    /**
+     * Returns WordPress attachment IDs for all MEDIA-type points matching $filter.
+     * Call update_postmeta_cache() on the result before streaming to avoid N+1 queries.
+     *
+     * @return int[]
+     */
+    public function get_media_ids(array $filter): array
+    {
+        $parts = $this->build_query_parts($filter);
+        if (isset($parts['error'])) {
+            return [];
+        }
+        [, $where] = $parts; // only the WHERE fragment is needed
+
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $ids = $wpdb->get_col(
+            "SELECT model FROM {$wpdb->prefix}spotmap_points WHERE 1 {$where} AND type = 'MEDIA' AND model IS NOT NULL AND model != ''"
+        );
+        return array_map('intval', $ids ?: []);
+    }
+
+    /**
+     * Streams points matching $filter to $callback one row at a time using an unbuffered
+     * MySQL query, keeping PHP memory flat regardless of result-set size.
+     *
+     * Validation is performed before the query is issued. If validation fails the method
+     * returns the error array without invoking $callback at all, so the caller can still
+     * send a normal wp_send_json() error response.
+     *
+     * @param  array    $filter   Same filter array accepted by get_points().
+     * @param  callable $callback Called once per row with the transformed point object.
+     * @return array{error:true,title:string,message:string}|null
+     *   Error array on validation failure, null on success (including zero rows).
+     */
+    public function stream_points(array $filter, callable $callback): ?array
+    {
+        $parts = $this->build_query_parts($filter);
+        if (isset($parts['error'])) {
+            return $parts;
+        }
+        [$select, $where, $order, $limit] = $parts;
+
+        global $wpdb;
+        $query  = "SELECT {$select}, custom_message FROM {$wpdb->prefix}spotmap_points WHERE 1 {$where} {$order} {$limit}";
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        $result = $wpdb->dbh->query($query, MYSQLI_USE_RESULT);
+        if (!$result) {
+            return null;
+        }
+
+        $date_fmt = get_option('date_format');
+        $time_fmt = get_option('time_format');
+
+        while ($point = $result->fetch_object()) {
+            self::transform_point($point, $date_fmt, $time_fmt);
+            $callback($point);
+        }
+        $result->free();
+        return null;
     }
 
     /**
