@@ -32,6 +32,9 @@ vendor/
 .gitignore
 .distignore
 
+# WP.org SVN assets (banner, icon, screenshots — deployed separately, not in plugin zip)
+.wordpress-org/
+
 # Docs / meta (not needed in plugin zip)
 README.md
 CLAUDE.md

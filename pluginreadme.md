@@ -2,7 +2,7 @@
 
 Contributors: techtimo  
 Donate link: paypal.me/ebaytimo  
-Tags: gps, tracking, map, gpx, live tracking, osmand, teltonika, spot, tracker, victron, post location
+Tags: map, tracking, gpx, live tracking, garmin
 License: GPL2  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: 6.5
@@ -10,7 +10,7 @@ Requires PHP: 8.2
 Tested up to: 7.0
 Stable tag: 1.0.0
 
-Live GPS tracking for WordPress — display positions from SPOT, Garmin inReach, OsmAnd, Teltonika, and more on interactive maps. Self-hosted, privacy-friendly. 🗺
+Live GPS tracking for WordPress. Display positions from SPOT, Garmin inReach, OsmAnd & Teltonika on interactive Leaflet maps. Self-hosted.
 
 ## Description
 
