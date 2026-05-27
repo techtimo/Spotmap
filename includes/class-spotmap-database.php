@@ -9,9 +9,6 @@ class Spotmap_Database
      */
     public const MAX_POINTS_PER_QUERY = 150000;
 
-    /** Per-request cache for get_all_feednames() — populated on first call. */
-    private ?array $feednames_cache = null;
-
     private const ALLOWED_COLUMNS = [
             'id', 'type', 'time', 'latitude', 'longitude', 'altitude',
             'battery_status', 'message', 'custom_message', 'feed_name',
@@ -116,15 +113,11 @@ class Spotmap_Database
 
     public function get_all_feednames()
     {
-        if ($this->feednames_cache !== null) {
-            return $this->feednames_cache;
-        }
         global $wpdb;
-        $from_db            = $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL");
-        $configured         = Spotmap_Options::get_feeds();
-        $from_options       = array_column($configured, 'name');
-        $this->feednames_cache = array_values(array_unique(array_merge($from_options, $from_db)));
-        return $this->feednames_cache;
+        $from_db      = $wpdb->get_col("SELECT DISTINCT feed_name FROM " . $wpdb->prefix . "spotmap_points WHERE feed_name IS NOT NULL");
+        $configured   = Spotmap_Options::get_feeds();
+        $from_options = array_column($configured, 'name');
+        return array_values(array_unique(array_merge($from_options, $from_db)));
     }
 
     /**

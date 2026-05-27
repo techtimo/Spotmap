@@ -469,10 +469,7 @@ class Spotmap_Public{
 			$filter,
 			function ( $point ) use ( &$first, $posts_results, $media_urls ) {
 				if ( $first ) {
-					// First DB row: flush any buffered output and open the JSON array.
-					while ( ob_get_level() > 0 ) {
-						ob_end_clean();
-					}
+					// First DB row: open the JSON array.
 					header( 'Content-Type: application/json; charset=utf-8' );
 					echo '[';
 					foreach ( $posts_results as $pt ) {
