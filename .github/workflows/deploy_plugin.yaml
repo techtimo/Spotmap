@@ -155,10 +155,6 @@ jobs:
           svn update --set-depth infinity /tmp/svn/trunk
           rsync -rc --delete --delete-excluded /tmp/plugin-build/spotmap/ /tmp/svn/trunk/
 
-          # Sync assets (banner, icon, screenshots)
-          svn update --set-depth infinity /tmp/svn/assets
-          rsync -rc --delete "$GITHUB_WORKSPACE/.wordpress-org/" /tmp/svn/assets/
-
           # Stage all changes
           cd /tmp/svn
           svn add --force . 2>/dev/null || true
