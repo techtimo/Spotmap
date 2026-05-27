@@ -22,10 +22,9 @@ Spotmap turns your WordPress site into a self-hosted GPS tracking platform. Conn
 * **Garmin inReach** — receives positions via Garmin's MapShare feed
 * **OsmAnd** — receives positions via HTTP from the OsmAnd smartphone app
 * **Teltonika** — direct integration for Teltonika GPS routers and trackers
-* **WordPress Media Library** — photos with GPS EXIF data appear as points on the map under the feed name `media`
-* **Post Locations** — assign GPS coordinates to any WordPress post, page, or custom post type via the block editor sidebar. Posts appear on the map as clickable markers that link directly to the article so readers can jump from the map to the full story.
-
-* **Zoleo** — planned
+* **WordPress Media Library** — photos with GPS EXIF data can appear on the map
+* **Post Locations** — assign GPS coordinates to any WordPresspost or page via the block editor sidebar. Posts appear on the map as clickable markers that link directly to the article so readers can jump from the map to the full story.
+* **Zoleo** — if you have a Zoleo device please reach out to the plugin author
 
 ### Map & visualization
 
@@ -68,16 +67,6 @@ Most GPS tracking solutions lock your data into a vendor cloud. SPOT's own platf
 3. Go to **Settings > Spotmap** and add your first feed
 4. In the block editor, type `/spotmap` to insert a map into any post or page
 
-### Connecting data sources (feeds)
-
-**SPOT:** Create an XML Feed in your SPOT account ([instructions](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed)). Enter the Feed ID in Spotmap settings. Positions are polled automatically. Your Feed ID looks like: `0Wl3diTJcqqvncI6NNsoqJV5ygrFtQfBB`
-
-**OsmAnd:** Configure OsmAnd's online tracking to send positions to the REST endpoint shown in Spotmap settings.
-
-**Teltonika:** Point your Teltonika device's data sending configuration to the endpoint shown in Spotmap settings.
-
-**Photos:** Upload geotagged images to your WordPress media library. Spotmap reads the EXIF GPS data and displays them under the feed name `media`.
-
 ## Security
 
 ### Message content and phone numbers
@@ -100,12 +89,12 @@ To reduce the risk of token abuse, **restrict each token to your domain using th
 
 ## Shortcodes
 
-Spotmap ships two shortcodes for themes or page builders that don't use the block editor.
+If you use a legacy text editor and require shortcodes, you are able to use the shortcode builder from the settings page of Spotmap. there you can interactively create the shortcode you need.
+
+The following shortcodes are supported:
 
 **`[spotmap]`** — embeds an interactive map
 **`[spotmessages]`** — embeds a table of SPOT messages and check-ins
-
-The shortcodes have **full feature parity with the Gutenberg block**: every option available in the block editor — feeds, time filtering, map tiles, GPX overlays, colors, line splitting, navigation buttons, scroll-wheel zoom, panning control, and more — can also be set as a shortcode attribute.
 
 For the full attribute reference, see **[README-SHORTCODE.md](https://github.com/techtimo/Spotmap/blob/main/README-SHORTCODE.md)** on GitHub.
 
@@ -145,11 +134,11 @@ Spotmap uses Leaflet and supports any XYZ tile provider. OpenStreetMap is includ
 
 ### Is Spotmap suitable for shared hosting?
 
-Yes, for SPOT, OsmAnd, and photo EXIF. All three use HTTP-based data transfer. Teltonika integration may require additional configuration depending on your device model and hosting.
+Yes, cpu and memory usage is kept intentially low so that the plugin works well on shared hosting. For future data sources like Zoleo, AIS and Flarm there will be a small web service that fetches points and interacts with your webpage 
 
 ### Which third-party services does the plugin use?
 
-1. [SPOT LLC](http://findmespot.com) — [Public API](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) for position data
+1. (optional) [SPOT LLC](http://findmespot.com) — [Public API](https://www.findmespot.com/en-us/support/spot-gen4/get-help/general/public-api-and-xml-feed) for position data
 2. (optional) [TimeZoneDB.com](https://timezonedb.com) — local time calculation for positions. [Create an account](https://timezonedb.com/register) and add the key in settings.
 3. (optional) [Mapbox](https://mapbox.com) — satellite imagery and map styles. [Get an API token](https://account.mapbox.com/access-tokens/). Restrict the token to your domain.
 4. (optional) [Thunderforest](https://thunderforest.com) — additional map styles. [Sign up](https://manage.thunderforest.com/users/sign_up?plan_id=5).
@@ -171,9 +160,7 @@ Spotmap fills a unique niche in the WordPress plugin ecosystem:
 * **Rich time filtering UI** — relative ranges like "last 24 hours" with a visual interface instead of shortcode parameters.
 * **Interactive data table** — click a position to zoom to it on the map.
 
-**vs. GPS Plotter** — Android-phone-only, Google Maps dependent, no GPX support, no satellite devices.
-
-**In short:** if you track with a satellite communicator, a Teltonika device, or want a modern block-editor experience with visual filtering and data management, Spotmap is the better fit. If you need protocol support for niche phone tracking apps (TrackMe, µLogger, OwnTracks), check out Trackserver.
+**In short:** if you track with a satellite communicator or want a modern block-editor experience with visual filtering and data management, Spotmap is the better fit. If you need protocol support for niche phone tracking apps (TrackMe, µLogger, OwnTracks), check out Trackserver.
 
 ### I have a question, an idea, or found a bug
 
