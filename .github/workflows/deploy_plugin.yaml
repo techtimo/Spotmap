@@ -137,6 +137,10 @@ jobs:
           mkdir -p /tmp/plugin-build
           unzip -q spotmap-${VERSION}.zip -d /tmp/plugin-build
 
+      - name: Install SVN
+        if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
+        run: sudo apt-get install -y subversion
+
       - name: Deploy to WordPress.org SVN
         if: steps.tag_check.outputs.exists == 'false' && steps.version.outputs.is_prerelease == 'false'
         env:
